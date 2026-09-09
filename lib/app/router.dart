@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../core/models/user_role.dart';
 import '../core/widgets/app_scaffold.dart';
 import '../features/artisan/presentation/artisan_home_screen.dart';
 import '../features/artisan/presentation/artisan_profile_screen.dart';
 import '../features/artisan/presentation/manage_products_screen.dart';
+import '../features/auth/presentation/auth_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/buyer/presentation/buyer_home_screen.dart';
 import '../features/cart/presentation/cart_screen.dart';
@@ -21,12 +23,16 @@ import '../features/products/presentation/product_details_screen.dart';
 import '../features/products/presentation/product_listing_screen.dart';
 import '../features/products/screens/artisan_add_product_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/role_selection/presentation/role_selection_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 
 abstract final class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String onboarding = '/onboarding';
+  static const String roleSelection = '/role-selection';
+  static const String sellerAuth = '/seller-auth';
+  static const String buyerAuth = '/buyer-auth';
   static const String home = '/home';
   static const String buyerHome = '/buyer-home';
   static const String artisanHome = '/artisan-home';
@@ -56,6 +62,18 @@ class AppRouter {
         return _buildRoute(const OnboardingScreen(), settings: settings);
       case AppRoutes.login:
         return _buildRoute(const LoginScreen(), settings: settings);
+      case AppRoutes.roleSelection:
+        return _buildRoute(const RoleSelectionScreen(), settings: settings);
+      case AppRoutes.sellerAuth:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => const AuthScreen(role: UserRole.seller),
+        );
+      case AppRoutes.buyerAuth:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => const AuthScreen(role: UserRole.buyer),
+        );
       case AppRoutes.home:
         return _buildRoute(const HomeScreen(), settings: settings);
       case AppRoutes.buyerHome:

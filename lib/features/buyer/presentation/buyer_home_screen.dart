@@ -74,7 +74,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                   return Text('HastKala', style: AppTextStyles.headlineLarge.copyWith(color: AppColors.brown, fontWeight: FontWeight.w800));
                 },
               ),
-              Text('Handmade with Artisan Pride', style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, fontSize: 10)),
+              Text('', style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, fontSize: 10)),
             ],
           ),
           const Spacer(),

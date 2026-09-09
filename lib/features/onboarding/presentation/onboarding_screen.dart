@@ -30,7 +30,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       );
     } else {
       // Use centralized router to navigate away from onboarding
-      Navigator.pushReplacementNamed(context, AppRoutes.buyerHome);
+      Navigator.pushReplacementNamed(context, AppRoutes.roleSelection);
     }
   }
 
