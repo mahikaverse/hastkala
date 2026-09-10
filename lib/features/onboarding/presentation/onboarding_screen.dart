@@ -76,7 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 64),
+            const SizedBox(height: 160),
             // Main heading
             Text(
               "India's Crafts\nDeserve a Bigger Stage",
@@ -115,7 +115,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 64),
+            const SizedBox(height: 160),
             Text(
               "Support Local Artisans",
               textAlign: TextAlign.center,
@@ -152,7 +152,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 64),
+            const SizedBox(height: 160),
             Text(
               "Start Your Journey",
               textAlign: TextAlign.center,

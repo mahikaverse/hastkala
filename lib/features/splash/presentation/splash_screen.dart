@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
+import '../../../core/widgets/hast_kala_background.dart';
 
 /// Splash screen for the HastKala application.
 ///
@@ -66,41 +67,35 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Decorative corner motifs
-            const _CornerMotifs(),
-
-            // Centered content
-            Center(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _BrandLogo(),
-                      SizedBox(height: AppDimensions.xxl),
-                      _Tagline(),
-                    ],
-                  ),
+    return HastKalaBackground(
+      child: Stack(
+        children: [
+          // Centered content
+          Center(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _BrandLogo(),
+                    SizedBox(height: AppDimensions.xxl),
+                    _Tagline(),
+                  ],
                 ),
               ),
             ),
+          ),
 
-            // Loading indicator at bottom
-            const Positioned(
-              bottom: AppDimensions.xxxl,
-              left: 0,
-              right: 0,
-              child: Center(child: _LoadingIndicator()),
-            ),
-          ],
-        ),
+          // Loading indicator at bottom
+          const Positioned(
+            bottom: AppDimensions.xxxl,
+            left: 0,
+            right: 0,
+            child: Center(child: _LoadingIndicator()),
+          ),
+        ],
       ),
     );
   }
@@ -160,109 +155,4 @@ class _LoadingIndicator extends StatelessWidget {
   }
 }
 
-/// Decorative corner motifs inspired by Indian craft patterns.
-///
-/// Uses very light, low-contrast terracotta and mustard elements
-/// positioned in the corners of the screen.
-class _CornerMotifs extends StatelessWidget {
-  const _CornerMotifs();
 
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Top-left motif
-        Positioned(
-          top: AppDimensions.xxxl,
-          left: AppDimensions.xxl,
-          child: CustomPaint(
-            size: const Size(60, 60),
-            painter: _MotifPainter(
-              color: AppColors.terracotta.withValues(alpha: 0.08),
-            ),
-          ),
-        ),
-
-        // Top-right motif
-        Positioned(
-          top: AppDimensions.xxxl,
-          right: AppDimensions.xxl,
-          child: CustomPaint(
-            size: const Size(60, 60),
-            painter: _MotifPainter(
-              color: AppColors.mustardGold.withValues(alpha: 0.08),
-            ),
-          ),
-        ),
-
-        // Bottom-left motif
-        Positioned(
-          bottom: AppDimensions.xxxxxl,
-          left: AppDimensions.xxl,
-          child: CustomPaint(
-            size: const Size(60, 60),
-            painter: _MotifPainter(
-              color: AppColors.mustardGold.withValues(alpha: 0.08),
-            ),
-          ),
-        ),
-
-        // Bottom-right motif
-        Positioned(
-          bottom: AppDimensions.xxxxxl,
-          right: AppDimensions.xxl,
-          child: CustomPaint(
-            size: const Size(60, 60),
-            painter: _MotifPainter(
-              color: AppColors.terracotta.withValues(alpha: 0.08),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Custom painter for subtle Indian-inspired decorative motifs.
-///
-/// Draws a simplified paisley/floral pattern at low opacity.
-class _MotifPainter extends CustomPainter {
-  const _MotifPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-
-    // Outer circle
-    canvas.drawCircle(center, radius, paint);
-
-    // Inner petal arcs
-    for (var i = 0; i < 6; i++) {
-      final angle = (i * 60) * (3.14159 / 180);
-      final point = Offset(
-        center.dx + (radius * 0.6) * (i.isEven ? 1 : -1) * 0.5,
-        center.dy + (radius * 0.6) * (angle / 3.14159) * 0.3,
-      );
-      canvas.drawCircle(point, radius * 0.2, paint);
-    }
-
-    // Center dot
-    final dotPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, 3, dotPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _MotifPainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}

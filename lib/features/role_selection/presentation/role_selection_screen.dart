@@ -5,6 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/user_role.dart';
+import '../../../core/widgets/hast_kala_background.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -18,9 +19,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
+    return HastKalaBackground(
+      child: Material(
+        type: MaterialType.transparency,
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppDimensions.xxl),
@@ -88,16 +89,18 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           role: UserRole.seller,
           title: 'Seller / Artisan',
           subtitle: 'Sell your handmade products\nand grow your craft business.',
-          icon: Icons.palette_outlined,
+         
           selectedColor: AppColors.terracotta,
+          imageAsset: 'assets/seller-enum-img.png',
         ),
         const SizedBox(height: AppDimensions.lg),
         _roleCard(
           role: UserRole.buyer,
           title: 'Buyer / Customer',
           subtitle: 'Discover and shop unique\nhandmade Indian crafts.',
-          icon: Icons.shopping_bag_outlined,
+          
           selectedColor: AppColors.terracotta,
+          imageAsset: 'assets/buyer-enum-img.png',
         ),
       ],
     );
@@ -107,8 +110,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     required UserRole role,
     required String title,
     required String subtitle,
-    required IconData icon,
+    required String imageAsset,
     required Color selectedColor,
+    IconData icon = Icons.circle,
   }) {
     final isSelected = _selectedRole == role;
     return GestureDetector(
@@ -116,7 +120,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         width: double.infinity,
-        padding: const EdgeInsets.all(AppDimensions.xl),
+        constraints: const BoxConstraints(minHeight: 140),
+        padding: const EdgeInsets.all(AppDimensions.lg),
         decoration: BoxDecoration(
           color: isSelected ? selectedColor.withValues(alpha: 0.05) : AppColors.surface,
           borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
@@ -134,20 +139,34 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: isSelected ? selectedColor.withValues(alpha: 0.1) : AppColors.warmBeige,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-              ),
-              child: Icon(
-                icon,
-                size: 28,
-                color: isSelected ? selectedColor : AppColors.brown,
+            // Role illustration image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+              child: Image.asset(
+                imageAsset,
+                width: 100,
+                height: 120,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  // Fallback to icon if image fails to load
+                  return Container(
+                    width: 100,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: isSelected ? selectedColor.withValues(alpha: 0.1) : AppColors.warmBeige,
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 40,
+                      color: isSelected ? selectedColor : AppColors.brown,
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(width: AppDimensions.lg),
+            // Text content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,7 +178,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppDimensions.sm),
                   Text(
                     subtitle,
                     style: AppTextStyles.bodySmall.copyWith(height: 1.4),

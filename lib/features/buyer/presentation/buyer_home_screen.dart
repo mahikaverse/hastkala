@@ -37,57 +37,57 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              _buildGreeting(),
-              _buildSearchSection(),
-              _buildAskHastKala(),
-              _buildHeroBanner(),
-              _buildExploreByCraft(),
-              _buildCuratedForYou(),
-              _buildCraftOfTheWeek(),
-              const SizedBox(height: 24),
-            ],
-          ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppDimensions.xxl, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Image.asset(
+                        'assets/horizontal-logo.png',
+                        height: 36,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Text('HastKala', style: AppTextStyles.headlineLarge.copyWith(color: AppColors.brown, fontWeight: FontWeight.w800));
+                        },
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.notifications_outlined, color: AppColors.charcoal),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.location_on_outlined, color: AppColors.charcoal),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: AppColors.divider),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildGreeting(),
+                    _buildSearchSection(),
+                    _buildAskHastKala(),
+                    _buildHeroBanner(),
+                    _buildExploreByCraft(),
+                    _buildCuratedForYou(),
+                    _buildCraftOfTheWeek(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDimensions.lg, AppDimensions.md, AppDimensions.lg, 0),
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Image.asset(
-                'assets/horizontal-logo.png',
-                height: 48,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Text('HastKala', style: AppTextStyles.headlineLarge.copyWith(color: AppColors.brown, fontWeight: FontWeight.w800));
-                },
-              ),
-              Text('', style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, fontSize: 10)),
-            ],
-          ),
-          const Spacer(),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.notifications_outlined, color: AppColors.charcoal),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.location_on_outlined, color: AppColors.charcoal),
-          ),
-        ],
-      ),
     );
   }
 

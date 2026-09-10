@@ -5,6 +5,8 @@ import '../core/widgets/app_scaffold.dart';
 import '../features/artisan/presentation/artisan_home_screen.dart';
 import '../features/artisan/presentation/artisan_profile_screen.dart';
 import '../features/artisan/presentation/manage_products_screen.dart';
+import '../features/artisan_store/presentation/screens/artisan_dashboard_screen.dart';
+import '../features/artisan_store/presentation/screens/artisan_store_screen.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/buyer/presentation/buyer_home_screen.dart';
@@ -16,6 +18,7 @@ import '../features/catalog/presentation/market_linkage_screen.dart';
 import '../features/catalog/presentation/publish_product_screen.dart';
 import '../features/checkout/presentation/checkout_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
+import '../features/marketplace/presentation/screens/explore_artisans_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/orders/presentation/artisan_orders_screen.dart';
 import '../features/orders/presentation/order_tracking_screen.dart';
@@ -51,6 +54,11 @@ abstract final class AppRoutes {
   static const String manageProducts = '/manage-products';
   static const String artisanOrders = '/artisan-orders';
   static const String publishProduct = '/publish-product';
+
+  // New marketplace routes
+  static const String artisanDashboard = '/artisan-dashboard';
+  static const String artisanStore = '/artisan-store';
+  static const String exploreArtisans = '/explore-artisans';
 }
 
 class AppRouter {
@@ -114,6 +122,19 @@ class AppRouter {
         return _buildRoute(const ArtisanOrdersScreen(), settings: settings);
       case AppRoutes.publishProduct:
         return _buildRoute(const PublishProductScreen(), settings: settings);
+
+      // New marketplace routes
+      case AppRoutes.artisanDashboard:
+        return _buildRoute(const ArtisanDashboardScreen(), settings: settings);
+      case AppRoutes.artisanStore:
+        final slug = settings.arguments as String;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => ArtisanStoreScreen(storeSlug: slug),
+        );
+      case AppRoutes.exploreArtisans:
+        return _buildRoute(const ExploreArtisansScreen(), settings: settings);
+
       default:
         return _buildRoute(_NotFoundScreen(routeName: settings.name ?? 'unknown'), settings: settings);
     }

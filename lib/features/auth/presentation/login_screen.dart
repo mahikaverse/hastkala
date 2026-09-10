@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/widgets/hast_kala_background.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,40 +19,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/login-bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Top Logo
-              Padding(
-                padding: const EdgeInsets.only(top: 45.0),
-                child: Image.asset(
-                  'assets/horizontal-logo.png',
-                  width: 160,
+    return HastKalaBackground(
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          children: [
+            // Top Logo
+            Padding(
+              padding: const EdgeInsets.only(top: 45.0),
+              child: Image.asset(
+                'assets/horizontal-logo.png',
+                width: 160,
+              ),
+            ),
+            // Login / Sign Up Card
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                  child: _buildCard(),
                 ),
               ),
-              // Login / Sign Up Card
-              Expanded(
-                child: SingleChildScrollView(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-                    child: _buildCard(),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -143,11 +134,13 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           'Welcome Back',
+          textAlign: TextAlign.center,
           style: AppTextStyles.headlineMedium.copyWith(color: AppColors.brown),
         ),
         const SizedBox(height: 4),
         Text(
           'Login to continue to HastKala',
+          textAlign: TextAlign.center,
           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
         ),
         const SizedBox(height: 24),
@@ -212,6 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           'Create Your Account',
+          textAlign: TextAlign.center,
           style: AppTextStyles.headlineMedium.copyWith(color: AppColors.brown),
         ),
         const SizedBox(height: 24),

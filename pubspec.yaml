@@ -58,10 +58,14 @@ flutter:
   assets:
     - assets/logo.png
     - assets/horizontal-logo.png
+    - assets/app-logo.png
+    - assets/default-bg.png
     - assets/onboarding1.png
     - assets/onboarding2.png
     - assets/onboarding3.png
     - assets/login-bg.png
+    - assets/seller-enum-img.png
+    - assets/buyer-enum-img.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

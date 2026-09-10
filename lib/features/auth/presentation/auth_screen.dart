@@ -5,6 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/user_role.dart';
+import '../../../core/widgets/hast_kala_background.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key, required this.role});
@@ -66,71 +67,61 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/login-bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 32),
-                child: Image.asset(
-                  'assets/horizontal-logo.png',
-                  width: 140,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Text(
-                      'HastKala',
-                      style: AppTextStyles.headlineLarge.copyWith(
-                        color: AppColors.brown,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    );
-                  },
-                ),
+    return HastKalaBackground(
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 32),
+              child: Image.asset(
+                'assets/horizontal-logo.png',
+                width: 140,
+                errorBuilder: (context, error, stackTrace) {
+                  return Text(
+                    'HastKala',
+                    style: AppTextStyles.headlineLarge.copyWith(
+                      color: AppColors.brown,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: (_isSeller ? AppColors.terracotta : AppColors.oliveGreen).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _isSeller ? Icons.store_outlined : Icons.shopping_bag_outlined,
-                      size: 12,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: (_isSeller ? AppColors.terracotta : AppColors.oliveGreen).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isSeller ? Icons.store_outlined : Icons.shopping_bag_outlined,
+                    size: 12,
+                    color: _isSeller ? AppColors.terracotta : AppColors.oliveGreen,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _isSeller ? 'SELLER / ARTISAN' : 'BUYER / CUSTOMER',
+                    style: AppTextStyles.labelSmall.copyWith(
                       color: _isSeller ? AppColors.terracotta : AppColors.oliveGreen,
+                      letterSpacing: 1.0,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _isSeller ? 'SELLER / ARTISAN' : 'BUYER / CUSTOMER',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: _isSeller ? AppColors.terracotta : AppColors.oliveGreen,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Expanded(
-                child: SingleChildScrollView(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  child: _buildCard(),
-                ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: _buildCard(),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -197,11 +188,13 @@ class _AuthScreenState extends State<AuthScreen> {
       children: [
         Text(
           _isSeller ? 'Welcome, Artisan' : 'Welcome Back',
+          textAlign: TextAlign.center,
           style: AppTextStyles.headlineMedium.copyWith(color: AppColors.brown),
         ),
         const SizedBox(height: 4),
         Text(
           _isSeller ? 'Login to manage your craft business' : 'Login to continue to HastKala',
+          textAlign: TextAlign.center,
           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
         ),
         const SizedBox(height: 24),
@@ -265,12 +258,14 @@ class _AuthScreenState extends State<AuthScreen> {
       children: [
         Text(
           _isSeller ? 'Start Selling Your Craft' : 'Create Your Account',
+          textAlign: TextAlign.center,
           style: AppTextStyles.headlineMedium.copyWith(color: AppColors.brown),
         ),
         const SizedBox(height: 4),
         if (_isSeller)
           Text(
             'Join HastKala and reach craft lovers worldwide.',
+            textAlign: TextAlign.center,
             style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
           ),
         const SizedBox(height: 24),
@@ -529,7 +524,7 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
-    final homeRoute = _isSeller ? AppRoutes.artisanHome : AppRoutes.buyerHome;
+    final homeRoute = _isSeller ? AppRoutes.artisanDashboard : AppRoutes.buyerHome;
     Navigator.pushReplacementNamed(context, homeRoute);
   }
 
@@ -571,7 +566,7 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
-    final homeRoute = _isSeller ? AppRoutes.artisanHome : AppRoutes.buyerHome;
+    final homeRoute = _isSeller ? AppRoutes.artisanDashboard : AppRoutes.buyerHome;
     Navigator.pushReplacementNamed(context, homeRoute);
   }
 }
