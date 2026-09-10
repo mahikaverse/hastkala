@@ -7,6 +7,7 @@ import '../features/artisan/presentation/artisan_profile_screen.dart';
 import '../features/artisan/presentation/manage_products_screen.dart';
 import '../features/artisan_store/presentation/screens/artisan_dashboard_screen.dart';
 import '../features/artisan_store/presentation/screens/artisan_store_screen.dart';
+import '../features/artisan_store/presentation/screens/voice_add_product_screen.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/buyer/presentation/buyer_home_screen.dart';
@@ -59,6 +60,7 @@ abstract final class AppRoutes {
   static const String artisanDashboard = '/artisan-dashboard';
   static const String artisanStore = '/artisan-store';
   static const String exploreArtisans = '/explore-artisans';
+  static const String voiceAddProduct = '/voice-add-product';
 }
 
 class AppRouter {
@@ -134,6 +136,8 @@ class AppRouter {
         );
       case AppRoutes.exploreArtisans:
         return _buildRoute(const ExploreArtisansScreen(), settings: settings);
+      case AppRoutes.voiceAddProduct:
+        return _buildRoute(const VoiceAddProductScreen(), settings: settings);
 
       default:
         return _buildRoute(_NotFoundScreen(routeName: settings.name ?? 'unknown'), settings: settings);

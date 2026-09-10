@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../app/router.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
@@ -179,17 +180,20 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
                 children: [
                   Expanded(
                     child: _buildActionCard('Add Product',
-                        Icons.add_box_outlined, AppColors.terracotta),
+                        Icons.add_box_outlined, AppColors.terracotta,
+                        () => Navigator.pushNamed(context, AppRoutes.voiceAddProduct)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: _buildActionCard(
-                        'My Store', Icons.store_outlined, AppColors.oliveGreen),
+                        'My Store', Icons.store_outlined, AppColors.oliveGreen,
+                        () => setState(() => _currentNavIndex = 1)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: _buildActionCard('Analytics',
-                        Icons.analytics_outlined, AppColors.mustardGold),
+                        Icons.analytics_outlined, AppColors.mustardGold,
+                        () {}),
                   ),
                 ],
               ),
@@ -276,11 +280,9 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
     );
   }
 
-  Widget _buildActionCard(String label, IconData icon, Color color) {
+  Widget _buildActionCard(String label, IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () {
-        if (label == 'My Store') setState(() => _currentNavIndex = 1);
-      },
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
@@ -566,7 +568,7 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
                       .copyWith(color: AppColors.brown)),
               const Spacer(),
               ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.voiceAddProduct),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add'),
                 style: ElevatedButton.styleFrom(
