@@ -1,12 +1,36 @@
-from fastapi import FastAPI
+import logging
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.ai import get_remove_session, router as ai_router
 from app.core.config import settings
 from app.core.supabase import get_supabase
+
+logger = logging.getLogger("hastkala")
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(ai_router)
+
+
+@app.on_event("startup")
+def startup_event():
+    logger.info("Loading AI model on startup...")
+    get_remove_session()
+    logger.info("AI model loaded. Server ready!")
 
 
 @app.get("/")

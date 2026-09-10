@@ -181,7 +181,7 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
                   Expanded(
                     child: _buildActionCard('Add Product',
                         Icons.add_box_outlined, AppColors.terracotta,
-                        () => Navigator.pushNamed(context, AppRoutes.voiceAddProduct)),
+                        () => Navigator.pushNamed(context, AppRoutes.artisanAddProduct)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -580,7 +580,7 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
                       .copyWith(color: AppColors.brown)),
               const Spacer(),
               ElevatedButton.icon(
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.voiceAddProduct),
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.artisanAddProduct),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add'),
                 style: ElevatedButton.styleFrom(

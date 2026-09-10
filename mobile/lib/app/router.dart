@@ -13,7 +13,9 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/buyer/presentation/buyer_home_screen.dart';
 import '../features/cart/presentation/cart_screen.dart';
 import '../features/catalog/presentation/ai_pricing_screen.dart';
+import '../features/catalog/presentation/ai_image_studio_screen.dart';
 import '../features/catalog/presentation/ai_product_studio_screen.dart';
+import '../features/products/screens/custom_camera_screen.dart';
 import '../features/catalog/presentation/catalog_screen.dart';
 import '../features/catalog/presentation/market_linkage_screen.dart';
 import '../features/catalog/presentation/publish_product_screen.dart';
@@ -48,6 +50,8 @@ abstract final class AppRoutes {
   static const String profile = '/profile';
   static const String artisanProfile = '/artisan-profile';
   static const String artisanAddProduct = '/artisan-add-product';
+  static const String aiImageStudio = '/ai-image-studio';
+  static const String customCamera = '/custom-camera';
   static const String aiProductStudio = '/ai-product-studio';
   static const String smartCatalog = '/smart-catalog';
   static const String aiPricing = '/ai-pricing';
@@ -110,6 +114,17 @@ class AppRouter {
         return _buildRoute(const ArtisanProfileScreen(), settings: settings);
       case AppRoutes.artisanAddProduct:
         return _buildRoute(const ArtisanAddProductScreen(), settings: settings);
+      case AppRoutes.aiImageStudio:
+        final imagePath = settings.arguments as String?;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => AIImageStudioScreen(imagePath: imagePath),
+        );
+      case AppRoutes.customCamera:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => const CustomCameraScreen(),
+        );
       case AppRoutes.aiProductStudio:
         return _buildRoute(const AIProductStudioScreen(), settings: settings);
       case AppRoutes.smartCatalog:

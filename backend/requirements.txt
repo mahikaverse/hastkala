@@ -4,3 +4,7 @@ python-dotenv
 python-multipart
 pydantic-settings
 supabase
+rembg[cpu]
+Pillow
+opencv-python-headless
+numpy
