@@ -1,9 +1,20 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../features/products/models/product_draft.dart';
 import '../models/models.dart';
+import 'api_config.dart';
 
 class DataService {
   static final DataService _instance = DataService._internal();
   factory DataService() => _instance;
   DataService._internal();
+
+  static const String _cachedProductsKey = 'hastkala_published_products';
 
   final List<ArtisanProfile> _artisanProfiles = [];
   final List<ArtisanStore> _stores = [];
@@ -28,9 +39,13 @@ class DataService {
   bool isFollowing(String storeId) => _followedStoreIds.contains(storeId);
   bool isWishlisted(String productId) => _wishlistProductIds.contains(productId);
 
-  void init() {
-    if (_artisanProfiles.isNotEmpty) return;
-    _seedData();
+  Future<void> init() async {
+    if (_artisanProfiles.isEmpty) {
+      _seedData();
+    }
+    await _loadCachedProducts();
+    // In background, sync fresh products from backend
+    syncPublishedProducts();
   }
 
   // ─── ARTISAN PROFILES ─────────────────────────────────────────────────────
@@ -190,9 +205,246 @@ class DataService {
   }
 
   MarketplaceProduct addProduct(MarketplaceProduct product) {
-    _products.add(product);
+    _products.insert(0, product);
+    _registerInMockLists(product);
     _updateStoreProductCount(product.storeId);
+    _saveCachedProducts();
     return product;
+  }
+
+  Future<void> _saveCachedProducts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final published = _products
+          .where((p) => p.id.startsWith('prod_'))
+          .map((p) => p.toMap())
+          .toList();
+      await prefs.setString(_cachedProductsKey, jsonEncode(published));
+    } catch (e) {
+      debugPrint('Failed to cache products: $e');
+    }
+  }
+
+  Future<void> _loadCachedProducts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_cachedProductsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final List list = jsonDecode(raw);
+        for (final item in list) {
+          final p = MarketplaceProduct.fromMap(Map<String, dynamic>.from(item));
+          if (!_products.any((existing) => existing.id == p.id)) {
+            _products.insert(0, p);
+            _registerInMockLists(p);
+          }
+        }
+        if (_stores.isNotEmpty) {
+          _updateStoreProductCount(_stores.first.id);
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load cached products: $e');
+    }
+  }
+
+  void _registerInMockLists(MarketplaceProduct p) {
+    final digits = p.id.replaceAll(RegExp(r'[^0-9]'), '');
+    final numId = digits.length >= 6
+        ? int.tryParse(digits.substring(digits.length - 6)) ?? (2000 + _products.length)
+        : (2000 + _products.length);
+
+    final product = Product(
+      id: numId,
+      name: p.name,
+      price: p.price.toInt(),
+      category: p.category.isNotEmpty ? p.category : 'Handicrafts',
+      artisan: _stores.isNotEmpty ? _stores.first.name : 'Artisan',
+      location: _stores.isNotEmpty ? _stores.first.location : 'Jaipur, Rajasthan',
+      rating: p.averageRating > 0 ? p.averageRating : 5.0,
+      reviews: p.totalReviews,
+      imageUrl: p.imageUrls.isNotEmpty ? p.imageUrls.first : '',
+      description: p.description,
+      tags: p.tags,
+      stock: p.stockQuantity,
+      status: 'Published',
+    );
+    MockProducts.addProduct(product);
+    MockArtisanProducts.addProduct(ArtisanProduct(
+      product: product,
+      status: 'Published',
+      views: p.views,
+      orders: p.totalSales,
+    ));
+  }
+
+  Future<void> syncPublishedProducts() async {
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/products');
+      final resp = await http.get(uri).timeout(const Duration(seconds: 4));
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        final List items = data['products'] ?? [];
+        bool changed = false;
+        for (final item in items) {
+          final id = item['id']?.toString() ?? '';
+          if (id.isEmpty) continue;
+          final existingIdx = _products.indexWhere((p) => p.id == id);
+          final img = item['image_url']?.toString() ?? '';
+          final name = item['name']?.toString() ?? 'Handcrafted Product';
+          final price = (item['price'] as num?)?.toDouble() ?? 500.0;
+          final cat = item['category']?.toString() ?? 'Handicrafts';
+          final desc = item['description']?.toString() ?? '';
+          final storeId = item['store_id']?.toString() ?? (_stores.isNotEmpty ? _stores.first.id : 'st_1');
+          final tags = (item['tags'] as List?)?.map((t) => t.toString()).toList() ?? ['Handmade'];
+
+          final mp = MarketplaceProduct(
+            id: id,
+            storeId: storeId,
+            artisanId: _artisanProfiles.isNotEmpty ? _artisanProfiles.first.id : 'ap_1',
+            name: name,
+            description: desc,
+            price: price,
+            category: cat,
+            imageUrls: [if (img.isNotEmpty) img],
+            stockQuantity: (item['stock'] as num?)?.toInt() ?? 10,
+            isPublished: true,
+            isFeatured: true,
+            tags: tags,
+            createdAt: DateTime.tryParse(item['created_at']?.toString() ?? '') ?? DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+
+          if (existingIdx == -1) {
+            _products.insert(0, mp);
+            _registerInMockLists(mp);
+            changed = true;
+          } else {
+            _products[existingIdx] = mp;
+            _registerInMockLists(mp);
+          }
+        }
+        if (changed) {
+          if (_stores.isNotEmpty) _updateStoreProductCount(_stores.first.id);
+          _saveCachedProducts();
+        }
+      }
+    } catch (e) {
+      debugPrint('Sync products skipped: $e');
+    }
+  }
+
+  Future<MarketplaceProduct> publishProductDraft(ProductDraft draft) async {
+    final priceVal = (draft.price ?? draft.suggestedPrice ?? draft.expectedPrice ?? 750).toDouble();
+    final prodId = 'prod_${DateTime.now().millisecondsSinceEpoch}';
+    final storeId = _stores.isNotEmpty ? _stores.first.id : 'st_1';
+    final artisanId = _artisanProfiles.isNotEmpty ? _artisanProfiles.first.id : 'ap_1';
+
+    String? base64Img;
+    if (draft.isBase64Image && draft.imagePath != null) {
+      base64Img = draft.imagePath!;
+    } else if (draft.imagePath != null && !draft.isBase64Image) {
+      try {
+        final f = File(draft.imagePath!);
+        if (f.existsSync()) {
+          base64Img = base64Encode(f.readAsBytesSync());
+        }
+      } catch (_) {}
+    }
+
+    final imageUrl = draft.imagePath ?? '';
+    final mp = MarketplaceProduct(
+      id: prodId,
+      storeId: storeId,
+      artisanId: artisanId,
+      name: draft.productName?.trim().isNotEmpty == true
+          ? draft.productName!.trim()
+          : 'Handcrafted Craft',
+      description: draft.craftStory?.trim().isNotEmpty == true
+          ? draft.craftStory!.trim()
+          : 'Authentic Indian handicraft made by artisan.',
+      price: priceVal > 0 ? priceVal : 750.0,
+      category: draft.category?.trim().isNotEmpty == true
+          ? draft.category!.trim()
+          : 'Pottery & Ceramics',
+      craftType: draft.craft,
+      material: draft.material,
+      imageUrls: [if (imageUrl.isNotEmpty) imageUrl],
+      tags: [
+        if (draft.craft != null && draft.craft!.isNotEmpty) draft.craft!,
+        if (draft.material != null && draft.material!.isNotEmpty) draft.material!,
+        'Handmade',
+      ],
+      stockQuantity: 10,
+      isPublished: true,
+      isFeatured: true,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    // 1. Instantly display in local lists
+    _products.insert(0, mp);
+    _registerInMockLists(mp);
+    _updateStoreProductCount(storeId);
+    await _saveCachedProducts();
+
+    // 2. Persist to Backend & Supabase Storage
+    _sendToBackend(prodId, mp, draft, base64Img);
+
+    return mp;
+  }
+
+  void _sendToBackend(
+    String prodId,
+    MarketplaceProduct mp,
+    ProductDraft draft,
+    String? base64Img,
+  ) async {
+    try {
+      final payload = {
+        'id': prodId,
+        'name': mp.name,
+        'price': mp.price,
+        'category': mp.category,
+        'craft': draft.craft,
+        'material': draft.material,
+        'color': draft.color,
+        'artisan_name': draft.artisanName ??
+            (_artisanProfiles.isNotEmpty ? _artisanProfiles.first.name : 'Artisan'),
+        'artisan_id': mp.artisanId,
+        'store_id': mp.storeId,
+        'location': draft.location ?? draft.artisanLocation ?? 'Jaipur, Rajasthan',
+        'description': mp.description,
+        'craft_story': draft.craftStory,
+        'making_time': draft.makingTime,
+        'tags': mp.tags,
+        'image_base64': base64Img,
+        'image_url': mp.imageUrls.isNotEmpty ? mp.imageUrls.first : '',
+        'stock': 10,
+        'is_published': true,
+      };
+
+      final resp = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/products'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 10));
+
+      if (resp.statusCode == 201 || resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        final remoteUrl = data['product']?['image_url']?.toString();
+        if (remoteUrl != null && remoteUrl.isNotEmpty) {
+          final idx = _products.indexWhere((p) => p.id == prodId);
+          if (idx != -1) {
+            final updated = _products[idx].copyWith(imageUrls: [remoteUrl]);
+            _products[idx] = updated;
+            _registerInMockLists(updated);
+            _saveCachedProducts();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error sending product to backend: $e');
+    }
   }
 
   void updateProduct(String id, MarketplaceProduct updated) {
@@ -200,6 +452,7 @@ class DataService {
     if (index != -1) {
       _products[index] = updated;
       _updateStoreProductCount(updated.storeId);
+      _saveCachedProducts();
     }
   }
 
@@ -208,6 +461,7 @@ class DataService {
     if (product != null) {
       _products.removeWhere((p) => p.id == id);
       _updateStoreProductCount(product.storeId);
+      _saveCachedProducts();
     }
   }
 

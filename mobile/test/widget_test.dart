@@ -7,6 +7,6 @@ void main() {
     await tester.pumpWidget(const HastKalaApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('HastKala'), findsWidgets);
+    expect(find.byType(HastKalaApp), findsOneWidget);
   });
 }

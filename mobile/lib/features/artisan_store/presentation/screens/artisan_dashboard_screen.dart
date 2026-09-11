@@ -5,6 +5,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/services/data_service.dart';
+import '../../../../core/widgets/adaptive_product_image.dart';
 
 const _pad = EdgeInsets.symmetric(horizontal: AppDimensions.lg);
 
@@ -647,8 +648,12 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
                 ? ClipRRect(
                     borderRadius:
                         BorderRadius.circular(AppDimensions.radiusSM),
-                    child: Image.asset(product.imageUrls.first,
-                        fit: BoxFit.cover),
+                    child: AdaptiveProductImage(
+                      imageUrl: product.imageUrls.first,
+                      fit: BoxFit.cover,
+                      width: 56,
+                      height: 56,
+                    ),
                   )
                 : const Icon(Icons.image, color: AppColors.brown),
           ),

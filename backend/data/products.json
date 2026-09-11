@@ -1,0 +1,53 @@
+[
+  {
+    "id": "prod_1789075173247",
+    "name": "Handcrafted Craft",
+    "price": 100000.0,
+    "original_price": 100000.0,
+    "category": "Pottery & Ceramics",
+    "craft": "Handcrafted",
+    "material": "",
+    "color": "",
+    "artisan_name": "Ramesh Kumar",
+    "artisan_id": "ap_1",
+    "store_id": "st_1",
+    "location": "India",
+    "description": "Authentic handcrafted creation made by skilled artisan.",
+    "craft_story": "Authentic handcrafted creation made by skilled artisan. ",
+    "making_time": "",
+    "tags": [
+      "Handcrafted",
+      "Handmade"
+    ],
+    "image_url": "https://acutpnwhubbmptbgtnih.supabase.co/storage/v1/object/public/products/prod_1789075173247.jpg",
+    "stock": 10,
+    "is_published": true,
+    "created_at": "2026-09-10T21:19:36Z"
+  },
+  {
+    "id": "prod_1789073386_eb0db6",
+    "name": "Terracotta Blue Pottery Vase",
+    "price": 850.0,
+    "original_price": 999.0,
+    "category": "Pottery & Ceramics",
+    "craft": "Blue Pottery",
+    "material": "Clay",
+    "color": "Blue",
+    "artisan_name": "Ramesh Kumar",
+    "artisan_id": "ap_1",
+    "store_id": "st_1",
+    "location": "Jaipur, Rajasthan",
+    "description": "Authentic handcrafted Blue Pottery Vase made with traditional techniques in Jaipur.",
+    "craft_story": "Created using traditional blue pottery techniques with premium clay.",
+    "making_time": "3 days",
+    "tags": [
+      "Pottery",
+      "Blue Pottery",
+      "Handmade"
+    ],
+    "image_url": "https://acutpnwhubbmptbgtnih.supabase.co/storage/v1/object/public/products/prod_1789073386_eb0db6.jpg",
+    "stock": 10,
+    "is_published": true,
+    "created_at": "2026-09-10T20:49:47Z"
+  }
+]

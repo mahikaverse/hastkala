@@ -8,6 +8,7 @@ import 'package:http_parser/http_parser.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/services/api_config.dart';
 
 class AIImageStudioScreen extends StatefulWidget {
   const AIImageStudioScreen({super.key, this.imagePath});
@@ -30,7 +31,7 @@ class _AIImageStudioScreenState extends State<AIImageStudioScreen>
   bool _hasNavigatedBack = false;
   late AnimationController _scanController;
 
-  static const String _baseUrl = 'http://192.168.1.5:8000';
+  static String get _baseUrl => ApiConfig.baseUrl;
 
   final List<String> _processingSteps = [
     'Analyzing your photo...',
@@ -76,30 +77,38 @@ class _AIImageStudioScreenState extends State<AIImageStudioScreen>
     try {
       final file = File(widget.imagePath!);
       final bytes = await file.readAsBytes();
-      final uri = Uri.parse('$_baseUrl/api/ai/enhance-image');
 
-      var request = http.MultipartRequest('POST', uri);
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: 'photo.jpg',
-          contentType: MediaType('image', 'jpeg'),
-        ),
-      );
-
-      final response = await request.send().timeout(
-        const Duration(seconds: 60),
-      );
-      final responseBody = await response.stream.bytesToString();
+      http.StreamedResponse? response;
+      for (final host in ApiConfig.candidateUrls) {
+        try {
+          final uri = Uri.parse('$host/api/ai/enhance-image');
+          final request = http.MultipartRequest('POST', uri);
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              'file',
+              bytes,
+              filename: 'photo.jpg',
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          final res = await request.send().timeout(const Duration(seconds: 15));
+          if (res.statusCode == 200) {
+            response = res;
+            break;
+          }
+        } catch (_) {
+          continue;
+        }
+      }
 
       stopwatch.stop();
       final elapsed = stopwatch.elapsedMilliseconds;
-      if (elapsed < 3000) {
-        await Future.delayed(Duration(milliseconds: 3000 - elapsed));
+      if (elapsed < 1200) {
+        await Future.delayed(Duration(milliseconds: 1200 - elapsed));
       }
 
-      if (response.statusCode == 200) {
+      if (response != null && response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
         final data = jsonDecode(responseBody);
         if (data['success'] == true) {
           setState(() {
@@ -114,10 +123,6 @@ class _AIImageStudioScreenState extends State<AIImageStudioScreen>
       _setError('Enhancement failed. You can continue with the original.');
     } catch (e) {
       stopwatch.stop();
-      final elapsed = stopwatch.elapsedMilliseconds;
-      if (elapsed < 3000) {
-        await Future.delayed(Duration(milliseconds: 3000 - elapsed));
-      }
       _setError('Could not connect to server. You can continue with the original.');
     }
   }

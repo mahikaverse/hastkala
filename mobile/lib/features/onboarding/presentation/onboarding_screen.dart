@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/services/auth_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -29,8 +30,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      // Use centralized router to navigate away from onboarding
-      Navigator.pushReplacementNamed(context, AppRoutes.roleSelection);
+      // Mark onboarding as completed so returning user goes straight to login
+      AuthService().setOnboardingSeen(true);
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
     }
   }
 

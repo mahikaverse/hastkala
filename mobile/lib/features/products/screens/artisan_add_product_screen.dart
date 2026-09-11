@@ -9,6 +9,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../models/product_draft.dart';
 
 class ArtisanAddProductScreen extends StatefulWidget {
   const ArtisanAddProductScreen({super.key});
@@ -567,8 +568,19 @@ class _ArtisanAddProductScreenState extends State<ArtisanAddProductScreen> {
     );
     if (result != null && result is Map<String, dynamic>) {
       final String? returnedPath = result['imagePath'] as String?;
+      final bool useEnhanced = result['useEnhanced'] == true;
       if (returnedPath != null) {
-        setState(() => _selectedImage = XFile(returnedPath));
+        final draft = ProductDraft(
+          imagePath: returnedPath,
+          useEnhanced: useEnhanced,
+        );
+        if (mounted) {
+          Navigator.pushNamed(
+            context,
+            AppRoutes.tellAboutProduct,
+            arguments: draft,
+          );
+        }
       }
     }
   }

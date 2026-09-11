@@ -4,6 +4,7 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../models/product_model.dart';
+import 'adaptive_product_image.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
@@ -53,38 +54,21 @@ class ProductCard extends StatelessWidget {
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(AppDimensions.radiusMD),
                       ),
-                      child: Image.network(
-                        product.imageUrl,
+                      child: AdaptiveProductImage(
+                        imageUrl: product.imageUrl,
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
-                        cacheWidth: 400,
-                        cacheHeight: 400,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                              valueColor: AlwaysStoppedAnimation(AppColors.terracotta.withValues(alpha: 0.5)),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.handyman_outlined, size: 40, color: AppColors.textSecondary.withValues(alpha: 0.4)),
-                                const SizedBox(height: 4),
-                                Text(product.category, style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
-                              ],
-                            ),
-                          );
-                        },
+                        placeholder: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.handyman_outlined, size: 40, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+                              const SizedBox(height: 4),
+                              Text(product.category, style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),

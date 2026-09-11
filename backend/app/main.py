@@ -3,7 +3,16 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+
 from app.api.ai import get_remove_session, router as ai_router
+from app.api.transcribe import router as transcribe_router
+from app.api.extract import router as extract_router
+from app.api.pricing import router as pricing_router
+from app.api.voice_to_catalog import router as voice_to_catalog_router
+from app.api.auth import router as auth_router
+from app.api.products import router as products_router
 from app.core.config import settings
 from app.core.supabase import get_supabase
 
@@ -15,6 +24,11 @@ app = FastAPI(
     version=settings.APP_VERSION,
 )
 
+# Static files mount for local uploads fallback
+uploads_dir = Path(__file__).resolve().parent.parent / "data" / "uploads"
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,13 +38,22 @@ app.add_middleware(
 )
 
 app.include_router(ai_router)
+app.include_router(transcribe_router)
+app.include_router(extract_router)
+app.include_router(voice_to_catalog_router)
+app.include_router(pricing_router)
+app.include_router(auth_router)
+app.include_router(products_router)
 
 
 @app.on_event("startup")
 def startup_event():
-    logger.info("Loading AI model on startup...")
-    get_remove_session()
-    logger.info("AI model loaded. Server ready!")
+    try:
+        logger.info("Loading AI model on startup...")
+        get_remove_session()
+        logger.info("AI model loaded. Server ready!")
+    except Exception as e:
+        logger.warning(f"Could not preload AI model on startup: {e}")
 
 
 @app.get("/")

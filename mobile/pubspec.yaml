@@ -39,7 +39,10 @@ dependencies:
   camera: ^0.11.0+2
   http: ^1.2.0
   http_parser: ^4.1.2
-
+  flutter_sound: ^9.30.0
+  path_provider: ^2.1.6
+  shared_preferences: ^2.5.5
+  supabase_flutter: ^2.17.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -70,6 +73,7 @@ flutter:
     - assets/login-bg.png
     - assets/seller-enum-img.png
     - assets/buyer-enum-img.png
+    - assets/.env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

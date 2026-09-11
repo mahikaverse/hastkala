@@ -28,6 +28,14 @@ import '../features/orders/presentation/order_tracking_screen.dart';
 import '../features/products/presentation/product_details_screen.dart';
 import '../features/products/presentation/product_listing_screen.dart';
 import '../features/products/screens/artisan_add_product_screen.dart';
+import '../features/products/screens/tell_about_product_screen.dart';
+import '../features/products/screens/review_details_screen.dart';
+import '../features/products/screens/catalog_preview_screen.dart';
+import '../features/products/screens/set_price_screen.dart';
+import '../features/products/screens/ai_price_assistant_screen.dart';
+import '../features/products/screens/ready_to_publish_screen.dart';
+import '../features/products/screens/publish_success_screen.dart';
+import '../features/products/models/product_draft.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/role_selection/presentation/role_selection_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
@@ -65,6 +73,13 @@ abstract final class AppRoutes {
   static const String artisanStore = '/artisan-store';
   static const String exploreArtisans = '/explore-artisans';
   static const String voiceAddProduct = '/voice-add-product';
+  static const String tellAboutProduct = '/tell-about-product';
+  static const String reviewDetails = '/review-details';
+  static const String catalogPreview = '/catalog-preview';
+  static const String setPrice = '/set-price';
+  static const String aiPriceAssistant = '/ai-price-assistant';
+  static const String readyToPublish = '/ready-to-publish';
+  static const String publishSuccess = '/publish-success';
 }
 
 class AppRouter {
@@ -75,18 +90,19 @@ class AppRouter {
       case AppRoutes.onboarding:
         return _buildRoute(const OnboardingScreen(), settings: settings);
       case AppRoutes.login:
-        return _buildRoute(const LoginScreen(), settings: settings);
+        final role = settings.arguments as UserRole?;
+        return _buildRoute(LoginScreen(initialRole: role), settings: settings);
       case AppRoutes.roleSelection:
         return _buildRoute(const RoleSelectionScreen(), settings: settings);
       case AppRoutes.sellerAuth:
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => const AuthScreen(role: UserRole.seller),
+          builder: (context) => const LoginScreen(initialRole: UserRole.seller),
         );
       case AppRoutes.buyerAuth:
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => const AuthScreen(role: UserRole.buyer),
+          builder: (context) => const LoginScreen(initialRole: UserRole.buyer),
         );
       case AppRoutes.home:
         return _buildRoute(const HomeScreen(), settings: settings);
@@ -153,6 +169,48 @@ class AppRouter {
         return _buildRoute(const ExploreArtisansScreen(), settings: settings);
       case AppRoutes.voiceAddProduct:
         return _buildRoute(const VoiceAddProductScreen(), settings: settings);
+      case AppRoutes.tellAboutProduct:
+        final draft = settings.arguments as ProductDraft;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => TellAboutProductScreen(draft: draft),
+        );
+      case AppRoutes.reviewDetails:
+        final draft = settings.arguments as ProductDraft;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => ReviewDetailsScreen(draft: draft),
+        );
+      case AppRoutes.catalogPreview:
+        final draft = settings.arguments as ProductDraft;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => CatalogPreviewScreen(draft: draft),
+        );
+      case AppRoutes.setPrice:
+        final draft = settings.arguments as ProductDraft;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => SetPriceScreen(draft: draft),
+        );
+      case AppRoutes.aiPriceAssistant:
+        final draft = settings.arguments as ProductDraft;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => AIPriceAssistantScreen(draft: draft),
+        );
+      case AppRoutes.readyToPublish:
+        final draft = settings.arguments as ProductDraft;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => ReadyToPublishScreen(draft: draft),
+        );
+      case AppRoutes.publishSuccess:
+        final draft = settings.arguments as ProductDraft;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => PublishSuccessScreen(draft: draft),
+        );
 
       default:
         return _buildRoute(_NotFoundScreen(routeName: settings.name ?? 'unknown'), settings: settings);

@@ -3,6 +3,7 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../models/marketplace_product.dart';
+import 'adaptive_product_image.dart';
 
 class MarketplaceProductCard extends StatelessWidget {
   const MarketplaceProductCard({
@@ -52,17 +53,13 @@ class MarketplaceProductCard extends StatelessWidget {
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(AppDimensions.radiusMD),
                       ),
-                      child: product.imageUrls.isNotEmpty
-                          ? Image.asset(
-                              product.imageUrls.first,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) {
-                                return _buildPlaceholder();
-                              },
-                            )
-                          : _buildPlaceholder(),
+                      child: AdaptiveProductImage(
+                        imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls.first : null,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        placeholder: _buildPlaceholder(),
+                      ),
                     ),
                   ),
                   if (product.hasDiscount)

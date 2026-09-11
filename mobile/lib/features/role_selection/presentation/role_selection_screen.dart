@@ -89,16 +89,23 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           role: UserRole.seller,
           title: 'Seller / Artisan',
           subtitle: 'Sell your handmade products\nand grow your craft business.',
-         
           selectedColor: AppColors.terracotta,
           imageAsset: 'assets/seller-enum-img.png',
+        ),
+        const SizedBox(height: AppDimensions.lg),
+        _roleCard(
+          role: UserRole.b2bSeller,
+          title: 'B2B Wholesale Seller',
+          subtitle: 'Bulk orders, wholesale catalogs\nand enterprise buyers.',
+          selectedColor: AppColors.terracotta,
+          imageAsset: 'assets/seller-enum-img.png',
+          icon: Icons.business_outlined,
         ),
         const SizedBox(height: AppDimensions.lg),
         _roleCard(
           role: UserRole.buyer,
           title: 'Buyer / Customer',
           subtitle: 'Discover and shop unique\nhandmade Indian crafts.',
-          
           selectedColor: AppColors.terracotta,
           imageAsset: 'assets/buyer-enum-img.png',
         ),
@@ -210,10 +217,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       child: ElevatedButton(
         onPressed: isEnabled
             ? () {
-                final route = _selectedRole == UserRole.seller
-                    ? AppRoutes.sellerAuth
-                    : AppRoutes.buyerAuth;
-                Navigator.pushNamed(context, route, arguments: _selectedRole);
+                Navigator.pushNamed(context, AppRoutes.login, arguments: _selectedRole);
               }
             : null,
         style: ElevatedButton.styleFrom(

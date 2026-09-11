@@ -5,6 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/product_model.dart';
+import '../../../core/widgets/adaptive_product_image.dart';
 
 class ManageProductsScreen extends StatefulWidget {
   const ManageProductsScreen({super.key});
@@ -396,14 +397,12 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                   onTap: () => Navigator.pushNamed(context, AppRoutes.productDetails, arguments: ap.product),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
-                    child: Image.network(
-                      ap.product.imageUrl,
+                    child: AdaptiveProductImage(
+                      imageUrl: ap.product.imageUrl,
                       width: 96,
                       height: 96,
                       fit: BoxFit.cover,
-                      cacheWidth: 200,
-                      cacheHeight: 200,
-                      errorBuilder: (_, _, _) => Container(
+                      placeholder: Container(
                         width: 96,
                         height: 96,
                         color: AppColors.warmBeige,

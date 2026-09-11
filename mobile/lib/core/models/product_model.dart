@@ -313,10 +313,20 @@ class MockArtisanProducts {
       p.product.tags.any((t) => t.toLowerCase().contains(q))
     ).toList();
   }
+
+  static void addProduct(ArtisanProduct p) {
+    all.removeWhere((item) => item.product.id == p.product.id);
+    all.insert(0, p);
+  }
 }
 
 class MockProducts {
   MockProducts._();
+
+  static void addProduct(Product p) {
+    all.removeWhere((item) => item.id == p.id);
+    all.insert(0, p);
+  }
 
   static const String _unsplashBase = 'https://images.unsplash.com';
 

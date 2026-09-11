@@ -5,6 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/product_model.dart';
+import '../../../core/widgets/adaptive_product_image.dart';
 import '../../products/presentation/product_details_screen.dart';
 
 class BuyerHomeScreen extends StatefulWidget {
@@ -453,19 +454,17 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusMD)),
-              child: Image.network(
-                product.imageUrl,
+              child: AdaptiveProductImage(
+                imageUrl: product.imageUrl,
                 width: 160,
                 height: 120,
                 fit: BoxFit.cover,
-                cacheWidth: 300,
-                cacheHeight: 225,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: 160,
-                      height: 120,
-                      color: AppColors.warmBeige,
-                      child: Icon(Icons.image_outlined, color: AppColors.textSecondary),
-                    ),
+                placeholder: Container(
+                  width: 160,
+                  height: 120,
+                  color: AppColors.warmBeige,
+                  child: const Icon(Icons.image_outlined, color: AppColors.textSecondary),
+                ),
               ),
             ),
             Padding(

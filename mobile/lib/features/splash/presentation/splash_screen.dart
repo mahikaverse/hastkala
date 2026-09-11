@@ -6,12 +6,13 @@ import 'package:flutter/services.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/hast_kala_background.dart';
 
 /// Splash screen for the HastKala application.
 ///
 /// Displays the brand logo with a tagline and subtle
-/// decorative motifs. After a brief delay, navigates to onboarding.
+/// decorative motifs. Checks persistent auth session and navigates.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -51,11 +52,26 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    _navigationTimer = Timer(const Duration(seconds: 10), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
-      }
+    _navigationTimer = Timer(const Duration(milliseconds: 1800), () {
+      _checkAuthAndNavigate();
     });
+  }
+
+  void _checkAuthAndNavigate() {
+    if (!mounted) return;
+
+    final auth = AuthService();
+    if (auth.isLoggedIn) {
+      // User is logged in, navigate straight to role dashboard! No re-login!
+      final targetRoute = auth.getHomeRouteForRole();
+      Navigator.of(context).pushReplacementNamed(targetRoute);
+    } else if (auth.hasSeenOnboarding) {
+      // Onboarding seen earlier, go straight to login
+      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+    } else {
+      // First time user, show onboarding
+      Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
+    }
   }
 
   @override
