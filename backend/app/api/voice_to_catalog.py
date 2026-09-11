@@ -1,8 +1,14 @@
 import logging
+from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 
-from app.ai.catalog_extractor import extract_product_details
+from app.ai.catalog_extractor import (
+    extract_product_details,
+    extract_step1_product_details,
+    extract_step2_quantity_details,
+    extract_step3_story_details,
+)
 from app.ai.speech_to_text import ALLOWED_AUDIO_TYPES, MAX_AUDIO_SIZE, transcribe_audio
 
 logger = logging.getLogger("hastkala.ai.voice_to_catalog")
@@ -11,8 +17,11 @@ router = APIRouter(prefix="/api/ai", tags=["AI"])
 
 
 @router.post("/voice-to-catalog")
-async def voice_to_catalog(file: UploadFile = File(...)):
-    logger.info(f"Voice-to-catalog request: {file.filename}, type={file.content_type}")
+async def voice_to_catalog(
+    file: UploadFile = File(...),
+    step: Optional[int] = Query(0, description="Step number: 0 for all, 1 for product details, 2 for quantity, 3 for story"),
+):
+    logger.info(f"Voice-to-catalog request: {file.filename}, type={file.content_type}, step={step}")
 
     if file.content_type not in ALLOWED_AUDIO_TYPES:
         raise HTTPException(
@@ -44,29 +53,22 @@ async def voice_to_catalog(file: UploadFile = File(...)):
             "success": True,
             "language": language,
             "transcript": "",
-            "data": {
-                "product_name": None,
-                "category": None,
-                "material": None,
-                "craft": None,
-                "color": None,
-                "size": None,
-                "weight": None,
-                "quantity": None,
-                "making_time": None,
-                "making_process": None,
-                "location": None,
-                "price": None,
-                "craft_story": None,
-            },
+            "data": {},
         }
 
     try:
-        data = extract_product_details(transcript)
-        data_dict = data.model_dump()
-    except RuntimeError as e:
+        if step == 1:
+            data_dict = extract_step1_product_details(transcript)
+        elif step == 2:
+            data_dict = extract_step2_quantity_details(transcript)
+        elif step == 3:
+            data_dict = extract_step3_story_details(transcript)
+        else:
+            data = extract_product_details(transcript)
+            data_dict = data.model_dump()
+    except Exception as e:
         logger.error(f"Extraction failed: {e}")
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
     logger.info(f"Voice-to-catalog complete: lang={language}, transcript_len={len(transcript)}")
 

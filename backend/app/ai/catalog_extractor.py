@@ -12,11 +12,11 @@ logger = logging.getLogger("hastkala.ai.extractor")
 
 _client: Optional[httpx.Client] = None
 
-EXTRACTION_PROMPT = """You are a product data extractor for Indian handicraft artisans. Extract facts explicitly stated in the transcript. Output valid JSON only.
-Transcript:
-{transcript}
+EXTRACTION_PROMPT_ALL = """You are an expert product data extractor for Indian handicraft artisans.
+Extract the facts explicitly stated or strongly implied in the transcript below into valid JSON.
+Transcript: "{transcript}"
 
-JSON structure:
+Output valid JSON ONLY with these exact keys:
 {{
   "product_name": null,
   "category": null,
@@ -26,36 +26,72 @@ JSON structure:
   "size": null,
   "weight": null,
   "quantity": null,
+  "production_capacity": null,
   "making_time": null,
   "making_process": null,
   "location": null,
   "price": null,
-  "craft_story": null
+  "craft_story": null,
+  "artisan_intro": null
 }}"""
 
+EXTRACTION_PROMPT_STEP1 = """You are an expert product catalog assistant for Indian artisans.
+Extract Product Basic Details from this artisan's speech into valid JSON.
+Speech: "{transcript}"
 
-def _get_client() -> httpx.Client:
-    global _client
-    if _client is None or _client.is_closed:
-        _client = httpx.Client(
-            base_url=settings.OLLAMA_BASE_URL,
-            timeout=httpx.Timeout(3.0, connect=1.0),
-        )
-        logger.info(f"Ollama client created: {settings.OLLAMA_BASE_URL}")
-    return _client
+Extract:
+- product_name: A clear, attractive product title (e.g. "Handcrafted Terracotta Blue Diya")
+- category: One of [Pottery & Ceramics, Woodwork, Textiles & Handloom, Jewelry & Accessories, Metal Craft, Paintings & Art, Bamboo & Cane, Leather Craft, Stone Craft, Other]
+- material: Material used (e.g. Terracotta clay, Sheesham wood, Pure silk, Brass, etc.)
+- craft: Traditional craft/technique (e.g. Blue Pottery, Hand Carving, Chikankari, Dhokra Art, Handloom Weaving, etc.)
+- color: Colors mentioned (e.g. Terracotta Red, Sky Blue, Multicolored, etc.)
+- size: Dimensions or size (e.g. 6 inches, Medium, 12x8 cm)
+- weight: Weight (e.g. 500 grams, 1 kg)
 
+Output valid JSON ONLY with these exact keys:
+{{
+  "product_name": null,
+  "category": null,
+  "material": null,
+  "craft": null,
+  "color": null,
+  "size": null,
+  "weight": null
+}}"""
 
-def check_ollama_health() -> dict:
-    try:
-        client = _get_client()
-        resp = client.get("/api/tags", timeout=httpx.Timeout(2.0, connect=1.0))
-        resp.raise_for_status()
-        models = resp.json().get("models", [])
-        model_names = [m.get("name", "") for m in models]
-        return {"available": True, "models": model_names}
-    except Exception as e:
-        logger.warning(f"Ollama health check failed: {e}")
-        return {"available": False, "models": [], "error": str(e)}
+EXTRACTION_PROMPT_STEP2 = """You are an assistant for Indian handicraft artisans.
+Extract Quantity & Production Capacity details from this speech into valid JSON.
+Speech: "{transcript}"
+
+Extract:
+- quantity: Ready stock count as a number or string (e.g. "10", "25", "1")
+- production_capacity: How many pieces the artisan can make per month/week (e.g. "50 pieces per month", "10 pieces per week")
+- making_time: Time required to make one piece or batch (e.g. "2 days", "3 hours", "1 week")
+- making_process: Brief summary of the technique or steps (e.g. "Wheel-thrown, kiln baked, hand polished and painted")
+
+Output valid JSON ONLY with these exact keys:
+{{
+  "quantity": null,
+  "production_capacity": null,
+  "making_time": null,
+  "making_process": null
+}}"""
+
+EXTRACTION_PROMPT_STEP3 = """You are a master storyteller celebrating Indian handicraft artisans.
+From this artisan's speech, extract and generate an authentic, captivating origin story and background into valid JSON.
+Speech: "{transcript}"
+
+Extract:
+- craft_story: A rich, beautiful 2-4 sentence narrative celebrating the heritage, history, and craft tradition of this product. Highlight the artisan's dedication and cultural roots.
+- location: City, town, or state where this craft is practiced (e.g. "Jaipur, Rajasthan", "Varanasi, Uttar Pradesh")
+- artisan_intro: Brief artisan background, lineage, or experience (e.g. "Master artisan with 20 years of experience continuing a 3-generation family tradition")
+
+Output valid JSON ONLY with these exact keys:
+{{
+  "craft_story": null,
+  "location": null,
+  "artisan_intro": null
+}}"""
 
 
 def _safe_parse_json(raw: str) -> Optional[dict]:
@@ -82,9 +118,79 @@ def _safe_parse_json(raw: str) -> Optional[dict]:
     return None
 
 
+def _call_ollama(prompt: str, timeout: float = 25.0) -> Optional[dict]:
+    """Primary LLM: Ollama (local qwen2.5:3b)."""
+    try:
+        logger.info(f"Calling Ollama at {settings.OLLAMA_BASE_URL} (model={settings.OLLAMA_MODEL})...")
+        with httpx.Client(base_url=settings.OLLAMA_BASE_URL, timeout=httpx.Timeout(timeout, connect=3.0)) as client:
+            resp = client.post(
+                "/api/generate",
+                json={
+                    "model": settings.OLLAMA_MODEL,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.1,
+                        "num_predict": 300,
+                    },
+                },
+            )
+            if resp.status_code == 200:
+                raw_text = resp.json().get("response", "")
+                parsed = _safe_parse_json(raw_text)
+                if parsed and isinstance(parsed, dict):
+                    logger.info("Ollama extraction succeeded!")
+                    return parsed
+    except Exception as e:
+        logger.warning(f"Ollama extraction failed/timed-out: {e}. Falling back to Groq...")
+    return None
+
+
+def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
+    """Fallback LLM: Groq API (groq/compound-mini or settings.GROQ_MODEL)."""
+    if not settings.GROQ_API_KEY:
+        logger.warning("Groq API key not configured, skipping Groq fallback.")
+        return None
+    try:
+        import groq
+
+        model_to_use = settings.GROQ_MODEL if settings.GROQ_MODEL and settings.GROQ_MODEL != "groq/compound-mini" else "groq/compound-mini"
+        logger.info(f"Calling Groq fallback (model={model_to_use})...")
+        groq_client = groq.Groq(api_key=settings.GROQ_API_KEY, timeout=timeout)
+        resp = groq_client.chat.completions.create(
+            model=model_to_use,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=350,
+        )
+        raw_text = resp.choices[0].message.content or ""
+        parsed = _safe_parse_json(raw_text)
+        if parsed and isinstance(parsed, dict):
+            logger.info("Groq fallback extraction succeeded!")
+            return parsed
+    except Exception as e:
+        logger.warning(f"Groq fallback extraction failed: {e}")
+    return None
+
+
+def extract_with_llm(prompt: str) -> Optional[dict]:
+    """Strictly use Ollama as primary, Groq as fallback."""
+    # 1. Primary: Ollama
+    result = _call_ollama(prompt)
+    if result:
+        return result
+
+    # 2. Fallback: Groq
+    result = _call_groq(prompt)
+    if result:
+        return result
+
+    return None
+
+
 def extract_fast(transcript: str) -> ProductDetails:
-    """Ultra-fast regex and NLP keyword extractor for Indian handicrafts.
-    Runs in < 2ms without any network or GPU dependency.
+    """Sub-millisecond regex & keyword extraction for Indian handicrafts.
+    Runs without network dependency and guarantees baseline accuracy.
     """
     t = transcript.strip()
     if not t:
@@ -238,7 +344,7 @@ def extract_fast(transcript: str) -> ProductDetails:
     elif 'ek kilo' in lower or '1 kilo' in lower:
         weight = '1 kg'
 
-    # 8. Quantity
+    # 8. Quantity (Ready Stock)
     quantity = None
     qty_match = re.search(r'(\d+)\s*(?:piece|pieces|pcs|pc|item|items|set)\b', lower)
     if qty_match:
@@ -248,7 +354,17 @@ def extract_fast(transcript: str) -> ProductDetails:
     elif 'do piece' in lower or 'pair' in lower or 'joda' in lower:
         quantity = '2'
 
-    # 9. Making Time
+    # 9. Production Capacity (Kitna bana sakte ho)
+    production_capacity = None
+    cap_match = re.search(r'(\d+)\s*(?:piece|pcs|item)?\s*(?:mahine|month|hafte|week|din|day)\s*(?:me|mein)?\s*(?:bana sakte|ban sakte|supply)', lower)
+    if cap_match:
+        production_capacity = f"{cap_match.group(1)} pieces"
+    elif '50 piece' in lower:
+        production_capacity = "50 pieces per month"
+    elif '100 piece' in lower:
+        production_capacity = "100 pieces per month"
+
+    # 10. Making Time
     making_time = None
     time_patterns = [
         (r'(\d+)\s*(?:din|days?)\b', lambda m: f"{m.group(1)} days"),
@@ -269,7 +385,7 @@ def extract_fast(transcript: str) -> ProductDetails:
             making_time = formatter(m)
             break
 
-    # 10. Making Process
+    # 11. Making Process
     process_hints = []
     if 'wheel' in lower or 'chaak' in lower:
         process_hints.append("Wheel-turned")
@@ -281,12 +397,14 @@ def extract_fast(transcript: str) -> ProductDetails:
         process_hints.append("Handloom woven")
     if 'mould' in lower or 'dhalai' in lower:
         process_hints.append("Molded and cured")
+    if 'bhatti' in lower or 'kiln' in lower or 'baked' in lower:
+        process_hints.append("Kiln-baked")
     if not process_hints:
         if any(w in lower for w in ['hath se', 'haath se', 'handmade', 'handcrafted']):
-            process_hints.append("Completely hand-crafted by artisan")
+            process_hints.append("Completely handcrafted by artisan")
     making_process = ", ".join(process_hints) if process_hints else None
 
-    # 11. Location
+    # 12. Location
     locations = [
         'Jaipur', 'Varanasi', 'Banaras', 'Lucknow', 'Jodhpur', 'Udaipur',
         'Kutch', 'Surat', 'Ahmedabad', 'Bhopal', 'Indore', 'Kashmir',
@@ -300,9 +418,9 @@ def extract_fast(transcript: str) -> ProductDetails:
             location = loc
             break
 
-    # 12. Product Name
+    # 13. Product Name
     noun_map = [
-        ('Decorative Pot', ['matka', 'pot', 'handi', 'ghada', 'ghada', 'kalash']),
+        ('Decorative Pot', ['matka', 'pot', 'handi', 'ghada', 'kalash']),
         ('Vase', ['vase', 'guldan', 'flower pot']),
         ('Diya Set', ['diya', 'deepak', 'diye']),
         ('Serving Plate', ['plate', 'thali', 'platter']),
@@ -342,11 +460,11 @@ def extract_fast(transcript: str) -> ProductDetails:
     elif category:
         name_parts.append(category.split('&')[0].strip())
     else:
-        name_parts.append("Handcrafted Craft")
+        name_parts.append("Handcrafted Artwork")
 
     product_name = " ".join(name_parts)
 
-    # 13. Craft Story
+    # 14. Craft Story
     craft_story = f"Authentic handcrafted {detected_noun or 'creation'} made by skilled artisan"
     if location:
         craft_story += f" in {location}"
@@ -354,9 +472,11 @@ def extract_fast(transcript: str) -> ProductDetails:
     if material and craft:
         craft_story += f"Created using traditional {craft.lower()} techniques with premium {material.lower()}. "
     elif material:
-        craft_story += f"Crafted from high-quality {material.lower()}. "
+        craft_story += f"Crafted from natural {material.lower()}. "
     if making_time:
         craft_story += f"Takes approximately {making_time} of dedicated craftsmanship to complete."
+
+    artisan_intro = f"Dedicated handicraft artisan practicing traditional {craft or 'heritage'} art in {location or 'India'}."
 
     return ProductDetails(
         product_name=product_name,
@@ -367,81 +487,105 @@ def extract_fast(transcript: str) -> ProductDetails:
         size=size,
         weight=weight,
         quantity=quantity,
+        production_capacity=production_capacity,
         making_time=making_time,
         making_process=making_process,
         location=location,
         price=price,
         craft_story=craft_story,
+        artisan_intro=artisan_intro,
     )
 
 
-def extract_product_details(transcript: str) -> ProductDetails:
-    """Fast, fail-safe product details extractor.
-    Uses sub-millisecond rule-based extraction as primary baseline,
-    enriched with Groq compound-mini (or Ollama fallback).
-    Never throws 503; always returns valid ProductDetails.
+def extract_step1_product_details(transcript: str) -> dict:
+    """Step 1: Extract Product Name, Category, Material, Craft, Color, Size, Weight.
+    Primary: Ollama, Fallback: Groq, Final: Fast Regex.
     """
-    logger.info(f"Extracting product details ({len(transcript)} chars)")
+    logger.info(f"Extract Step 1: '{transcript[:50]}...'")
+    base = extract_fast(transcript).model_dump()
 
-    # 1. Sub-millisecond baseline extraction
-    base_result = extract_fast(transcript)
-    base_dict = base_result.model_dump()
+    prompt = EXTRACTION_PROMPT_STEP1.format(transcript=transcript)
+    llm_data = extract_with_llm(prompt)
 
-    # 2. Try fast Groq enrichment (< 500ms)
-    if settings.GROQ_API_KEY:
-        try:
-            import groq
+    if llm_data:
+        for k in ["product_name", "category", "material", "craft", "color", "size", "weight"]:
+            val = llm_data.get(k)
+            if val is not None and str(val).strip() and str(val).strip().lower() != "null":
+                base[k] = str(val).strip()
 
-            groq_client = groq.Groq(api_key=settings.GROQ_API_KEY, timeout=3.0)
-            prompt = EXTRACTION_PROMPT.format(transcript=transcript)
-            resp = groq_client.chat.completions.create(
-                model=settings.GROQ_MODEL or "groq/compound-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                max_tokens=300,
-            )
-            raw_groq = resp.choices[0].message.content or ""
-            parsed = _safe_parse_json(raw_groq)
-            if parsed and isinstance(parsed, dict):
-                for k, v in parsed.items():
-                    if k in base_dict and v is not None and str(v).strip() and str(v).strip().lower() != "null":
-                        # If base_dict already has a specific value (like detected craft/material), only overwrite if groq gave something meaningful
-                        if base_dict[k] is None or len(str(v)) > len(str(base_dict[k])):
-                            base_dict[k] = str(v).strip()
-                logger.info("Groq catalog enrichment succeeded.")
-                return ProductDetails(**base_dict)
-        except Exception as e:
-            logger.info(f"Groq catalog enrichment skipped/failed: {e}. Trying Ollama or baseline.")
+    return {
+        "product_name": base.get("product_name"),
+        "category": base.get("category"),
+        "material": base.get("material"),
+        "craft": base.get("craft"),
+        "color": base.get("color"),
+        "size": base.get("size"),
+        "weight": base.get("weight"),
+    }
 
-    # 3. Try fast Ollama enrichment with 2.0s strict timeout
-    try:
-        client = _get_client()
-        prompt = EXTRACTION_PROMPT.format(transcript=transcript)
-        resp = client.post(
-            "/api/generate",
-            json={
-                "model": settings.OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "format": "json",
-                "options": {
-                    "temperature": 0.1,
-                    "num_predict": 120,
-                },
-            },
-            timeout=httpx.Timeout(2.0, connect=1.0),
-        )
-        if resp.status_code == 200:
-            raw_response = resp.json().get("response", "")
-            parsed = _safe_parse_json(raw_response)
-            if parsed and isinstance(parsed, dict):
-                for k, v in parsed.items():
-                    if k in base_dict and v is not None and str(v).strip() and str(v).strip().lower() != "null":
-                        base_dict[k] = str(v).strip()
-                logger.info("Ollama enrichment succeeded.")
-                return ProductDetails(**base_dict)
-    except Exception as e:
-        logger.info(f"Ollama fast enrichment skipped/timed-out: {e}.")
 
-    logger.info("Baseline extraction complete.")
-    return ProductDetails(**base_dict)
+def extract_step2_quantity_details(transcript: str) -> dict:
+    """Step 2: Extract Quantity, Capacity, Making Time, Making Process.
+    Primary: Ollama, Fallback: Groq, Final: Fast Regex.
+    """
+    logger.info(f"Extract Step 2: '{transcript[:50]}...'")
+    base = extract_fast(transcript).model_dump()
+
+    prompt = EXTRACTION_PROMPT_STEP2.format(transcript=transcript)
+    llm_data = extract_with_llm(prompt)
+
+    if llm_data:
+        for k in ["quantity", "production_capacity", "making_time", "making_process"]:
+            val = llm_data.get(k)
+            if val is not None and str(val).strip() and str(val).strip().lower() != "null":
+                base[k] = str(val).strip()
+
+    return {
+        "quantity": base.get("quantity"),
+        "production_capacity": base.get("production_capacity"),
+        "making_time": base.get("making_time"),
+        "making_process": base.get("making_process"),
+    }
+
+
+def extract_step3_story_details(transcript: str) -> dict:
+    """Step 3: Extract & generate Craft Origin Story, Location, Artisan Lineage.
+    Primary: Ollama, Fallback: Groq, Final: Fast Regex.
+    """
+    logger.info(f"Extract Step 3: '{transcript[:50]}...'")
+    base = extract_fast(transcript).model_dump()
+
+    prompt = EXTRACTION_PROMPT_STEP3.format(transcript=transcript)
+    llm_data = extract_with_llm(prompt)
+
+    if llm_data:
+        for k in ["craft_story", "location", "artisan_intro"]:
+            val = llm_data.get(k)
+            if val is not None and str(val).strip() and str(val).strip().lower() != "null":
+                base[k] = str(val).strip()
+
+    return {
+        "craft_story": base.get("craft_story"),
+        "location": base.get("location"),
+        "artisan_intro": base.get("artisan_intro"),
+    }
+
+
+def extract_product_details(transcript: str) -> ProductDetails:
+    """Extract complete product details.
+    Primary: Ollama, Fallback: Groq, Final: Fast Regex.
+    Never fails, always returns valid ProductDetails.
+    """
+    logger.info(f"Extract Full Catalog ({len(transcript)} chars)")
+    base = extract_fast(transcript).model_dump()
+
+    prompt = EXTRACTION_PROMPT_ALL.format(transcript=transcript)
+    llm_data = extract_with_llm(prompt)
+
+    if llm_data:
+        for k in base.keys():
+            val = llm_data.get(k)
+            if val is not None and str(val).strip() and str(val).strip().lower() != "null":
+                base[k] = str(val).strip()
+
+    return ProductDetails(**base)

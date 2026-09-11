@@ -23,11 +23,13 @@ class ProductDetails(BaseModel):
     size: Optional[str] = None
     weight: Optional[str] = None
     quantity: Optional[str] = None
+    production_capacity: Optional[str] = None
     making_time: Optional[str] = None
     making_process: Optional[str] = None
     location: Optional[str] = None
     price: Optional[str] = None
     craft_story: Optional[str] = None
+    artisan_intro: Optional[str] = None
 
 
 class ExtractionResponse(BaseModel):

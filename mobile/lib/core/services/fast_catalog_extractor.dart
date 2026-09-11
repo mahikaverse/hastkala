@@ -13,11 +13,13 @@ class FastCatalogExtractor {
         'size': null,
         'weight': null,
         'quantity': null,
+        'production_capacity': null,
         'making_time': null,
         'making_process': null,
         'location': null,
         'price': null,
         'craft_story': null,
+        'artisan_intro': null,
       };
     }
 
@@ -184,7 +186,7 @@ class FastCatalogExtractor {
       weight = '1 kg';
     }
 
-    // 8. Quantity
+    // 8. Quantity (Ready Stock)
     int? quantity;
     final qtyRegex = RegExp(r'(\d+)\s*(?:piece|pieces|pcs|pc|item|items|set)\b');
     final qm = qtyRegex.firstMatch(lower);
@@ -196,7 +198,19 @@ class FastCatalogExtractor {
       quantity = 2;
     }
 
-    // 9. Making Time
+    // 9. Production Capacity (Kitna bana sakte ho)
+    String? productionCapacity;
+    final capRegex = RegExp(r'(\d+)\s*(?:piece|pcs|item)?\s*(?:mahine|month|hafte|week|din|day)\s*(?:me|mein)?\s*(?:bana sakte|ban sakte|supply)');
+    final capMatch = capRegex.firstMatch(lower);
+    if (capMatch != null) {
+      productionCapacity = '${capMatch.group(1)} pieces';
+    } else if (lower.contains('50 piece') || lower.contains('50 bana')) {
+      productionCapacity = '50 pieces per month';
+    } else if (lower.contains('100 piece') || lower.contains('100 bana')) {
+      productionCapacity = '100 pieces per month';
+    }
+
+    // 10. Making Time
     String? makingTime;
     final timeMap = [
       (RegExp(r'(\d+)\s*(?:din|days?)\b'), (Match m) => '${m.group(1)} days'),
@@ -219,7 +233,7 @@ class FastCatalogExtractor {
       }
     }
 
-    // 10. Making Process
+    // 11. Making Process
     String? makingProcess;
     final processHints = <String>[];
     if (lower.contains('wheel') || lower.contains('chaak')) {
@@ -237,6 +251,9 @@ class FastCatalogExtractor {
     if (lower.contains('mould') || lower.contains('dhalai')) {
       processHints.add('Molded and cured');
     }
+    if (lower.contains('bhatti') || lower.contains('kiln') || lower.contains('pakate')) {
+      processHints.add('Kiln-baked');
+    }
     if (processHints.isEmpty) {
       if (lower.contains('hath se') || lower.contains('haath se') || lower.contains('handmade') || lower.contains('handcrafted')) {
         processHints.add('Completely hand-crafted by artisan');
@@ -246,7 +263,7 @@ class FastCatalogExtractor {
       makingProcess = processHints.join(', ');
     }
 
-    // 11. Location
+    // 12. Location
     final locations = [
       'Jaipur', 'Varanasi', 'Banaras', 'Lucknow', 'Jodhpur', 'Udaipur',
       'Kutch', 'Surat', 'Ahmedabad', 'Bhopal', 'Indore', 'Kashmir',
@@ -262,9 +279,9 @@ class FastCatalogExtractor {
       }
     }
 
-    // 12. Product Name
+    // 13. Product Name
     final nounMap = <String, List<String>>{
-      'Decorative Pot': ['matka', 'pot', 'handi', 'ghada', 'ghada', 'kalash'],
+      'Decorative Pot': ['matka', 'pot', 'handi', 'ghada', 'kalash'],
       'Vase': ['vase', 'guldan', 'flower pot'],
       'Diya Set': ['diya', 'deepak', 'diye'],
       'Serving Plate': ['plate', 'thali', 'platter'],
@@ -312,7 +329,7 @@ class FastCatalogExtractor {
 
     final productName = nameParts.join(' ');
 
-    // 13. Craft Story
+    // 14. Craft Story
     var craftStory = 'Authentic handcrafted ${detectedNoun ?? 'creation'} made by skilled artisan';
     if (location != null) craftStory += ' in $location';
     craftStory += '. ';
@@ -325,6 +342,8 @@ class FastCatalogExtractor {
       craftStory += 'Takes approximately $makingTime of dedicated craftsmanship to complete.';
     }
 
+    final artisanIntro = 'Dedicated handicraft artisan practicing traditional ${craft ?? 'heritage'} art in ${location ?? 'India'}.';
+
     return {
       'product_name': productName,
       'category': category,
@@ -334,11 +353,45 @@ class FastCatalogExtractor {
       'size': size,
       'weight': weight,
       'quantity': quantity,
+      'production_capacity': productionCapacity,
       'making_time': makingTime,
       'making_process': makingProcess,
       'location': location,
       'price': price,
       'craft_story': craftStory,
+      'artisan_intro': artisanIntro,
+    };
+  }
+
+  static Map<String, dynamic> extractStep1(String transcript) {
+    final full = extract(transcript);
+    return {
+      'product_name': full['product_name'],
+      'category': full['category'],
+      'material': full['material'],
+      'craft': full['craft'],
+      'color': full['color'],
+      'size': full['size'],
+      'weight': full['weight'],
+    };
+  }
+
+  static Map<String, dynamic> extractStep2(String transcript) {
+    final full = extract(transcript);
+    return {
+      'quantity': full['quantity'],
+      'production_capacity': full['production_capacity'],
+      'making_time': full['making_time'],
+      'making_process': full['making_process'],
+    };
+  }
+
+  static Map<String, dynamic> extractStep3(String transcript) {
+    final full = extract(transcript);
+    return {
+      'craft_story': full['craft_story'],
+      'location': full['location'],
+      'artisan_intro': full['artisan_intro'],
     };
   }
 

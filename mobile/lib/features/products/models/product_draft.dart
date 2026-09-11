@@ -10,6 +10,7 @@ class ProductDraft {
   String? size;
   String? weight;
   int? quantity;
+  String? productionCapacity;
   String? makingTime;
   String? makingProcess;
   String? location;
@@ -41,6 +42,7 @@ class ProductDraft {
     this.size,
     this.weight,
     this.quantity,
+    this.productionCapacity,
     this.makingTime,
     this.makingProcess,
     this.location,

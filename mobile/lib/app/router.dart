@@ -28,6 +28,9 @@ import '../features/orders/presentation/order_tracking_screen.dart';
 import '../features/products/presentation/product_details_screen.dart';
 import '../features/products/presentation/product_listing_screen.dart';
 import '../features/products/screens/artisan_add_product_screen.dart';
+import '../features/products/screens/voice_step1_details_screen.dart';
+import '../features/products/screens/voice_step2_quantity_screen.dart';
+import '../features/products/screens/voice_step3_story_screen.dart';
 import '../features/products/screens/tell_about_product_screen.dart';
 import '../features/products/screens/review_details_screen.dart';
 import '../features/products/screens/catalog_preview_screen.dart';
@@ -72,7 +75,9 @@ abstract final class AppRoutes {
   static const String artisanDashboard = '/artisan-dashboard';
   static const String artisanStore = '/artisan-store';
   static const String exploreArtisans = '/explore-artisans';
-  static const String voiceAddProduct = '/voice-add-product';
+  static const String voiceStep1Details = '/voice-step-1';
+  static const String voiceStep2Quantity = '/voice-step-2';
+  static const String voiceStep3Story = '/voice-step-3';
   static const String tellAboutProduct = '/tell-about-product';
   static const String reviewDetails = '/review-details';
   static const String catalogPreview = '/catalog-preview';
@@ -169,11 +174,24 @@ class AppRouter {
         return _buildRoute(const ExploreArtisansScreen(), settings: settings);
       case AppRoutes.voiceAddProduct:
         return _buildRoute(const VoiceAddProductScreen(), settings: settings);
+      case AppRoutes.voiceStep1Details:
       case AppRoutes.tellAboutProduct:
         final draft = settings.arguments as ProductDraft;
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => TellAboutProductScreen(draft: draft),
+          builder: (context) => VoiceStep1DetailsScreen(draft: draft),
+        );
+      case AppRoutes.voiceStep2Quantity:
+        final draft = settings.arguments as ProductDraft;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => VoiceStep2QuantityScreen(draft: draft),
+        );
+      case AppRoutes.voiceStep3Story:
+        final draft = settings.arguments as ProductDraft;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => VoiceStep3StoryScreen(draft: draft),
         );
       case AppRoutes.reviewDetails:
         final draft = settings.arguments as ProductDraft;

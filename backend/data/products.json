@@ -1,5 +1,29 @@
 [
   {
+    "id": "prod_1789109193285",
+    "name": "Handcrafted Craft",
+    "price": 50.0,
+    "original_price": 50.0,
+    "category": "Pottery & Ceramics",
+    "craft": "",
+    "material": "",
+    "color": "",
+    "artisan_name": "Ramesh Kumar",
+    "artisan_id": "ap_1",
+    "store_id": "st_1",
+    "location": "India",
+    "description": "Authentic handcrafted creation made by skilled artisan.",
+    "craft_story": "Authentic handcrafted creation made by skilled artisan. ",
+    "making_time": "",
+    "tags": [
+      "Handmade"
+    ],
+    "image_url": "https://acutpnwhubbmptbgtnih.supabase.co/storage/v1/object/public/products/prod_1789109193285.jpg",
+    "stock": 10,
+    "is_published": true,
+    "created_at": "2026-09-11T06:46:36Z"
+  },
+  {
     "id": "prod_1789075173247",
     "name": "Handcrafted Craft",
     "price": 100000.0,
