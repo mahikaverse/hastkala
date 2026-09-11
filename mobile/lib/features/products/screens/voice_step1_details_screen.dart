@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:http/http.dart' as http;
@@ -14,7 +15,6 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/api_config.dart';
-import '../../../core/services/fast_catalog_extractor.dart';
 import '../models/product_draft.dart';
 import 'voice_step2_quantity_screen.dart';
 
@@ -31,6 +31,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     with SingleTickerProviderStateMixin {
   // Mode: true = showing extracted form, false = voice recording mode
   bool _showExtractedForm = false;
+  bool _extractionHadData = false; // track whether extraction returned anything useful
 
   // Recording & Live Caption state
   bool _isRecording = false;
@@ -40,6 +41,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   late AnimationController _waveController;
   String _liveCaption = '';
   String? _audioPath;
+  String? _errorMessage;
 
   // Speech to text
   final SpeechToText _speech = SpeechToText();
@@ -47,7 +49,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   String _selectedLanguage = 'Hindi';
   String _selectedLocaleId = 'hi_IN';
 
-  // Audio recording fallback
+  // Audio recording
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   bool _recorderInitialized = false;
 
@@ -59,15 +61,20 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   late final TextEditingController _colorCtrl;
   late final TextEditingController _sizeCtrl;
   late final TextEditingController _weightCtrl;
+  late final TextEditingController _descriptionCtrl;
 
   // Manual text input toggle in voice mode
   bool _showManualInput = false;
   final TextEditingController _manualInputCtrl = TextEditingController();
 
+  // DEV debug panel state
+  String? _debugTranscript;
+  Map<String, dynamic>? _debugExtracted;
+
   final List<String> _guidingQuestions = [
-    'Product ka naam kya hai?',
-    'Kis material (mitti, lakdi, pital, silk) se bana hai?',
-    'Kaunsi kala ya craft (Blue Pottery, Chikankari) hai?',
+    'Product ka naam kya hai? (e.g. bamboo ki tokri)',
+    'Kis material se bana hai? (mitti, lakdi, pital, silk, bamboo)',
+    'Kaunsi kala ya craft hai? (Blue Pottery, Chikankari, etc.)',
     'Rang (color) aur size / weight kya hai?',
   ];
 
@@ -87,10 +94,12 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     _colorCtrl = TextEditingController(text: d.color ?? '');
     _sizeCtrl = TextEditingController(text: d.size ?? '');
     _weightCtrl = TextEditingController(text: d.weight ?? '');
+    _descriptionCtrl = TextEditingController(text: d.description ?? '');
 
-    // If draft already has product name or material, show form
+    // If draft already has product name, show form
     if (d.productName != null && d.productName!.isNotEmpty) {
       _showExtractedForm = true;
+      _extractionHadData = true;
     }
 
     _initSpeech();
@@ -108,6 +117,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     _colorCtrl.dispose();
     _sizeCtrl.dispose();
     _weightCtrl.dispose();
+    _descriptionCtrl.dispose();
     _manualInputCtrl.dispose();
     try {
       _speech.stop();
@@ -122,19 +132,15 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   Future<void> _initSpeech() async {
     try {
       final available = await _speech.initialize(
-        onError: (e) => debugPrint('STT Error: ${e.errorMsg}'),
-        onStatus: (status) {
-          debugPrint('STT Status: $status');
-          if ((status == 'done' || status == 'notListening') && _isRecording && mounted) {
-            // Keep recording active or allow user to finish
-          }
-        },
+        onError: (e) => debugPrint('[STT] Error: ${e.errorMsg}'),
+        onStatus: (status) => debugPrint('[STT] Status: $status'),
       );
       if (mounted) {
         setState(() => _speechAvailable = available);
       }
+      debugPrint('[STT] Available: $available');
     } catch (e) {
-      debugPrint('STT init error: $e');
+      debugPrint('[STT] Init error: $e');
     }
   }
 
@@ -142,8 +148,9 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     try {
       await _recorder.openRecorder();
       _recorderInitialized = true;
+      debugPrint('[Recorder] Initialized successfully');
     } catch (e) {
-      debugPrint('Recorder init error: $e');
+      debugPrint('[Recorder] Init error: $e');
     }
   }
 
@@ -155,16 +162,15 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
       _recordingSeconds = 0;
       _liveCaption = '';
       _audioPath = null;
+      _errorMessage = null;
     });
 
     _waveController.repeat(reverse: true);
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (mounted) {
-        setState(() => _recordingSeconds++);
-      }
+      if (mounted) setState(() => _recordingSeconds++);
     });
 
-    // 1. Device real-time speech recognition for live captioning
+    // Start device live STT for live captions
     if (_speechAvailable) {
       try {
         await _speech.listen(
@@ -176,12 +182,13 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             cancelOnError: false,
           ),
         );
+        debugPrint('[STT] Listening started');
       } catch (e) {
-        debugPrint('Speech listen error: $e');
+        debugPrint('[STT] Listen error: $e');
       }
     }
 
-    // 2. Audio recording backup
+    // Always record audio for backend transcription
     try {
       if (!_recorderInitialized) await _initRecorder();
       final dir = await getTemporaryDirectory();
@@ -193,16 +200,15 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         sampleRate: 44100,
       );
       _audioPath = path;
+      debugPrint('[Recorder] Recording to: $path');
     } catch (e) {
-      debugPrint('Audio recording error: $e');
+      debugPrint('[Recorder] Start error: $e');
     }
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
     if (mounted) {
-      setState(() {
-        _liveCaption = result.recognizedWords;
-      });
+      setState(() => _liveCaption = result.recognizedWords);
     }
   }
 
@@ -211,95 +217,136 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     _waveController.stop();
 
     try {
-      if (_speech.isListening) {
-        await _speech.stop();
-      }
+      if (_speech.isListening) await _speech.stop();
     } catch (_) {}
 
     try {
       if (_recorder.isRecording) {
         final path = await _recorder.stopRecorder();
         if (path != null) _audioPath = path;
+        debugPrint('[Recorder] Stopped. File: $_audioPath');
       }
     } catch (_) {}
 
-    if (mounted) {
-      setState(() => _isRecording = false);
-    }
+    if (mounted) setState(() => _isRecording = false);
 
     _processExtraction();
   }
 
   Future<void> _processExtraction() async {
-    final spokenText = _liveCaption.trim();
-
-    if (spokenText.isNotEmpty) {
-      await _extractDetails(spokenText);
-      return;
-    }
-
-    // If live speech text was empty, try backend transcription from audio
+    // ALWAYS prefer uploading the actual audio file to the backend for best accuracy.
+    // The live caption is only a fallback when there is NO audio file.
     if (_audioPath != null) {
-      await _extractFromAudioFile();
+      final file = File(_audioPath!);
+      final exists = await file.exists();
+      final size = exists ? await file.length() : 0;
+      debugPrint('[Process] Audio file: $_audioPath, exists=$exists, size=$size bytes');
+
+      if (exists && size > 1000) {
+        await _extractFromAudioFile();
+        return;
+      }
+      debugPrint('[Process] Audio file too small ($size bytes), trying live caption');
+    }
+
+    // Fallback: use live STT caption text
+    final spokenText = _liveCaption.trim();
+    if (spokenText.isNotEmpty) {
+      debugPrint('[Process] Using live caption: "$spokenText"');
+      await _extractDetailsFromText(spokenText);
       return;
     }
 
-    // If both empty
     if (mounted) {
+      setState(() {
+        _errorMessage = 'No speech detected. Please speak clearly and try again.';
+        _isExtracting = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please speak or type about your product.')),
+        const SnackBar(
+          content: Text('Please speak clearly about your product, then tap Done.'),
+          duration: Duration(seconds: 4),
+        ),
       );
     }
   }
 
-  Future<void> _extractDetails(String text) async {
-    setState(() => _isExtracting = true);
+  Future<void> _extractDetailsFromText(String text) async {
+    if (mounted) setState(() => _isExtracting = true);
 
-    // 1. Instant local extraction (< 2ms)
-    final localData = FastCatalogExtractor.extractStep1(text);
-    _populateControllers(localData);
+    debugPrint('[Extract] Sending to backend extract-step1: "${text.substring(0, text.length.clamp(0, 80))}..."');
 
-    // 2. Enrich with backend (Ollama primary, Groq fallback)
     try {
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/ai/extract-step1');
+      debugPrint('[Extract] POST $uri');
+
       final resp = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'transcript': text}),
-      ).timeout(const Duration(seconds: 14));
+      ).timeout(const Duration(seconds: 20));
+
+      debugPrint('[Extract] HTTP status: ${resp.statusCode}');
+      debugPrint('[Extract] Response body: ${resp.body.substring(0, resp.body.length.clamp(0, 500))}');
 
       if (resp.statusCode == 200) {
-        final data = jsonDecode(resp.body);
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
         if (data['success'] == true && data['data'] is Map) {
-          final serverData = data['data'] as Map<String, dynamic>;
-          _populateControllers(serverData);
+          final extracted = data['data'] as Map<String, dynamic>;
+          debugPrint('[Extract] Extracted data: $extracted');
+          if (mounted) {
+            setState(() {
+              _debugTranscript = text;
+              _debugExtracted = extracted;
+            });
+          }
+          _populateControllersFromServer(extracted);
+          _saveTowardsDraft(text);
+          if (mounted) {
+            setState(() {
+              _isExtracting = false;
+              _showExtractedForm = true;
+              _extractionHadData = _hasAnyData(extracted);
+              _errorMessage = _extractionHadData ? null : 'Extraction returned no data. Please speak more clearly.';
+            });
+          }
+          return;
+        } else {
+          debugPrint('[Extract] Backend returned success=false or no data: $data');
         }
       }
     } catch (e) {
-      debugPrint('Backend step 1 enrichment fallback used local: $e');
+      debugPrint('[Extract] Backend call failed: $e');
     }
 
-    widget.draft.voiceTranscript = text;
-
+    // Backend failed — show form with whatever we have
+    _saveTowardsDraft(text);
     if (mounted) {
       setState(() {
         _isExtracting = false;
         _showExtractedForm = true;
+        _extractionHadData = false;
+        _errorMessage = 'Could not reach AI. Please check connection and try again, or fill manually.';
       });
     }
   }
 
   Future<void> _extractFromAudioFile() async {
     if (_audioPath == null) return;
-    setState(() => _isExtracting = true);
+    if (mounted) setState(() => _isExtracting = true);
+
+    final langCode = _selectedLocaleId.split('_').first;
 
     try {
       final file = File(_audioPath!);
       final bytes = await file.readAsBytes();
+      debugPrint('[AudioUpload] File size: ${bytes.length} bytes');
 
       for (final host in ApiConfig.candidateUrls) {
         try {
-          final uri = Uri.parse('$host/api/ai/voice-to-catalog?step=1');
+          final uri = Uri.parse('$host/api/ai/voice-to-catalog?step=1&language=$langCode');
+          debugPrint('[AudioUpload] Trying: $uri');
+
           final req = http.MultipartRequest('POST', uri);
           req.files.add(http.MultipartFile.fromBytes(
             'file',
@@ -307,63 +354,135 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             filename: 'step1_voice.m4a',
             contentType: MediaType('audio', 'mp4'),
           ));
-          final streamed = await req.send().timeout(const Duration(seconds: 16));
+
+          final streamed = await req.send().timeout(const Duration(seconds: 30));
+          debugPrint('[AudioUpload] HTTP status: ${streamed.statusCode}');
+
           if (streamed.statusCode == 200) {
             final body = await streamed.stream.bytesToString();
-            final data = jsonDecode(body);
-            if (data['success'] == true) {
-              final transcript = data['transcript'] as String? ?? '';
-              _liveCaption = transcript;
-              widget.draft.voiceTranscript = transcript;
-              final extracted = data['data'] as Map<String, dynamic>?;
-              if (extracted != null) {
-                _populateControllers(extracted);
-              }
+            debugPrint('[AudioUpload] Response: ${body.substring(0, body.length.clamp(0, 600))}');
+
+            final data = jsonDecode(body) as Map<String, dynamic>;
+            final success = data['success'] as bool? ?? false;
+            final transcript = data['transcript'] as String? ?? '';
+            final extracted = data['data'] as Map<String, dynamic>?;
+
+            debugPrint('[AudioUpload] success=$success, transcript="${transcript.substring(0, transcript.length.clamp(0, 100))}"');
+            debugPrint('[AudioUpload] extracted=$extracted');
+
+            if (!success) {
+              final errorMsg = data['error'] as String? ?? 'Transcription failed';
               if (mounted) {
                 setState(() {
                   _isExtracting = false;
+                  _errorMessage = errorMsg;
                   _showExtractedForm = true;
+                  _extractionHadData = false;
                 });
               }
               return;
             }
+
+            if (transcript.isNotEmpty) {
+              _liveCaption = transcript;
+            }
+
+            if (extracted != null) {
+              if (mounted) {
+                setState(() {
+                  _debugTranscript = transcript;
+                  _debugExtracted = extracted;
+                });
+              }
+              _populateControllersFromServer(extracted);
+              _saveTowardsDraft(transcript);
+              final hadData = _hasAnyData(extracted);
+              if (mounted) {
+                setState(() {
+                  _isExtracting = false;
+                  _showExtractedForm = true;
+                  _extractionHadData = hadData;
+                  _errorMessage = hadData ? null : 'Speech was heard but details could not be extracted. Please edit manually.';
+                });
+              }
+            } else {
+              _saveTowardsDraft(transcript);
+              if (mounted) {
+                setState(() {
+                  _isExtracting = false;
+                  _showExtractedForm = true;
+                  _extractionHadData = false;
+                  _errorMessage = 'No product details extracted. Please fill in manually.';
+                });
+              }
+            }
+            return;
           }
-        } catch (_) {
+        } catch (e) {
+          debugPrint('[AudioUpload] Host $host failed: $e');
           continue;
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[AudioUpload] Fatal error: $e');
+    }
 
+    // All hosts failed
     if (mounted) {
       setState(() {
         _isExtracting = false;
         _showExtractedForm = true;
+        _extractionHadData = false;
+        _errorMessage = 'Could not connect to AI server. Please fill in details manually.';
       });
     }
   }
 
-  void _populateControllers(Map<String, dynamic> data) {
-    if (data['product_name'] != null && data['product_name'].toString().trim().isNotEmpty) {
-      _productNameCtrl.text = data['product_name'].toString().trim();
+  /// Populate controllers from server data.
+  /// Server data always wins — overwrite whatever was there before.
+  void _populateControllersFromServer(Map<String, dynamic> data) {
+    debugPrint('[Populate] Populating controllers from: $data');
+
+    final name = _str(data['product_name']);
+    final cat = _str(data['category']);
+    final mat = _str(data['material']);
+    final craft = _str(data['craft']);
+    final color = _str(data['color']);
+    final size = _str(data['size']);
+    final weight = _str(data['weight']);
+    final desc = _str(data['description']);
+
+    // Use setState to trigger rebuild after controller text changes
+    if (mounted) {
+      setState(() {
+        if (name != null) _productNameCtrl.text = name;
+        if (cat != null) _categoryCtrl.text = cat;
+        if (mat != null) _materialCtrl.text = mat;
+        if (craft != null) _craftCtrl.text = craft;
+        if (color != null) _colorCtrl.text = color;
+        if (size != null) _sizeCtrl.text = size;
+        if (weight != null) _weightCtrl.text = weight;
+        if (desc != null) _descriptionCtrl.text = desc;
+      });
     }
-    if (data['category'] != null && data['category'].toString().trim().isNotEmpty) {
-      _categoryCtrl.text = data['category'].toString().trim();
-    }
-    if (data['material'] != null && data['material'].toString().trim().isNotEmpty) {
-      _materialCtrl.text = data['material'].toString().trim();
-    }
-    if (data['craft'] != null && data['craft'].toString().trim().isNotEmpty) {
-      _craftCtrl.text = data['craft'].toString().trim();
-    }
-    if (data['color'] != null && data['color'].toString().trim().isNotEmpty) {
-      _colorCtrl.text = data['color'].toString().trim();
-    }
-    if (data['size'] != null && data['size'].toString().trim().isNotEmpty) {
-      _sizeCtrl.text = data['size'].toString().trim();
-    }
-    if (data['weight'] != null && data['weight'].toString().trim().isNotEmpty) {
-      _weightCtrl.text = data['weight'].toString().trim();
-    }
+
+    debugPrint('[Populate] product_name="${_productNameCtrl.text}" category="${_categoryCtrl.text}" material="${_materialCtrl.text}"');
+  }
+
+  void _saveTowardsDraft(String transcript) {
+    widget.draft.voiceTranscript = transcript;
+  }
+
+  bool _hasAnyData(Map<String, dynamic> data) {
+    return ['product_name', 'category', 'material', 'craft', 'color', 'size', 'weight', 'description']
+        .any((k) => _str(data[k]) != null);
+  }
+
+  String? _str(dynamic v) {
+    if (v == null) return null;
+    final s = v.toString().trim();
+    if (s.isEmpty || s.toLowerCase() == 'null') return null;
+    return s;
   }
 
   void _saveAndProceedToStep2() {
@@ -375,6 +494,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     d.color = _colorCtrl.text.trim().isNotEmpty ? _colorCtrl.text.trim() : d.color;
     d.size = _sizeCtrl.text.trim().isNotEmpty ? _sizeCtrl.text.trim() : d.size;
     d.weight = _weightCtrl.text.trim().isNotEmpty ? _weightCtrl.text.trim() : d.weight;
+    d.description = _descriptionCtrl.text.trim().isNotEmpty ? _descriptionCtrl.text.trim() : d.description;
 
     Navigator.push(
       context,
@@ -600,7 +720,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // VOICE INPUT VIEW (with GPT-style Live Caption)
+  // VOICE INPUT VIEW
   // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildVoiceInputView() {
@@ -726,18 +846,16 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         ),
         const SizedBox(height: 4),
         Text(
-          'Bolna shuru karein — live caption dikhega',
+          'Bolna shuru karein — bolo aur AI extract karega',
           style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
   }
 
-  // ─── REAL-TIME GPT-STYLE LIVE CAPTION VIEW ─────────────────────────────────
   Widget _buildLiveCaptionActiveView() {
     return Column(
       children: [
-        // Pulsing live indicator
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -760,8 +878,6 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         const SizedBox(height: AppDimensions.md),
         _buildWaveform(),
         const SizedBox(height: AppDimensions.lg),
-
-        // Live Caption Bubble (GPT style live streaming text)
         Container(
           width: double.infinity,
           constraints: const BoxConstraints(minHeight: 140),
@@ -806,8 +922,6 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
           ),
         ),
         const SizedBox(height: AppDimensions.xl),
-
-        // Done Speaking Button
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -884,7 +998,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
           ),
           const SizedBox(height: AppDimensions.xs),
           Text(
-            'Identifying product name, category, material & craft technique...',
+            'Identifying product name, category, material & craft...',
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -944,7 +1058,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
           controller: _manualInputCtrl,
           maxLines: 3,
           decoration: InputDecoration(
-            hintText: 'e.g. Maine ek neela mitti ka diya banaya hai Jaipur me, 6 inch ka hai...',
+            hintText: 'e.g. Main bamboo ki tokri banata hoon. Brown rang ki hai. Size 12 inch hai.',
             hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             filled: true,
             fillColor: Colors.white,
@@ -961,7 +1075,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             onPressed: () {
               final text = _manualInputCtrl.text.trim();
               if (text.isNotEmpty) {
-                _extractDetails(text);
+                _extractDetailsFromText(text);
               }
             },
             style: ElevatedButton.styleFrom(
@@ -977,62 +1091,48 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // EXTRACTED FORM VIEW (Editable Form for Step 1)
+  // EXTRACTED FORM VIEW
   // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildExtractedFormView() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Success banner
-        Container(
-          padding: const EdgeInsets.all(AppDimensions.md),
-          decoration: BoxDecoration(
-            color: AppColors.oliveGreen.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-            border: Border.all(color: AppColors.oliveGreen.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.check_circle, color: AppColors.oliveGreen, size: 20),
-              const SizedBox(width: AppDimensions.sm),
-              Expanded(
-                child: Text(
-                  'Details extracted successfully! Review or edit below.',
-                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.oliveGreen, fontWeight: FontWeight.bold),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() => _showExtractedForm = false);
-                },
-                child: const Text('Speak Again', style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
-              ),
-            ],
-          ),
-        ),
+        // Status banner
+        if (_errorMessage != null)
+          _buildErrorBanner()
+        else if (_extractionHadData)
+          _buildSuccessBanner()
+        else
+          _buildWarningBanner(),
+
         const SizedBox(height: AppDimensions.lg),
 
-        _buildFormField('Product Title / Name', _productNameCtrl, Icons.shopping_bag_outlined, 'e.g. Handcrafted Terracotta Diya'),
+        // DEV DEBUG PANEL — only in debug mode
+        if (kDebugMode && (_debugTranscript != null || _debugExtracted != null))
+          _buildDebugPanel(),
+
+        _buildFormField('Product Title / Name', _productNameCtrl, Icons.shopping_bag_outlined, 'e.g. Bamboo Basket, Clay Diya'),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Category', _categoryCtrl, Icons.category_outlined, 'e.g. Pottery & Ceramics'),
+        _buildFormField('Category', _categoryCtrl, Icons.category_outlined, 'e.g. Bamboo & Cane, Pottery & Ceramics'),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Material', _materialCtrl, Icons.texture_outlined, 'e.g. Terracotta Clay, Wood, Brass'),
+        _buildFormField('Material', _materialCtrl, Icons.texture_outlined, 'e.g. Bamboo, Terracotta Clay, Wood'),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Craft Technique', _craftCtrl, Icons.handyman_outlined, 'e.g. Blue Pottery, Hand Carved'),
+        _buildFormField('Craft Technique', _craftCtrl, Icons.handyman_outlined, 'e.g. Blue Pottery, Hand Carved (leave blank if none)'),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Color(s)', _colorCtrl, Icons.palette_outlined, 'e.g. Natural Terracotta, Blue & Gold'),
+        _buildFormField('Color(s)', _colorCtrl, Icons.palette_outlined, 'e.g. Brown, Blue & Gold'),
         const SizedBox(height: AppDimensions.md),
         Row(
           children: [
-            Expanded(child: _buildFormField('Size / Dimensions', _sizeCtrl, Icons.straighten_outlined, 'e.g. 6 inches')),
+            Expanded(child: _buildFormField('Size / Dimensions', _sizeCtrl, Icons.straighten_outlined, 'e.g. 12 inch')),
             const SizedBox(width: AppDimensions.md),
             Expanded(child: _buildFormField('Weight', _weightCtrl, Icons.scale_outlined, 'e.g. 400 grams')),
           ],
         ),
+        const SizedBox(height: AppDimensions.md),
+        _buildFormField('Description', _descriptionCtrl, Icons.description_outlined, 'Short description of your product'),
         const SizedBox(height: AppDimensions.xxl),
 
-        // Save & Next Button
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -1057,6 +1157,136 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         ),
         const SizedBox(height: AppDimensions.lg),
       ],
+    );
+  }
+
+  Widget _buildSuccessBanner() {
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.md),
+      decoration: BoxDecoration(
+        color: AppColors.oliveGreen.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+        border: Border.all(color: AppColors.oliveGreen.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle, color: AppColors.oliveGreen, size: 20),
+          const SizedBox(width: AppDimensions.sm),
+          Expanded(
+            child: Text(
+              'Details extracted! Review or edit below.',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.oliveGreen, fontWeight: FontWeight.bold),
+            ),
+          ),
+          TextButton(
+            onPressed: () => setState(() {
+              _showExtractedForm = false;
+              _errorMessage = null;
+            }),
+            child: const Text('Speak Again', style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWarningBanner() {
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.md),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+          const SizedBox(width: AppDimensions.sm),
+          Expanded(
+            child: Text(
+              'Speech heard but no details extracted. Please fill in manually.',
+              style: AppTextStyles.bodySmall.copyWith(color: Colors.orange.shade800, fontWeight: FontWeight.bold),
+            ),
+          ),
+          TextButton(
+            onPressed: () => setState(() {
+              _showExtractedForm = false;
+              _errorMessage = null;
+            }),
+            child: const Text('Try Again', style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner() {
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.md),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+          const SizedBox(width: AppDimensions.sm),
+          Expanded(
+            child: Text(
+              _errorMessage ?? 'Something went wrong.',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error, fontWeight: FontWeight.bold),
+            ),
+          ),
+          TextButton(
+            onPressed: () => setState(() {
+              _showExtractedForm = false;
+              _errorMessage = null;
+            }),
+            child: const Text('Try Again', style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// DEV-ONLY debug panel — visible only in debug builds
+  Widget _buildDebugPanel() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: AppDimensions.lg),
+      padding: const EdgeInsets.all(AppDimensions.md),
+      decoration: BoxDecoration(
+        color: Colors.black87,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '🛠 DEV DEBUG — Remove before production',
+            style: TextStyle(color: Colors.yellow, fontSize: 11, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          if (_debugTranscript != null) ...[
+            const Text('Transcript:', style: TextStyle(color: Colors.grey, fontSize: 10)),
+            Text(
+              _debugTranscript!,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+            ),
+            const SizedBox(height: 6),
+          ],
+          if (_debugExtracted != null) ...[
+            const Text('Extracted:', style: TextStyle(color: Colors.grey, fontSize: 10)),
+            ...(_debugExtracted!.entries
+                .where((e) => e.value != null && e.value.toString().isNotEmpty && e.value.toString() != 'null')
+                .map((e) => Text(
+                      '  ${e.key}: ${e.value}',
+                      style: const TextStyle(color: Colors.greenAccent, fontSize: 12),
+                    ))),
+          ],
+        ],
+      ),
     );
   }
 

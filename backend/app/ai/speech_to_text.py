@@ -28,25 +28,28 @@ ALLOWED_AUDIO_TYPES = {
 MAX_AUDIO_SIZE = 25 * 1024 * 1024  # 25MB
 
 
-def _transcribe_groq(audio_bytes: bytes, filename: str) -> dict:
+def _transcribe_groq(audio_bytes: bytes, filename: str, language: str = None) -> dict:
     import groq
 
     client = groq.Groq(api_key=settings.GROQ_API_KEY)
-    logger.info(f"Transcribing audio via Groq whisper-large-v3-turbo ({len(audio_bytes)} bytes)...")
+    logger.info(f"Transcribing audio via Groq whisper-large-v3-turbo ({len(audio_bytes)} bytes, lang={language})...")
 
-    # Pass (filename, bytes) tuple to Groq audio transcription
     fname = filename if filename and "." in filename else "audio.m4a"
-    res = client.audio.transcriptions.create(
-        file=(fname, audio_bytes),
-        model="whisper-large-v3-turbo",
-        response_format="verbose_json",
-    )
+    kwargs = {
+        "file": (fname, audio_bytes),
+        "model": "whisper-large-v3-turbo",
+        "response_format": "verbose_json",
+    }
+    if language:
+        kwargs["language"] = language
+
+    res = client.audio.transcriptions.create(**kwargs)
     transcript = (res.text or "").strip()
-    language = getattr(res, "language", None) or "unknown"
-    logger.info(f"Groq transcription complete: lang={language}, chars={len(transcript)}")
+    detected_lang = getattr(res, "language", None) or "unknown"
+    logger.info(f"Groq transcription complete: lang={detected_lang}, chars={len(transcript)}")
     return {
         "success": True,
-        "language": language,
+        "language": detected_lang,
         "transcript": transcript,
     }
 
@@ -101,11 +104,10 @@ def _transcribe_local(audio_bytes: bytes, filename: str) -> dict:
             pass
 
 
-def transcribe_audio(audio_bytes: bytes, filename: str = "audio.wav") -> dict:
-    # 1. Primary: Groq Whisper (ultra-fast < 0.5s, supports Hindi/Hinglish, no RAM overhead)
+def transcribe_audio(audio_bytes: bytes, filename: str = "audio.wav", language: str = None) -> dict:
     if settings.GROQ_API_KEY:
         try:
-            return _transcribe_groq(audio_bytes, filename)
+            return _transcribe_groq(audio_bytes, filename, language=language)
         except Exception as e:
             logger.warning(f"Groq transcription failed ({e}). Falling back to local whisper...")
 

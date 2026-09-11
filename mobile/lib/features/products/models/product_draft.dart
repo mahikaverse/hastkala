@@ -15,6 +15,7 @@ class ProductDraft {
   String? makingProcess;
   String? location;
   String? craftStory;
+  String? description;
   int? price;
   int? expectedPrice;
   int? suggestedPrice;
@@ -47,6 +48,7 @@ class ProductDraft {
     this.makingProcess,
     this.location,
     this.craftStory,
+    this.description,
     this.price,
     this.expectedPrice,
     this.suggestedPrice,

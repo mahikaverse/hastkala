@@ -290,7 +290,7 @@ class DataService {
           if (id.isEmpty) continue;
           final existingIdx = _products.indexWhere((p) => p.id == id);
           final img = item['image_url']?.toString() ?? '';
-          final name = item['name']?.toString() ?? 'Handcrafted Product';
+          final name = item['name']?.toString() ?? 'Product';
           final price = (item['price'] as num?)?.toDouble() ?? 500.0;
           final cat = item['category']?.toString() ?? 'Handicrafts';
           final desc = item['description']?.toString() ?? '';
@@ -358,10 +358,12 @@ class DataService {
       artisanId: artisanId,
       name: draft.productName?.trim().isNotEmpty == true
           ? draft.productName!.trim()
-          : 'Handcrafted Craft',
-      description: draft.craftStory?.trim().isNotEmpty == true
-          ? draft.craftStory!.trim()
-          : 'Authentic Indian handicraft made by artisan.',
+          : 'Product',
+      description: draft.description?.trim().isNotEmpty == true
+          ? draft.description!.trim()
+          : draft.craftStory?.trim().isNotEmpty == true
+              ? draft.craftStory!.trim()
+              : '',
       price: priceVal > 0 ? priceVal : 750.0,
       category: draft.category?.trim().isNotEmpty == true
           ? draft.category!.trim()

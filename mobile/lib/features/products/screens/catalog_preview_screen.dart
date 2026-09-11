@@ -186,10 +186,9 @@ class CatalogPreviewScreen extends StatelessWidget {
     final color = draft.color ?? '';
     final name = draft.productName ?? 'product';
 
-    final description = 'Handcrafted $name made with $material using traditional '
-        '$craft techniques${color.isNotEmpty ? ' in $color' : ''}. '
-        'Each piece reflects the rich heritage of Indian craftsmanship and the '
-        'dedication of skilled artisans.';
+    final description = draft.description?.isNotEmpty == true
+        ? draft.description!
+        : '$name${material.isNotEmpty ? ' made with $material' : ''}${craft.isNotEmpty ? ' using $craft techniques' : ''}${color.isNotEmpty ? ' in $color' : ''}.';
 
     return Text(
       description,

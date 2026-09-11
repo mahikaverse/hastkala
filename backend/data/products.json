@@ -1,5 +1,53 @@
 [
   {
+    "id": "prod_1789125403156",
+    "name": "Product",
+    "price": 790000.0,
+    "original_price": 790000.0,
+    "category": "Pottery & Ceramics",
+    "craft": "",
+    "material": "",
+    "color": "",
+    "artisan_name": "Ramesh Kumar",
+    "artisan_id": "ap_1",
+    "store_id": "st_1",
+    "location": "Jaipur, Rajasthan",
+    "description": "",
+    "craft_story": "",
+    "making_time": "",
+    "tags": [
+      "Handmade"
+    ],
+    "image_url": "https://acutpnwhubbmptbgtnih.supabase.co/storage/v1/object/public/products/prod_1789125403156.jpg",
+    "stock": 10,
+    "is_published": true,
+    "created_at": "2026-09-11T11:16:45Z"
+  },
+  {
+    "id": "prod_1789115989770",
+    "name": "Handcrafted Artwork",
+    "price": 100.0,
+    "original_price": 100.0,
+    "category": "Pottery & Ceramics",
+    "craft": "",
+    "material": "",
+    "color": "",
+    "artisan_name": "Ramesh Kumar",
+    "artisan_id": "ap_1",
+    "store_id": "st_1",
+    "location": "Jaipur, Rajasthan",
+    "description": "Authentic handcrafted creation made by skilled artisan.",
+    "craft_story": "Authentic handcrafted creation made by skilled artisan.",
+    "making_time": "",
+    "tags": [
+      "Handmade"
+    ],
+    "image_url": "https://acutpnwhubbmptbgtnih.supabase.co/storage/v1/object/public/products/prod_1789115989770.jpg",
+    "stock": 10,
+    "is_published": true,
+    "created_at": "2026-09-11T08:39:52Z"
+  },
+  {
     "id": "prod_1789109193285",
     "name": "Handcrafted Craft",
     "price": 50.0,

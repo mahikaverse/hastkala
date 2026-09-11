@@ -28,6 +28,7 @@ class ProductDetails(BaseModel):
     making_process: Optional[str] = None
     location: Optional[str] = None
     price: Optional[str] = None
+    description: Optional[str] = None
     craft_story: Optional[str] = None
     artisan_intro: Optional[str] = None
 

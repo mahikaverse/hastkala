@@ -7,14 +7,12 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/api_config.dart';
-import '../../../core/services/fast_catalog_extractor.dart';
 import '../models/product_draft.dart';
 import 'voice_step3_story_screen.dart';
 
@@ -161,6 +159,13 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
         );
       } catch (e) {
         debugPrint('Speech listen error: $e');
+        if (mounted) {
+          setState(() => _liveCaption = '[Audio recording mode - speak clearly about quantity and making process]');
+        }
+      }
+    } else {
+      if (mounted) {
+        setState(() => _liveCaption = '[Audio recording mode - speak clearly about quantity and making process]');
       }
     }
 
@@ -200,50 +205,59 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   Future<void> _processExtraction() async {
-    final spokenText = _liveCaption.trim();
+    // ALWAYS prefer uploading audio for best accuracy — same as Step 1
+    if (_audioPath != null) {
+      final file = File(_audioPath!);
+      final exists = await file.exists();
+      final size = exists ? await file.length() : 0;
+      debugPrint('[Step2] Audio file: $_audioPath, exists=$exists, size=$size bytes');
 
-    if (spokenText.isNotEmpty) {
-      await _extractDetails(spokenText);
-      return;
+      if (exists && size > 1000) {
+        await _extractFromAudioFile();
+        return;
+      }
+      debugPrint('[Step2] Audio file too small ($size bytes), falling back to live caption');
     }
 
-    if (_audioPath != null) {
-      await _extractFromAudioFile();
+    final spokenText = _liveCaption.trim();
+    if (spokenText.isNotEmpty && !spokenText.startsWith('[Audio recording')) {
+      debugPrint('[Step2] Using live caption: "$spokenText"');
+      await _extractDetails(spokenText);
       return;
     }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please speak or type about quantity and making details.')),
+        const SnackBar(content: Text('Please speak clearly about quantity and making details.')),
       );
     }
   }
 
   Future<void> _extractDetails(String text) async {
     setState(() => _isExtracting = true);
+    debugPrint('[Step2] Sending to /api/ai/extract-step2: "${text.substring(0, text.length.clamp(0, 80))}..."');
 
-    // 1. Instant local extraction
-    final localData = FastCatalogExtractor.extractStep2(text);
-    _populateControllers(localData);
-
-    // 2. Enrich with backend (Ollama primary, Groq fallback)
     try {
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/ai/extract-step2');
       final resp = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'transcript': text}),
-      ).timeout(const Duration(seconds: 14));
+      ).timeout(const Duration(seconds: 20));
+
+      debugPrint('[Step2] HTTP status: ${resp.statusCode}');
+      debugPrint('[Step2] Response: ${resp.body.substring(0, resp.body.length.clamp(0, 400))}');
 
       if (resp.statusCode == 200) {
-        final data = jsonDecode(resp.body);
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
         if (data['success'] == true && data['data'] is Map) {
           final serverData = data['data'] as Map<String, dynamic>;
+          debugPrint('[Step2] Extracted: $serverData');
           _populateControllers(serverData);
         }
       }
     } catch (e) {
-      debugPrint('Backend step 2 enrichment fallback: $e');
+      debugPrint('[Step2] Backend call failed: $e');
     }
 
     if (mounted) {
@@ -258,13 +272,18 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
     if (_audioPath == null) return;
     setState(() => _isExtracting = true);
 
+    final langCode = _selectedLocaleId.split('_').first;
+
     try {
       final file = File(_audioPath!);
       final bytes = await file.readAsBytes();
+      debugPrint('[Step2 Audio] Uploading ${bytes.length} bytes');
 
       for (final host in ApiConfig.candidateUrls) {
         try {
-          final uri = Uri.parse('$host/api/ai/voice-to-catalog?step=2');
+          final uri = Uri.parse('$host/api/ai/voice-to-catalog?step=2&language=$langCode');
+          debugPrint('[Step2 Audio] Trying: $uri');
+
           final req = http.MultipartRequest('POST', uri);
           req.files.add(http.MultipartFile.fromBytes(
             'file',
@@ -272,31 +291,42 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
             filename: 'step2_voice.m4a',
             contentType: MediaType('audio', 'mp4'),
           ));
-          final streamed = await req.send().timeout(const Duration(seconds: 16));
+          final streamed = await req.send().timeout(const Duration(seconds: 30));
+          debugPrint('[Step2 Audio] HTTP status: ${streamed.statusCode}');
+
           if (streamed.statusCode == 200) {
             final body = await streamed.stream.bytesToString();
-            final data = jsonDecode(body);
-            if (data['success'] == true) {
-              final transcript = data['transcript'] as String? ?? '';
-              _liveCaption = transcript;
-              final extracted = data['data'] as Map<String, dynamic>?;
-              if (extracted != null) {
-                _populateControllers(extracted);
-              }
-              if (mounted) {
-                setState(() {
-                  _isExtracting = false;
-                  _showExtractedForm = true;
-                });
-              }
-              return;
+            debugPrint('[Step2 Audio] Response: ${body.substring(0, body.length.clamp(0, 500))}');
+
+            final data = jsonDecode(body) as Map<String, dynamic>;
+            final success = data['success'] as bool? ?? false;
+            final transcript = data['transcript'] as String? ?? '';
+            final extracted = data['data'] as Map<String, dynamic>?;
+
+            debugPrint('[Step2 Audio] success=$success, transcript="${transcript.substring(0, transcript.length.clamp(0, 100))}"');
+
+            if (transcript.isNotEmpty) _liveCaption = transcript;
+
+            if (extracted != null) {
+              debugPrint('[Step2 Audio] Extracted: $extracted');
+              _populateControllers(extracted);
             }
+            if (mounted) {
+              setState(() {
+                _isExtracting = false;
+                _showExtractedForm = true;
+              });
+            }
+            return;
           }
-        } catch (_) {
+        } catch (e) {
+          debugPrint('[Step2 Audio] Host $host failed: $e');
           continue;
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[Step2 Audio] Fatal error: $e');
+    }
 
     if (mounted) {
       setState(() {

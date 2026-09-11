@@ -12,9 +12,23 @@ logger = logging.getLogger("hastkala.ai.extractor")
 
 _client: Optional[httpx.Client] = None
 
-EXTRACTION_PROMPT_ALL = """You are an expert product data extractor for Indian handicraft artisans.
-Extract the facts explicitly stated or strongly implied in the transcript below into valid JSON.
+# ──────────────────────────────────────────────────────────────
+# LLM PROMPTS — Factual extraction only. No invention allowed.
+# ──────────────────────────────────────────────────────────────
+
+EXTRACTION_PROMPT_ALL = """You are a factual product data extractor for Indian artisans.
+Extract ONLY the facts explicitly stated or clearly implied by the artisan in the transcript below.
+
 Transcript: "{transcript}"
+
+STRICT RULES:
+- Extract ONLY what the artisan actually said.
+- Do NOT invent, assume, or embellish any information.
+- If the artisan did NOT mention something, set it to null.
+- Do NOT use words like "handcrafted", "handmade", "traditional", "premium", "ancient", "heritage" unless the artisan literally said those words.
+- Product name must be derived from the actual product described (e.g. "Bamboo Basket", "Clay Diya").
+- Category must be inferred from the actual product/material (e.g. Bamboo & Cane, Pottery & Ceramics).
+- Description should be a simple factual sentence based ONLY on what was said.
 
 Output valid JSON ONLY with these exact keys:
 {{
@@ -31,22 +45,40 @@ Output valid JSON ONLY with these exact keys:
   "making_process": null,
   "location": null,
   "price": null,
+  "description": null,
   "craft_story": null,
   "artisan_intro": null
 }}"""
 
-EXTRACTION_PROMPT_STEP1 = """You are an expert product catalog assistant for Indian artisans.
-Extract Product Basic Details from this artisan's speech into valid JSON.
+EXTRACTION_PROMPT_STEP1 = """You are a factual product data extractor for Indian artisans.
+Extract ONLY the product basic details that the artisan explicitly mentions in their speech.
+
 Speech: "{transcript}"
 
-Extract:
-- product_name: A clear, attractive product title (e.g. "Handcrafted Terracotta Blue Diya")
-- category: One of [Pottery & Ceramics, Woodwork, Textiles & Handloom, Jewelry & Accessories, Metal Craft, Paintings & Art, Bamboo & Cane, Leather Craft, Stone Craft, Other]
-- material: Material used (e.g. Terracotta clay, Sheesham wood, Pure silk, Brass, etc.)
-- craft: Traditional craft/technique (e.g. Blue Pottery, Hand Carving, Chikankari, Dhokra Art, Handloom Weaving, etc.)
-- color: Colors mentioned (e.g. Terracotta Red, Sky Blue, Multicolored, etc.)
-- size: Dimensions or size (e.g. 6 inches, Medium, 12x8 cm)
-- weight: Weight (e.g. 500 grams, 1 kg)
+STRICT RULES:
+- Extract ONLY what the artisan actually said.
+- Do NOT invent, assume, or embellish any information.
+- If something was NOT mentioned, set it to null.
+- Do NOT use generic filler words like "handcrafted", "handmade", "traditional", "premium".
+- Product name must be the actual product described. Examples:
+  - "Mai bamboo ki tokri banata hu" → product_name: "Bamboo Basket"
+  - "Mai mitti ke diye banata hu" → product_name: "Clay Diya"
+  - "Mai blue pottery ka vase banata hu" → product_name: "Blue Pottery Vase"
+  - "Mai mobile banata hu" → product_name: "Mobile"
+  - NEVER: "Handcrafted Item", "Handmade Craft", "Handicraft Product"
+- Category must match the actual product/material:
+  - Bamboo/Cane products → "Bamboo & Cane"
+  - Clay/Terracotta/Pottery → "Pottery & Ceramics"
+  - Silk/Cotton/Saree/Kurta → "Textiles & Handloom"
+  - Brass/Copper/Bronze metal items → "Metal Craft"
+  - Wood/Wooden items → "Woodwork"
+  - Jewelry items → "Jewelry & Accessories"
+  - Paintings → "Paintings & Art"
+  - Leather items → "Leather Craft"
+  - Stone/Marble items → "Stone Craft"
+  - Anything else → "Other"
+  - Do NOT force a product into a handicraft category if it doesn't belong there.
+- description: A simple factual sentence based ONLY on what was said. Do NOT add words like "premium", "traditional", "handcrafted" unless the artisan literally said them. Example: "Bamboo basket that takes 3 days to make."
 
 Output valid JSON ONLY with these exact keys:
 {{
@@ -56,18 +88,19 @@ Output valid JSON ONLY with these exact keys:
   "craft": null,
   "color": null,
   "size": null,
-  "weight": null
+  "weight": null,
+  "description": null
 }}"""
 
-EXTRACTION_PROMPT_STEP2 = """You are an assistant for Indian handicraft artisans.
-Extract Quantity & Production Capacity details from this speech into valid JSON.
+EXTRACTION_PROMPT_STEP2 = """You are a factual data extractor for Indian artisans.
+Extract ONLY the quantity and production details that the artisan explicitly mentions.
+
 Speech: "{transcript}"
 
-Extract:
-- quantity: Ready stock count as a number or string (e.g. "10", "25", "1")
-- production_capacity: How many pieces the artisan can make per month/week (e.g. "50 pieces per month", "10 pieces per week")
-- making_time: Time required to make one piece or batch (e.g. "2 days", "3 hours", "1 week")
-- making_process: Brief summary of the technique or steps (e.g. "Wheel-thrown, kiln baked, hand polished and painted")
+STRICT RULES:
+- Extract ONLY what the artisan actually said.
+- Do NOT invent or assume any information.
+- If something was NOT mentioned, set it to null.
 
 Output valid JSON ONLY with these exact keys:
 {{
@@ -77,14 +110,20 @@ Output valid JSON ONLY with these exact keys:
   "making_process": null
 }}"""
 
-EXTRACTION_PROMPT_STEP3 = """You are a master storyteller celebrating Indian handicraft artisans.
-From this artisan's speech, extract and generate an authentic, captivating origin story and background into valid JSON.
+EXTRACTION_PROMPT_STEP3 = """You are a factual data extractor for Indian artisans.
+Extract ONLY the craft story, location, and artisan intro that the artisan explicitly shares.
+
 Speech: "{transcript}"
 
-Extract:
-- craft_story: A rich, beautiful 2-4 sentence narrative celebrating the heritage, history, and craft tradition of this product. Highlight the artisan's dedication and cultural roots.
-- location: City, town, or state where this craft is practiced (e.g. "Jaipur, Rajasthan", "Varanasi, Uttar Pradesh")
-- artisan_intro: Brief artisan background, lineage, or experience (e.g. "Master artisan with 20 years of experience continuing a 3-generation family tradition")
+STRICT RULES:
+- Extract ONLY what the artisan actually said about their story, location, and background.
+- Do NOT invent fictional stories, heritage claims, or cultural narratives.
+- If the artisan did NOT share a personal story, set craft_story to null.
+- If the artisan did NOT mention their location, set location to null.
+- If the artisan did NOT introduce themselves, set artisan_intro to null.
+- Do NOT use phrases like "ancient tradition", "passed down for centuries", "India's rich cultural heritage" unless the artisan literally said those words.
+- craft_story should only contain what the artisan actually shared about how they learned the craft or their experience.
+- artisan_intro should only contain the artisan's name and any background they actually provided.
 
 Output valid JSON ONLY with these exact keys:
 {{
@@ -154,7 +193,10 @@ def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
     try:
         import groq
 
-        model_to_use = settings.GROQ_MODEL if settings.GROQ_MODEL and settings.GROQ_MODEL != "groq/compound-mini" else "groq/compound-mini"
+        # Fix invalid model names — groq/compound-mini does not exist
+        model_to_use = settings.GROQ_MODEL
+        if not model_to_use or model_to_use.startswith("groq/"):
+            model_to_use = "llama-3.1-8b-instant"
         logger.info(f"Calling Groq fallback (model={model_to_use})...")
         groq_client = groq.Groq(api_key=settings.GROQ_API_KEY, timeout=timeout)
         resp = groq_client.chat.completions.create(
@@ -175,12 +217,10 @@ def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
 
 def extract_with_llm(prompt: str) -> Optional[dict]:
     """Strictly use Ollama as primary, Groq as fallback."""
-    # 1. Primary: Ollama
     result = _call_ollama(prompt)
     if result:
         return result
 
-    # 2. Fallback: Groq
     result = _call_groq(prompt)
     if result:
         return result
@@ -188,9 +228,21 @@ def extract_with_llm(prompt: str) -> Optional[dict]:
     return None
 
 
+def _clean_null(value) -> Optional[str]:
+    """Return None if value is None, empty, or the string 'null'."""
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s or s.lower() == "null":
+        return None
+    return s
+
+
 def extract_fast(transcript: str) -> ProductDetails:
-    """Sub-millisecond regex & keyword extraction for Indian handicrafts.
-    Runs without network dependency and guarantees baseline accuracy.
+    """Sub-millisecond regex extraction for numeric/factual data only.
+    This extracts: price, material, size, weight, quantity, making_time, location, color.
+    It does NOT generate: product_name, craft, craft_story, artisan_intro, description.
+    Those must come from the LLM.
     """
     t = transcript.strip()
     if not t:
@@ -242,56 +294,7 @@ def extract_fast(transcript: str) -> ProductDetails:
         if material:
             break
 
-    # 3. Category
-    categories = [
-        ('Pottery & Ceramics', ['pottery', 'matka', 'pot', 'diya', 'vase', 'kulhad', 'ceramic', 'clay', 'terracotta', 'mitti', 'cup', 'kullhad']),
-        ('Woodwork', ['wood', 'wooden', 'furniture', 'carving', 'toy', 'sheesham', 'lakdi', 'box', 'jharokha', 'mandir']),
-        ('Textiles & Handloom', ['saree', 'dupatta', 'kurta', 'shawl', 'fabric', 'cloth', 'weaving', 'handloom', 'chikankari', 'cotton', 'silk', 'embroidery', 'stole', 'bedsheet', 'chiffon']),
-        ('Jewelry & Accessories', ['jewelry', 'jewellery', 'necklace', 'earring', 'bangle', 'ring', 'pendant', 'jhumka', 'haar', 'churi', 'kangan', 'payal']),
-        ('Metal Craft', ['metal', 'brass', 'copper', 'bronze', 'bell', 'dhokra', 'bidri', 'peetal', 'diya', 'lamp']),
-        ('Paintings & Art', ['painting', 'art', 'madhubani', 'warli', 'pattachitra', 'canvas', 'chitra', 'portrait', 'tanjore']),
-        ('Bamboo & Cane', ['bamboo', 'cane', 'wicker', 'tokri', 'basket', 'baans', 'mat']),
-        ('Leather Craft', ['leather', 'bag', 'wallet', 'jooti', 'mojari', 'chamda', 'belt']),
-        ('Stone Craft', ['stone', 'marble', 'sculpture', 'murti', 'idol', 'carved stone']),
-    ]
-    category = None
-    for cat_name, keywords in categories:
-        for kw in keywords:
-            if re.search(r'\b' + re.escape(kw) + r'\b', lower):
-                category = cat_name
-                break
-        if category:
-            break
-
-    # 4. Craft Technique
-    crafts = [
-        ('Blue Pottery', ['blue pottery']),
-        ('Terracotta Craft', ['terracotta', 'teracota', 'pakki mitti']),
-        ('Hand Carving', ['hand carving', 'carved', 'nakkashi', 'carving', 'tarasha']),
-        ('Hand Painted', ['hand painted', 'painted', 'rangoli', 'paint kiya', 'chitrakala']),
-        ('Handloom Weaving', ['handloom', 'weaving', 'bunkar', 'bunai', 'hath kargha', 'buna hua']),
-        ('Chikankari', ['chikankari', 'chikan']),
-        ('Block Printing', ['block print', 'ajrakh', 'dabu', 'bagru', 'chhappai', 'thappa']),
-        ('Madhubani Painting', ['madhubani', 'mithila']),
-        ('Warli Art', ['warli']),
-        ('Pattachitra', ['pattachitra', 'patachitra']),
-        ('Dhokra Art', ['dhokra', 'dokra']),
-        ('Bidriware', ['bidri']),
-        ('Zardozi Embroidery', ['zardozi', 'zari', 'gota patti', 'aari']),
-        ('Wheel Pottery', ['wheel', 'chaak', 'chaak par', 'mitti ka kaam']),
-        ('Cane Weaving', ['cane weaving', 'tokri bunai', 'baans bunai']),
-        ('Handcrafted', ['handcrafted', 'handmade', 'haath se', 'hath se', 'hastshilp', 'hastkala']),
-    ]
-    craft = None
-    for craft_name, keywords in crafts:
-        for kw in keywords:
-            if re.search(r'\b' + re.escape(kw) + r'\b', lower):
-                craft = craft_name
-                break
-        if craft:
-            break
-
-    # 5. Color
+    # 3. Color
     colors = [
         ('Blue', ['blue', 'neela', 'neeli', 'aasmaani']),
         ('Red', ['red', 'lal', 'laal']),
@@ -315,7 +318,7 @@ def extract_fast(transcript: str) -> ProductDetails:
         if color:
             break
 
-    # 6. Size
+    # 4. Size
     size = None
     size_match = re.search(r'(\d+(?:\.\d+)?\s*(?:inch|inches|cm|centimeters?|feet|foot|meter|in|ft)\b)', lower)
     if size_match:
@@ -334,7 +337,7 @@ def extract_fast(transcript: str) -> ProductDetails:
             if size:
                 break
 
-    # 7. Weight
+    # 5. Weight
     weight = None
     weight_match = re.search(r'(\d+(?:\.\d+)?\s*(?:gram|grams|gm|gms|g|kg|kilogram|kilo)\b)', lower)
     if weight_match:
@@ -344,7 +347,7 @@ def extract_fast(transcript: str) -> ProductDetails:
     elif 'ek kilo' in lower or '1 kilo' in lower:
         weight = '1 kg'
 
-    # 8. Quantity (Ready Stock)
+    # 6. Quantity (Ready Stock)
     quantity = None
     qty_match = re.search(r'(\d+)\s*(?:piece|pieces|pcs|pc|item|items|set)\b', lower)
     if qty_match:
@@ -354,17 +357,13 @@ def extract_fast(transcript: str) -> ProductDetails:
     elif 'do piece' in lower or 'pair' in lower or 'joda' in lower:
         quantity = '2'
 
-    # 9. Production Capacity (Kitna bana sakte ho)
+    # 7. Production Capacity
     production_capacity = None
     cap_match = re.search(r'(\d+)\s*(?:piece|pcs|item)?\s*(?:mahine|month|hafte|week|din|day)\s*(?:me|mein)?\s*(?:bana sakte|ban sakte|supply)', lower)
     if cap_match:
         production_capacity = f"{cap_match.group(1)} pieces"
-    elif '50 piece' in lower:
-        production_capacity = "50 pieces per month"
-    elif '100 piece' in lower:
-        production_capacity = "100 pieces per month"
 
-    # 10. Making Time
+    # 8. Making Time
     making_time = None
     time_patterns = [
         (r'(\d+)\s*(?:din|days?)\b', lambda m: f"{m.group(1)} days"),
@@ -385,7 +384,7 @@ def extract_fast(transcript: str) -> ProductDetails:
             making_time = formatter(m)
             break
 
-    # 11. Making Process
+    # 9. Making Process - only extract if explicitly mentioned
     process_hints = []
     if 'wheel' in lower or 'chaak' in lower:
         process_hints.append("Wheel-turned")
@@ -399,12 +398,9 @@ def extract_fast(transcript: str) -> ProductDetails:
         process_hints.append("Molded and cured")
     if 'bhatti' in lower or 'kiln' in lower or 'baked' in lower:
         process_hints.append("Kiln-baked")
-    if not process_hints:
-        if any(w in lower for w in ['hath se', 'haath se', 'handmade', 'handcrafted']):
-            process_hints.append("Completely handcrafted by artisan")
     making_process = ", ".join(process_hints) if process_hints else None
 
-    # 12. Location
+    # 10. Location - only if explicitly mentioned
     locations = [
         'Jaipur', 'Varanasi', 'Banaras', 'Lucknow', 'Jodhpur', 'Udaipur',
         'Kutch', 'Surat', 'Ahmedabad', 'Bhopal', 'Indore', 'Kashmir',
@@ -418,71 +414,9 @@ def extract_fast(transcript: str) -> ProductDetails:
             location = loc
             break
 
-    # 13. Product Name
-    noun_map = [
-        ('Decorative Pot', ['matka', 'pot', 'handi', 'ghada', 'kalash']),
-        ('Vase', ['vase', 'guldan', 'flower pot']),
-        ('Diya Set', ['diya', 'deepak', 'diye']),
-        ('Serving Plate', ['plate', 'thali', 'platter']),
-        ('Wall Hanging', ['wall hanging', 'jharokha', 'toran']),
-        ('Saree', ['saree', 'sari']),
-        ('Kurta', ['kurta', 'kurti']),
-        ('Shawl', ['shawl', 'dupatta', 'stole']),
-        ('Fruit Basket', ['basket', 'tokri']),
-        ('Wooden Box', ['box', 'dabba', 'sandook']),
-        ('Statue / Idol', ['statue', 'idol', 'murti', 'vigrah']),
-        ('Necklace', ['necklace', 'haar', 'chain']),
-        ('Earrings', ['earring', 'earrings', 'jhumka', 'jhumke']),
-        ('Painting', ['painting', 'chitra', 'portrait']),
-        ('Handbag', ['wallet', 'purse', 'bag', 'jhola']),
-        ('Pen Stand', ['pen stand', 'desk stand']),
-        ('Coasters', ['coaster', 'coasters']),
-    ]
-    detected_noun = None
-    for noun, kws in noun_map:
-        for kw in kws:
-            if re.search(r'\b' + re.escape(kw) + r'\b', lower):
-                detected_noun = noun
-                break
-        if detected_noun:
-            break
-
-    name_parts = []
-    if location:
-        name_parts.append(location)
-    if craft and craft != 'Handcrafted':
-        name_parts.append(craft)
-    elif material:
-        name_parts.append(material)
-
-    if detected_noun:
-        name_parts.append(detected_noun)
-    elif category:
-        name_parts.append(category.split('&')[0].strip())
-    else:
-        name_parts.append("Handcrafted Artwork")
-
-    product_name = " ".join(name_parts)
-
-    # 14. Craft Story
-    craft_story = f"Authentic handcrafted {detected_noun or 'creation'} made by skilled artisan"
-    if location:
-        craft_story += f" in {location}"
-    craft_story += ". "
-    if material and craft:
-        craft_story += f"Created using traditional {craft.lower()} techniques with premium {material.lower()}. "
-    elif material:
-        craft_story += f"Crafted from natural {material.lower()}. "
-    if making_time:
-        craft_story += f"Takes approximately {making_time} of dedicated craftsmanship to complete."
-
-    artisan_intro = f"Dedicated handicraft artisan practicing traditional {craft or 'heritage'} art in {location or 'India'}."
-
     return ProductDetails(
-        product_name=product_name,
-        category=category,
+        category=None,
         material=material,
-        craft=craft,
         color=color,
         size=size,
         weight=weight,
@@ -492,100 +426,145 @@ def extract_fast(transcript: str) -> ProductDetails:
         making_process=making_process,
         location=location,
         price=price,
-        craft_story=craft_story,
-        artisan_intro=artisan_intro,
     )
 
 
 def extract_step1_product_details(transcript: str) -> dict:
-    """Step 1: Extract Product Name, Category, Material, Craft, Color, Size, Weight.
-    Primary: Ollama, Fallback: Groq, Final: Fast Regex.
+    """Step 1: Product Name, Category, Material, Craft, Color, Size, Weight.
+    LLM is PRIMARY for semantic fields (name, category, craft).
+    Regex only fills numeric/factual gaps that LLM may miss.
     """
     logger.info(f"Extract Step 1: '{transcript[:50]}...'")
-    base = extract_fast(transcript).model_dump()
 
     prompt = EXTRACTION_PROMPT_STEP1.format(transcript=transcript)
     llm_data = extract_with_llm(prompt)
 
+    # Start with regex-extracted numeric/factual data as baseline
+    fast = extract_fast(transcript).model_dump()
+    base = {k: _clean_null(v) for k, v in fast.items()}
+
+    # LLM is the primary source — it decides product_name, category, craft, description
     if llm_data:
-        for k in ["product_name", "category", "material", "craft", "color", "size", "weight"]:
-            val = llm_data.get(k)
-            if val is not None and str(val).strip() and str(val).strip().lower() != "null":
-                base[k] = str(val).strip()
+        semantic_keys = ["product_name", "category", "craft", "description"]
+        for k in semantic_keys:
+            val = _clean_null(llm_data.get(k))
+            if val is not None:
+                base[k] = val
+            else:
+                # LLM explicitly said null → don't let regex fill it
+                base[k] = None
+
+        # For factual fields, LLM overrides regex if present, else keep regex
+        factual_keys = ["material", "color", "size", "weight"]
+        for k in factual_keys:
+            llm_val = _clean_null(llm_data.get(k))
+            if llm_val is not None:
+                base[k] = llm_val
+    else:
+        # LLM failed — use regex only for what it can do
+        base["product_name"] = None
+        base["category"] = None
+        base["craft"] = None
+        base["description"] = None
 
     return {
-        "product_name": base.get("product_name"),
-        "category": base.get("category"),
-        "material": base.get("material"),
-        "craft": base.get("craft"),
-        "color": base.get("color"),
-        "size": base.get("size"),
-        "weight": base.get("weight"),
+        "product_name": _clean_null(base.get("product_name")),
+        "category": _clean_null(base.get("category")),
+        "material": _clean_null(base.get("material")),
+        "craft": _clean_null(base.get("craft")),
+        "color": _clean_null(base.get("color")),
+        "size": _clean_null(base.get("size")),
+        "weight": _clean_null(base.get("weight")),
+        "description": _clean_null(base.get("description")),
     }
 
 
 def extract_step2_quantity_details(transcript: str) -> dict:
-    """Step 2: Extract Quantity, Capacity, Making Time, Making Process.
-    Primary: Ollama, Fallback: Groq, Final: Fast Regex.
+    """Step 2: Quantity, Capacity, Making Time, Making Process.
+    Regex is primary for numbers. LLM fills gaps.
     """
     logger.info(f"Extract Step 2: '{transcript[:50]}...'")
-    base = extract_fast(transcript).model_dump()
+
+    fast = extract_fast(transcript).model_dump()
+    base = {k: _clean_null(v) for k, v in fast.items()}
 
     prompt = EXTRACTION_PROMPT_STEP2.format(transcript=transcript)
     llm_data = extract_with_llm(prompt)
 
     if llm_data:
         for k in ["quantity", "production_capacity", "making_time", "making_process"]:
-            val = llm_data.get(k)
-            if val is not None and str(val).strip() and str(val).strip().lower() != "null":
-                base[k] = str(val).strip()
+            llm_val = _clean_null(llm_data.get(k))
+            if llm_val is not None:
+                base[k] = llm_val
 
     return {
-        "quantity": base.get("quantity"),
-        "production_capacity": base.get("production_capacity"),
-        "making_time": base.get("making_time"),
-        "making_process": base.get("making_process"),
+        "quantity": _clean_null(base.get("quantity")),
+        "production_capacity": _clean_null(base.get("production_capacity")),
+        "making_time": _clean_null(base.get("making_time")),
+        "making_process": _clean_null(base.get("making_process")),
     }
 
 
 def extract_step3_story_details(transcript: str) -> dict:
-    """Step 3: Extract & generate Craft Origin Story, Location, Artisan Lineage.
-    Primary: Ollama, Fallback: Groq, Final: Fast Regex.
+    """Step 3: Craft Story, Location, Artisan Intro.
+    LLM is PRIMARY. Only extracts what artisan actually shared.
     """
     logger.info(f"Extract Step 3: '{transcript[:50]}...'")
-    base = extract_fast(transcript).model_dump()
+
+    fast = extract_fast(transcript).model_dump()
+    base = {k: _clean_null(v) for k, v in fast.items()}
 
     prompt = EXTRACTION_PROMPT_STEP3.format(transcript=transcript)
     llm_data = extract_with_llm(prompt)
 
     if llm_data:
         for k in ["craft_story", "location", "artisan_intro"]:
-            val = llm_data.get(k)
-            if val is not None and str(val).strip() and str(val).strip().lower() != "null":
-                base[k] = str(val).strip()
+            val = _clean_null(llm_data.get(k))
+            # Use LLM result (even if null — that means artisan didn't share)
+            base[k] = val
+    else:
+        # LLM failed — no story generation from regex
+        base["craft_story"] = None
+        base["artisan_intro"] = None
 
     return {
-        "craft_story": base.get("craft_story"),
-        "location": base.get("location"),
-        "artisan_intro": base.get("artisan_intro"),
+        "craft_story": _clean_null(base.get("craft_story")),
+        "location": _clean_null(base.get("location")),
+        "artisan_intro": _clean_null(base.get("artisan_intro")),
     }
 
 
 def extract_product_details(transcript: str) -> ProductDetails:
     """Extract complete product details.
-    Primary: Ollama, Fallback: Groq, Final: Fast Regex.
-    Never fails, always returns valid ProductDetails.
+    LLM is PRIMARY. Regex fills numeric gaps only.
     """
     logger.info(f"Extract Full Catalog ({len(transcript)} chars)")
-    base = extract_fast(transcript).model_dump()
+
+    fast = extract_fast(transcript).model_dump()
+    base = {k: _clean_null(v) for k, v in fast.items()}
 
     prompt = EXTRACTION_PROMPT_ALL.format(transcript=transcript)
     llm_data = extract_with_llm(prompt)
 
     if llm_data:
-        for k in base.keys():
-            val = llm_data.get(k)
-            if val is not None and str(val).strip() and str(val).strip().lower() != "null":
-                base[k] = str(val).strip()
+        # Semantic fields — LLM decides, null if LLM says null
+        for k in ["product_name", "category", "craft", "description", "craft_story", "artisan_intro"]:
+            val = _clean_null(llm_data.get(k))
+            base[k] = val
 
-    return ProductDetails(**base)
+        # Factual fields — LLM overrides if present, else keep regex
+        for k in ["material", "color", "size", "weight", "quantity", "production_capacity",
+                   "making_time", "making_process", "location", "price"]:
+            llm_val = _clean_null(llm_data.get(k))
+            if llm_val is not None:
+                base[k] = llm_val
+    else:
+        # LLM failed — null out fields it should have decided
+        base["product_name"] = None
+        base["category"] = None
+        base["craft"] = None
+        base["description"] = None
+        base["craft_story"] = None
+        base["artisan_intro"] = None
+
+    return ProductDetails(**{k: v for k, v in base.items() if k in ProductDetails.model_fields})

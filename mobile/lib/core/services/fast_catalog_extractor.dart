@@ -1,26 +1,12 @@
-/// Ultra-fast on-device handicraft catalog extractor
-/// Operates in < 5ms without requiring network or heavy AI.
+/// Ultra-fast on-device catalog extractor for numeric/factual data only.
+/// This extracts: price, material, size, weight, quantity, making_time, location, color.
+/// It does NOT generate: product_name, craft, craft_story, artisan_intro, description.
+/// Those must come from the LLM backend.
 class FastCatalogExtractor {
   static Map<String, dynamic> extract(String transcript) {
     final t = transcript.trim();
     if (t.isEmpty) {
-      return {
-        'product_name': null,
-        'category': null,
-        'material': null,
-        'craft': null,
-        'color': null,
-        'size': null,
-        'weight': null,
-        'quantity': null,
-        'production_capacity': null,
-        'making_time': null,
-        'making_process': null,
-        'location': null,
-        'price': null,
-        'craft_story': null,
-        'artisan_intro': null,
-      };
+      return _emptyResult();
     }
 
     final lower = t.toLowerCase();
@@ -41,11 +27,11 @@ class FastCatalogExtractor {
       }
     }
 
-    // 2. Material
+    // 2. Material — only when explicitly mentioned
     final materials = <String, List<String>>{
       'Terracotta': ['terracotta', 'teracota', 'pakki mitti', 'baked clay'],
       'Clay': ['clay', 'mitti', 'chikni mitti', 'kali mitti', 'lal mitti'],
-      'Bamboo': ['bamboo', 'baans', 'bans', 'cane', 'bent'],
+      'Bamboo': ['bamboo', 'baans', 'bans', 'cane'],
       'Teak Wood': ['teak', 'sagwan', 'saagwan'],
       'Sheesham Wood': ['sheesham', 'shisham', 'rosewood'],
       'Wood': ['wood', 'wooden', 'lakdi', 'lakadi', 'kashth'],
@@ -74,62 +60,7 @@ class FastCatalogExtractor {
       if (material != null) break;
     }
 
-    // 3. Category
-    final categories = <String, List<String>>{
-      'Pottery & Ceramics': ['pottery', 'matka', 'pot', 'diya', 'vase', 'kulhad', 'ceramic', 'clay', 'terracotta', 'mitti', 'cup', 'kullhad'],
-      'Woodwork': ['wood', 'wooden', 'furniture', 'carving', 'toy', 'sheesham', 'lakdi', 'box', 'jharokha', 'mandir'],
-      'Textiles & Handloom': ['saree', 'dupatta', 'kurta', 'shawl', 'fabric', 'cloth', 'weaving', 'handloom', 'chikankari', 'cotton', 'silk', 'embroidery', 'stole', 'bedsheet', 'chiffon'],
-      'Jewelry & Accessories': ['jewelry', 'jewellery', 'necklace', 'earring', 'bangle', 'ring', 'pendant', 'jhumka', 'haar', 'churi', 'kangan', 'payal'],
-      'Metal Craft': ['metal', 'brass', 'copper', 'bronze', 'bell', 'dhokra', 'bidri', 'peetal', 'diya', 'lamp'],
-      'Paintings & Art': ['painting', 'art', 'madhubani', 'warli', 'pattachitra', 'canvas', 'chitra', 'portrait', 'tanjore'],
-      'Bamboo & Cane': ['bamboo', 'cane', 'wicker', 'tokri', 'basket', 'baans', 'mat'],
-      'Leather Craft': ['leather', 'bag', 'wallet', 'jooti', 'mojari', 'chamda', 'belt'],
-      'Stone Craft': ['stone', 'marble', 'sculpture', 'murti', 'idol', 'carved stone'],
-    };
-
-    String? category;
-    for (final entry in categories.entries) {
-      for (final kw in entry.value) {
-        if (_containsWord(lower, kw)) {
-          category = entry.key;
-          break;
-        }
-      }
-      if (category != null) break;
-    }
-
-    // 4. Craft Technique
-    final crafts = <String, List<String>>{
-      'Blue Pottery': ['blue pottery'],
-      'Terracotta Craft': ['terracotta', 'teracota', 'pakki mitti'],
-      'Hand Carving': ['hand carving', 'carved', 'nakkashi', 'carving', 'tarasha'],
-      'Hand Painted': ['hand painted', 'painted', 'rangoli', 'paint kiya', 'chitrakala'],
-      'Handloom Weaving': ['handloom', 'weaving', 'bunkar', 'bunai', 'hath kargha', 'buna hua'],
-      'Chikankari': ['chikankari', 'chikan'],
-      'Block Printing': ['block print', 'ajrakh', 'dabu', 'bagru', 'chhappai', 'thappa'],
-      'Madhubani Painting': ['madhubani', 'mithila'],
-      'Warli Art': ['warli'],
-      'Pattachitra': ['pattachitra', 'patachitra'],
-      'Dhokra Art': ['dhokra', 'dokra'],
-      'Bidriware': ['bidri'],
-      'Zardozi Embroidery': ['zardozi', 'zari', 'gota patti', 'aari'],
-      'Wheel Pottery': ['wheel', 'chaak', 'chaak par', 'mitti ka kaam'],
-      'Cane Weaving': ['cane weaving', 'tokri bunai', 'baans bunai'],
-      'Handcrafted': ['handcrafted', 'handmade', 'haath se', 'hath se', 'hastshilp', 'hastkala'],
-    };
-
-    String? craft;
-    for (final entry in crafts.entries) {
-      for (final kw in entry.value) {
-        if (_containsWord(lower, kw)) {
-          craft = entry.key;
-          break;
-        }
-      }
-      if (craft != null) break;
-    }
-
-    // 5. Color
+    // 3. Color — only when explicitly mentioned
     final colors = <String, List<String>>{
       'Blue': ['blue', 'neela', 'neeli', 'aasmaani'],
       'Red': ['red', 'lal', 'laal'],
@@ -156,7 +87,7 @@ class FastCatalogExtractor {
       if (color != null) break;
     }
 
-    // 6. Size
+    // 4. Size
     String? size;
     final sizeRegex = RegExp(r'(\d+(?:\.\d+)?\s*(?:inch|inches|cm|centimeters?|feet|foot|meter|in|ft)\b)');
     final sm = sizeRegex.firstMatch(lower);
@@ -174,7 +105,7 @@ class FastCatalogExtractor {
       }
     }
 
-    // 7. Weight
+    // 5. Weight
     String? weight;
     final weightRegex = RegExp(r'(\d+(?:\.\d+)?\s*(?:gram|grams|gm|gms|g|kg|kilogram|kilo)\b)');
     final wm = weightRegex.firstMatch(lower);
@@ -186,7 +117,7 @@ class FastCatalogExtractor {
       weight = '1 kg';
     }
 
-    // 8. Quantity (Ready Stock)
+    // 6. Quantity (Ready Stock)
     int? quantity;
     final qtyRegex = RegExp(r'(\d+)\s*(?:piece|pieces|pcs|pc|item|items|set)\b');
     final qm = qtyRegex.firstMatch(lower);
@@ -198,19 +129,15 @@ class FastCatalogExtractor {
       quantity = 2;
     }
 
-    // 9. Production Capacity (Kitna bana sakte ho)
+    // 7. Production Capacity
     String? productionCapacity;
     final capRegex = RegExp(r'(\d+)\s*(?:piece|pcs|item)?\s*(?:mahine|month|hafte|week|din|day)\s*(?:me|mein)?\s*(?:bana sakte|ban sakte|supply)');
     final capMatch = capRegex.firstMatch(lower);
     if (capMatch != null) {
       productionCapacity = '${capMatch.group(1)} pieces';
-    } else if (lower.contains('50 piece') || lower.contains('50 bana')) {
-      productionCapacity = '50 pieces per month';
-    } else if (lower.contains('100 piece') || lower.contains('100 bana')) {
-      productionCapacity = '100 pieces per month';
     }
 
-    // 10. Making Time
+    // 8. Making Time
     String? makingTime;
     final timeMap = [
       (RegExp(r'(\d+)\s*(?:din|days?)\b'), (Match m) => '${m.group(1)} days'),
@@ -233,7 +160,7 @@ class FastCatalogExtractor {
       }
     }
 
-    // 11. Making Process
+    // 9. Making Process — only if explicitly described
     String? makingProcess;
     final processHints = <String>[];
     if (lower.contains('wheel') || lower.contains('chaak')) {
@@ -254,16 +181,11 @@ class FastCatalogExtractor {
     if (lower.contains('bhatti') || lower.contains('kiln') || lower.contains('pakate')) {
       processHints.add('Kiln-baked');
     }
-    if (processHints.isEmpty) {
-      if (lower.contains('hath se') || lower.contains('haath se') || lower.contains('handmade') || lower.contains('handcrafted')) {
-        processHints.add('Completely hand-crafted by artisan');
-      }
-    }
     if (processHints.isNotEmpty) {
       makingProcess = processHints.join(', ');
     }
 
-    // 12. Location
+    // 10. Location — only when explicitly mentioned
     final locations = [
       'Jaipur', 'Varanasi', 'Banaras', 'Lucknow', 'Jodhpur', 'Udaipur',
       'Kutch', 'Surat', 'Ahmedabad', 'Bhopal', 'Indore', 'Kashmir',
@@ -279,76 +201,12 @@ class FastCatalogExtractor {
       }
     }
 
-    // 13. Product Name
-    final nounMap = <String, List<String>>{
-      'Decorative Pot': ['matka', 'pot', 'handi', 'ghada', 'kalash'],
-      'Vase': ['vase', 'guldan', 'flower pot'],
-      'Diya Set': ['diya', 'deepak', 'diye'],
-      'Serving Plate': ['plate', 'thali', 'platter'],
-      'Wall Hanging': ['wall hanging', 'jharokha', 'toran'],
-      'Saree': ['saree', 'sari'],
-      'Kurta': ['kurta', 'kurti'],
-      'Shawl': ['shawl', 'dupatta', 'stole'],
-      'Fruit Basket': ['basket', 'tokri'],
-      'Wooden Box': ['box', 'dabba', 'sandook'],
-      'Statue / Idol': ['statue', 'idol', 'murti', 'vigrah'],
-      'Necklace': ['necklace', 'haar', 'chain'],
-      'Earrings': ['earring', 'earrings', 'jhumka', 'jhumke'],
-      'Painting': ['painting', 'chitra', 'portrait'],
-      'Handbag': ['wallet', 'purse', 'bag', 'jhola'],
-      'Pen Stand': ['pen stand', 'desk stand'],
-      'Coasters': ['coaster', 'coasters'],
-    };
-
-    String? detectedNoun;
-    for (final entry in nounMap.entries) {
-      for (final kw in entry.value) {
-        if (_containsWord(lower, kw)) {
-          detectedNoun = entry.key;
-          break;
-        }
-      }
-      if (detectedNoun != null) break;
-    }
-
-    final nameParts = <String>[];
-    if (location != null) nameParts.add(location);
-    if (craft != null && craft != 'Handcrafted') {
-      nameParts.add(craft);
-    } else if (material != null) {
-      nameParts.add(material);
-    }
-
-    if (detectedNoun != null) {
-      nameParts.add(detectedNoun);
-    } else if (category != null) {
-      nameParts.add(category.split('&').first.trim());
-    } else {
-      nameParts.add('Handcrafted Craft');
-    }
-
-    final productName = nameParts.join(' ');
-
-    // 14. Craft Story
-    var craftStory = 'Authentic handcrafted ${detectedNoun ?? 'creation'} made by skilled artisan';
-    if (location != null) craftStory += ' in $location';
-    craftStory += '. ';
-    if (material != null && craft != null) {
-      craftStory += 'Created using traditional ${craft.toLowerCase()} techniques with premium ${material.toLowerCase()}. ';
-    } else if (material != null) {
-      craftStory += 'Crafted from high-quality ${material.toLowerCase()}. ';
-    }
-    if (makingTime != null) {
-      craftStory += 'Takes approximately $makingTime of dedicated craftsmanship to complete.';
-    }
-
-    final artisanIntro = 'Dedicated handicraft artisan practicing traditional ${craft ?? 'heritage'} art in ${location ?? 'India'}.';
-
+    // Return ONLY factual data. No product_name, no craft, no stories.
     return {
-      'product_name': productName,
-      'category': category,
+      'product_name': null,
+      'category': null,
       'material': material,
-      'craft': craft,
+      'craft': null,
       'color': color,
       'size': size,
       'weight': weight,
@@ -358,8 +216,9 @@ class FastCatalogExtractor {
       'making_process': makingProcess,
       'location': location,
       'price': price,
-      'craft_story': craftStory,
-      'artisan_intro': artisanIntro,
+      'description': null,
+      'craft_story': null,
+      'artisan_intro': null,
     };
   }
 
@@ -373,6 +232,7 @@ class FastCatalogExtractor {
       'color': full['color'],
       'size': full['size'],
       'weight': full['weight'],
+      'description': full['description'],
     };
   }
 
@@ -400,5 +260,26 @@ class FastCatalogExtractor {
       return text.contains(word);
     }
     return RegExp(r'\b' + RegExp.escape(word) + r'\b').hasMatch(text);
+  }
+
+  static Map<String, dynamic> _emptyResult() {
+    return {
+      'product_name': null,
+      'category': null,
+      'material': null,
+      'craft': null,
+      'color': null,
+      'size': null,
+      'weight': null,
+      'quantity': null,
+      'production_capacity': null,
+      'making_time': null,
+      'making_process': null,
+      'location': null,
+      'price': null,
+      'description': null,
+      'craft_story': null,
+      'artisan_intro': null,
+    };
   }
 }

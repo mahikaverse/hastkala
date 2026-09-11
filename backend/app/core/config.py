@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     OLLAMA_TIMEOUT: int = 120
 
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "groq/compound-mini"
+    GROQ_MODEL: str = "llama-3.1-8b-instant"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

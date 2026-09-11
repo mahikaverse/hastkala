@@ -70,6 +70,7 @@ abstract final class AppRoutes {
   static const String manageProducts = '/manage-products';
   static const String artisanOrders = '/artisan-orders';
   static const String publishProduct = '/publish-product';
+  static const String voiceAddProduct = '/voice-add-product';
 
   // New marketplace routes
   static const String artisanDashboard = '/artisan-dashboard';

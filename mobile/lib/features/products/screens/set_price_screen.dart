@@ -102,7 +102,7 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.draft.productName ?? 'Handcrafted Product',
+                  widget.draft.productName ?? 'Product',
                   style: AppTextStyles.titleMedium.copyWith(color: AppColors.charcoal),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
