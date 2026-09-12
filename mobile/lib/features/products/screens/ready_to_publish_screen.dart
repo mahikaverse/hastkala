@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/services/data_service.dart';
 import '../models/product_draft.dart';
 
@@ -84,6 +85,7 @@ class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
   @override
   Widget build(BuildContext context) {
     final draft = widget.draft;
+    final lang = LanguageProvider.of(context);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -94,7 +96,7 @@ class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Ready to Publish',
+          lang.t('readyToPublish'),
           style: AppTextStyles.headlineMedium.copyWith(color: AppColors.cream),
         ),
         centerTitle: true,
@@ -131,7 +133,7 @@ class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              draft.productName ?? 'Product',
+                              draft.productName ?? lang.t('productFallback'),
                               style: AppTextStyles.titleMedium,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -153,7 +155,7 @@ class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              draft.artisanName ?? 'Artisan',
+                              draft.artisanName ?? lang.t('artisan'),
                               style: AppTextStyles.bodySmall.copyWith(
                                 color: AppColors.textSecondary,
                               ),
@@ -173,15 +175,15 @@ class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
               ),
               const SizedBox(height: AppDimensions.xl),
               Text(
-                'Checklist',
+                lang.t('checklist'),
                 style: AppTextStyles.titleLarge,
               ),
               const SizedBox(height: AppDimensions.md),
-              _buildCheckItem('Product details'),
-              _buildCheckItem('Enhanced photo'),
-              _buildCheckItem('Description'),
-              _buildCheckItem('Craft story'),
-              _buildCheckItem('Artisan profile'),
+              _buildCheckItem(lang.t('productDetails')),
+              _buildCheckItem(lang.t('enhancedPhoto')),
+              _buildCheckItem(lang.t('descriptionLabel')),
+              _buildCheckItem(lang.t('craftStory')),
+              _buildCheckItem(lang.t('artisanProfile')),
               const SizedBox(height: AppDimensions.xxl),
               SizedBox(
                 width: double.infinity,
@@ -209,7 +211,7 @@ class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
                           ),
                         )
                       : Text(
-                          'Publish Product',
+                          lang.t('publishProduct'),
                           style: AppTextStyles.buttonLarge.copyWith(
                             color: AppColors.cream,
                           ),
@@ -235,7 +237,7 @@ class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
                     ),
                   ),
                   child: Text(
-                    'Save as Draft',
+                    lang.t('saveAsDraft'),
                     style: AppTextStyles.buttonMedium.copyWith(
                       color: AppColors.brown,
                     ),

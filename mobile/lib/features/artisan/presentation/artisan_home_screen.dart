@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/router.dart';
@@ -7,457 +9,585 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/product_model.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 
-class ArtisanHomeScreen extends StatelessWidget {
+class ArtisanHomeScreen extends StatefulWidget {
   const ArtisanHomeScreen({super.key});
 
   @override
+  State<ArtisanHomeScreen> createState() => _ArtisanHomeScreenState();
+}
+
+class _ArtisanHomeScreenState extends State<ArtisanHomeScreen> {
+  final PageController _schemePageController = PageController();
+  int _schemePage = 0;
+  Timer? _schemeTimer;
+
+  static const _schemeImages = [
+    'assets/government1-img.png',
+    'assets/government2-img.png',
+    'assets/government3-img.png',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startSchemeTimer());
+  }
+
+  @override
+  void dispose() {
+    _schemeTimer?.cancel();
+    _schemePageController.dispose();
+    super.dispose();
+  }
+
+  void _startSchemeTimer() {
+    _schemeTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted || !_schemePageController.hasClients) return;
+      final next = (_schemePage + 1) % _schemeImages.length;
+      _schemePageController.animateToPage(next, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = screenWidth * 0.04;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFFDF6F0),
       body: SafeArea(
         child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: padding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(context),
-              _buildArtisanStatus(),
-              _buildAIHero(context),
-              _buildAIQuickActions(context),
-              _buildBusinessSnapshot(),
-              _buildMarketOpportunity(context),
-              _buildYourProducts(context),
-              _buildRecentOrders(context),
-              _buildAIAssistant(context),
-              const SizedBox(height: 24),
+              SizedBox(height: screenWidth * 0.03),
+              _buildHeader(),
+              SizedBox(height: screenWidth * 0.04),
+              _buildWelcomeSection(),
+              SizedBox(height: screenWidth * 0.05),
+              _buildAICraftAssistant(),
+              SizedBox(height: screenWidth * 0.05),
+              _buildStatsRow(),
+              SizedBox(height: screenWidth * 0.05),
+              _buildOpportunities(),
+              SizedBox(height: screenWidth * 0.05),
+              _buildMyProducts(),
+              SizedBox(height: screenWidth * 0.06),
+              _buildSchemesAndExhibitions(),
+              SizedBox(height: screenWidth * 0.06),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(context),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
   // ─── 1. HEADER ─────────────────────────────────────────────────────────────
 
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDimensions.xl, AppDimensions.lg, AppDimensions.xl, 0),
-      child: Row(
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: '\u0939\u0938\u094D\u0924',
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.terracotta),
+              ),
+              TextSpan(
+                text: 'Kala',
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.brown),
+              ),
+            ],
+          ),
+        ),
+        const Spacer(),
+        _buildHeaderIcon(Icons.notifications_outlined, hasNotification: true),
+        const SizedBox(width: 12),
+        _buildHeaderIcon(Icons.person, isProfile: true),
+      ],
+    );
+  }
+
+  Widget _buildHeaderIcon(IconData icon, {bool hasNotification = false, bool isProfile = false}) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: isProfile ? AppColors.brown.withValues(alpha: 0.15) : Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: isProfile ? null : [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Icon(icon, color: isProfile ? AppColors.brown : AppColors.brown, size: 22),
+          if (hasNotification)
+            Positioned(
+              top: 8,
+              right: 10,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(color: AppColors.terracotta, shape: BoxShape.circle),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ─── 2. WELCOME SECTION ────────────────────────────────────────────────────
+
+  Widget _buildWelcomeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Welcome back,', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                'Sita Devi',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.brown),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text('\u{1F44B}', style: const TextStyle(fontSize: 22)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text('Your craft. Your story. Your market.', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.oliveGreen.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.verified_rounded, size: 14, color: AppColors.oliveGreen),
+              const SizedBox(width: 4),
+              Text('Verified Artisan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.oliveGreen)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── 3. AI CRAFT ASSISTANT ─────────────────────────────────────────────────
+
+  Widget _buildAICraftAssistant() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 360;
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: isSmallScreen ? _buildAISmallLayout() : _buildAILargeLayout(),
+        );
+      },
+    );
+  }
+
+  Widget _buildAILargeLayout() {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: AppColors.mustardGold, size: 18),
+                  const SizedBox(width: 6),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('AI Craft Assistant', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.charcoal)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text('Turn your craft into a ready-to-sell product listing.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 6,
+                children: [
+                  _featureChip(Icons.mic, 'Speak in Hindi or English'),
+                  _featureChip(Icons.camera_alt_outlined, 'Add a photo'),
+                  _featureChip(Icons.auto_awesome, 'AI does the rest'),
+                ],
+              ),
+              const SizedBox(height: 14),
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(context, AppRoutes.artisanAddProduct),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(color: AppColors.terracotta, borderRadius: BorderRadius.circular(25)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.add, color: Colors.white, size: 18),
+                      const SizedBox(width: 6),
+                      Text('Add Product', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          width: 100,
+          height: 120,
+          decoration: BoxDecoration(
+            color: AppColors.warmBeige.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Image.asset('assets/app-logo.png', fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Icon(Icons.park_rounded, size: 50, color: AppColors.brown.withValues(alpha: 0.4)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAISmallLayout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.auto_awesome, color: AppColors.mustardGold, size: 16),
+            const SizedBox(width: 6),
+            Text('AI Craft Assistant', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.charcoal)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text('Turn your craft into a ready-to-sell product listing.', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            _featureChip(Icons.mic, 'Speak in Hindi or English'),
+            _featureChip(Icons.camera_alt_outlined, 'Add a photo'),
+            _featureChip(Icons.auto_awesome, 'AI does the rest'),
+          ],
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () => Navigator.pushNamed(context, AppRoutes.artisanAddProduct),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(color: AppColors.terracotta, borderRadius: BorderRadius.circular(25)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Namaste, Sita Devi \u{1F44B}', style: AppTextStyles.headlineMedium),
-                const SizedBox(height: 2),
-                Text("Let's grow your craft business.", style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                const Icon(Icons.add, color: Colors.white, size: 16),
+                const SizedBox(width: 6),
+                Text('Add Product', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
               ],
             ),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.notifications_outlined, color: AppColors.charcoal, size: 22),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, AppRoutes.artisanProfile),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundColor: AppColors.warmBeige,
-              child: Icon(Icons.person, color: AppColors.brown, size: 22),
+        ),
+      ],
+    );
+  }
+
+  Widget _featureChip(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 11, color: AppColors.terracotta),
+        const SizedBox(width: 3),
+        Text(text, style: TextStyle(fontSize: 9, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+
+  // ─── 4. STATS ROW ──────────────────────────────────────────────────────────
+
+  Widget _buildStatsRow() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = (constraints.maxWidth - 30) / 4;
+        final iconPadding = cardWidth * 0.18;
+        final iconSize = cardWidth * 0.38;
+        return Row(
+          children: [
+            _statCard(Icons.inventory_2_outlined, '9', 'Products', AppColors.terracotta, iconPadding, iconSize),
+            SizedBox(width: constraints.maxWidth * 0.03),
+            _statCard(Icons.shopping_bag_outlined, '3', 'Orders', AppColors.oliveGreen, iconPadding, iconSize),
+            SizedBox(width: constraints.maxWidth * 0.03),
+            _statCard(Icons.currency_rupee_rounded, '\u20B911,980', 'Revenue', AppColors.mustardGold, iconPadding, iconSize),
+            SizedBox(width: constraints.maxWidth * 0.03),
+            _statCard(Icons.visibility_outlined, '3,250', 'Views', Colors.blue.shade600, iconPadding, iconSize),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _statCard(IconData icon, String value, String label, Color color, double padding, double iconSize) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: padding * 0.8, horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(padding * 0.5),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+              child: Icon(icon, size: iconSize, color: color),
             ),
-          ),
-        ],
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.charcoal)),
+            ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(label, style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // ─── 2. ARTISAN STATUS ─────────────────────────────────────────────────────
+  // ─── 5. OPPORTUNITIES ─────────────────────────────────────────────────────
 
-  Widget _buildArtisanStatus() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDimensions.xl, AppDimensions.md, AppDimensions.xl, 0),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(color: AppColors.oliveGreen, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: AppDimensions.sm),
-          Text('Artisan Profile Active', style: AppTextStyles.labelMedium.copyWith(color: AppColors.oliveGreen)),
-          const SizedBox(width: AppDimensions.md),
-          Icon(Icons.verified, size: 14, color: AppColors.oliveGreen),
-          const SizedBox(width: 4),
-          Text('Verified Artisan', style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
-        ],
-      ),
-    );
-  }
-
-  // ─── 3. PRIMARY AI HERO ────────────────────────────────────────────────────
-
-  Widget _buildAIHero(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDimensions.xl, AppDimensions.xxl, AppDimensions.xl, 0),
-      child: GestureDetector(
-        onTap: () => Navigator.pushNamed(context, AppRoutes.artisanAddProduct),
-        child: Container(
+  Widget _buildOpportunities() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmall = constraints.maxWidth < 360;
+        return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(AppDimensions.xl),
+          padding: EdgeInsets.all(isSmall ? 10 : 14),
           decoration: BoxDecoration(
-            color: AppColors.brown,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.auto_awesome, color: AppColors.mustardGold, size: 20),
-                  const SizedBox(width: AppDimensions.sm),
-                  Text('AI-Powered', style: AppTextStyles.labelMedium.copyWith(color: AppColors.mustardGold)),
+                  Icon(Icons.work_outline_rounded, color: AppColors.oliveGreen, size: isSmall ? 18 : 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text('Opportunities for You', style: TextStyle(fontSize: isSmall ? 14 : 16, fontWeight: FontWeight.w700, color: AppColors.charcoal)),
+                    ),
+                  ),
+                  Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.terracotta)),
                 ],
               ),
-              const SizedBox(height: AppDimensions.md),
-              Text(
-                'Turn Your Craft Into a\nMarket-Ready Product',
-                style: AppTextStyles.headlineLarge.copyWith(color: AppColors.cream, height: 1.2),
-              ),
-              const SizedBox(height: AppDimensions.sm),
-              Text(
-                'Just show us your craft. HastKala AI helps create\nthe listing, suggest a price and find the right market.',
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.cream.withValues(alpha: 0.7), height: 1.5),
-              ),
-              const SizedBox(height: AppDimensions.xl),
+              const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppDimensions.xl, vertical: AppDimensions.md),
-                decoration: BoxDecoration(
-                  color: AppColors.terracotta,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add, color: AppColors.cream, size: 20),
-                    const SizedBox(width: AppDimensions.sm),
-                    Text('Add Product with AI', style: AppTextStyles.buttonMedium.copyWith(color: AppColors.cream)),
-                  ],
-                ),
+                padding: EdgeInsets.all(isSmall ? 8 : 12),
+                decoration: BoxDecoration(color: AppColors.warmBeige.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(12)),
+                child: isSmall ? _buildOpportunitySmall() : _buildOpportunityLarge(),
               ),
-              const SizedBox(height: AppDimensions.xl),
-              // AI Workflow Visual
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppDimensions.md, vertical: AppDimensions.sm),
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _workflowStep(Icons.camera_alt_outlined, 'Photo'),
-                    _workflowDot(),
-                    _workflowStep(Icons.auto_awesome, 'AI Catalog'),
-                    _workflowDot(),
-                    _workflowStep(Icons.attach_money, 'Smart Price'),
-                    _workflowDot(),
-                    _workflowStep(Icons.public, 'Market'),
-                  ],
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(color: AppColors.terracotta, borderRadius: BorderRadius.circular(20)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('View Request', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                      const SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _workflowStep(IconData icon, String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+  Widget _buildOpportunityLarge() {
+    return Row(
       children: [
-        Icon(icon, color: AppColors.cream.withValues(alpha: 0.8), size: 18),
-        const SizedBox(height: 4),
-        Text(label, style: AppTextStyles.labelSmall.copyWith(color: AppColors.cream.withValues(alpha: 0.7), fontSize: 9)),
-      ],
-    );
-  }
-
-  Widget _workflowDot() {
-    return Icon(Icons.chevron_right, color: AppColors.cream.withValues(alpha: 0.3), size: 14);
-  }
-
-  // ─── 4. AI QUICK ACTIONS ───────────────────────────────────────────────────
-
-  Widget _buildAIQuickActions(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDimensions.xl, AppDimensions.lg, AppDimensions.xl, 0),
-      child: Row(
-        children: [
-          Expanded(
-            child: _quickActionCard(
-              context: context,
-              icon: Icons.edit_outlined,
-              title: 'Create Listing',
-              subtitle: 'Turn photo + voice into a catalog',
-              route: AppRoutes.artisanAddProduct,
-            ),
-          ),
-          const SizedBox(width: AppDimensions.sm),
-          Expanded(
-            child: _quickActionCard(
-              context: context,
-              icon: Icons.attach_money,
-              title: 'Smart Pricing',
-              subtitle: 'Know what your craft is worth',
-              route: AppRoutes.aiPricing,
-            ),
-          ),
-          const SizedBox(width: AppDimensions.sm),
-          Expanded(
-            child: _quickActionCard(
-              context: context,
-              icon: Icons.public,
-              title: 'Find Markets',
-              subtitle: 'Discover better buyers',
-              route: AppRoutes.marketLinkage,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _quickActionCard({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String route,
-  }) {
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, route),
-      child: Container(
-        padding: const EdgeInsets.all(AppDimensions.md),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-          border: Border.all(color: AppColors.borderLight),
+        Container(
+          width: 48, height: 48,
+          decoration: BoxDecoration(color: AppColors.terracotta.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+          child: Icon(Icons.handshake_rounded, color: AppColors.terracotta, size: 24),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: AppColors.terracotta, borderRadius: BorderRadius.circular(4)),
+                    child: Text('B2B', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+                  ),
+                  const SizedBox(width: 6),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Bulk Order Request', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.charcoal)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text('50 Handcrafted Wooden Boxes', style: TextStyle(fontSize: 12, color: AppColors.charcoal)),
+              const SizedBox(height: 2),
+              Text('Buyer: Delhi, India', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              const SizedBox(height: 2),
+              Text('\u20B9450 - \u20B9550 / piece', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.brown)),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Column(
           children: [
-            Icon(icon, color: AppColors.terracotta, size: 22),
-            const SizedBox(height: AppDimensions.sm),
-            Text(title, style: AppTextStyles.labelMedium.copyWith(color: AppColors.charcoal)),
-            const SizedBox(height: 2),
-            Text(subtitle, style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, fontSize: 10, height: 1.3)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(color: AppColors.oliveGreen.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+              child: FittedBox(child: Text('AI Match: 92%', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.oliveGreen))),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              width: 50, height: 40,
+              decoration: BoxDecoration(color: AppColors.warmBeige, borderRadius: BorderRadius.circular(8)),
+              child: Icon(Icons.inventory_2_outlined, color: AppColors.brown.withValues(alpha: 0.5), size: 20),
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  // ─── 5. BUSINESS SNAPSHOT ──────────────────────────────────────────────────
-
-  Widget _buildBusinessSnapshot() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDimensions.xl, AppDimensions.xxl, AppDimensions.xl, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Your Business', style: AppTextStyles.titleMedium),
-          const SizedBox(height: AppDimensions.md),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: AppDimensions.lg),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-              border: Border.all(color: AppColors.borderLight),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _compactStat('12', 'Products'),
-                _statDivider(),
-                _compactStat('356', 'Views'),
-                _statDivider(),
-                _compactStat('48', 'Orders'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _compactStat(String value, String label) {
-    return Column(
-      children: [
-        Text(value, style: AppTextStyles.headlineSmall.copyWith(color: AppColors.brown)),
-        const SizedBox(height: 2),
-        Text(label, style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
       ],
     );
   }
 
-  Widget _statDivider() {
-    return Container(
-      width: 1,
-      height: 32,
-      color: AppColors.borderLight,
-    );
-  }
-
-  // ─── 6. MARKET OPPORTUNITY ─────────────────────────────────────────────────
-
-  Widget _buildMarketOpportunity(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDimensions.xl, AppDimensions.xxl, AppDimensions.xl, 0),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppDimensions.lg),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-          border: Border.all(color: AppColors.borderLight),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildOpportunitySmall() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Text('Market Opportunity', style: AppTextStyles.titleMedium),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppDimensions.sm, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.mustardGold.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(color: AppColors.terracotta.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+              child: Icon(Icons.handshake_rounded, color: AppColors.terracotta, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Icon(Icons.auto_awesome, size: 10, color: AppColors.mustardGold),
-                      const SizedBox(width: 3),
-                      Text('AI Insight', style: AppTextStyles.labelSmall.copyWith(color: AppColors.mustardGold, fontSize: 9)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(color: AppColors.terracotta, borderRadius: BorderRadius.circular(4)),
+                        child: Text('B2B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
+                      ),
+                      const SizedBox(width: 4),
+                      Text('Bulk Order', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.charcoal)),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.md),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppDimensions.md),
-              decoration: BoxDecoration(
-                color: AppColors.warmBeige.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
-              ),
-              child: Text(
-                'Terracotta home d\u00E9cor is seeing high demand among urban buyers.',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.brown, height: 1.5),
-              ),
-            ),
-            const SizedBox(height: AppDimensions.md),
-            Row(
-              children: [
-                _marketIndicator('Demand', 'HIGH', AppColors.terracotta),
-                const SizedBox(width: AppDimensions.md),
-                _marketIndicator('Competition', 'MEDIUM', AppColors.mustardGold),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.sm),
-            _marketIndicator('Potential Market', 'Home Decor Buyers', AppColors.oliveGreen),
-            const SizedBox(height: AppDimensions.lg),
-            GestureDetector(
-              onTap: () => Navigator.pushNamed(context, AppRoutes.marketLinkage),
-              child: Row(
-                children: [
-                  Text('Find Better Markets', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right, size: 16, color: AppColors.terracotta),
+                  const SizedBox(height: 2),
+                  Text('\u20B9450 - \u20B9550 / piece', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.brown)),
                 ],
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 6),
+        Text('50 Handcrafted Wooden Boxes', style: TextStyle(fontSize: 11, color: AppColors.charcoal)),
+        Text('Buyer: Delhi, India', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+      ],
     );
   }
 
-  Widget _marketIndicator(String label, String value, Color color) {
-    return Row(
+  // ─── 6. MY PRODUCTS ────────────────────────────────────────────────────────
+
+  Widget _buildMyProducts() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$label: ', style: AppTextStyles.bodySmall),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppDimensions.sm, vertical: 2),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+        Row(
+          children: [
+            Icon(Icons.inventory_2_outlined, color: AppColors.terracotta, size: 20),
+            const SizedBox(width: 8),
+            Text('My Products', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.charcoal)),
+            const Spacer(),
+            GestureDetector(
+              onTap: () => Navigator.pushNamed(context, AppRoutes.manageProducts),
+              child: Row(
+                children: [
+                  Text('View All', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.terracotta)),
+                  const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.terracotta),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 190,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: MockProducts.all.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, index) => _productCard(MockProducts.all[index]),
           ),
-          child: Text(value, style: AppTextStyles.labelSmall.copyWith(color: color, fontSize: 10)),
         ),
       ],
     );
   }
 
-  // ─── 7. YOUR PRODUCTS ──────────────────────────────────────────────────────
-
-  Widget _buildYourProducts(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, AppDimensions.xxl, 0, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppDimensions.xl),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Your Products', style: AppTextStyles.titleMedium),
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.manageProducts),
-                  child: Row(
-                    children: [
-                      Text('View All', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
-                      Icon(Icons.chevron_right, size: 16, color: AppColors.terracotta),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppDimensions.md),
-          SizedBox(
-            height: 160,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: AppDimensions.xl),
-              scrollDirection: Axis.horizontal,
-              itemCount: 3,
-              separatorBuilder: (_, _) => const SizedBox(width: AppDimensions.md),
-              itemBuilder: (context, index) {
-                final product = MockProducts.all[index];
-                final isDraft = index == 1;
-                return _productCard(context, product, isDraft);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _productCard(BuildContext context, Product product, bool isDraft) {
+  Widget _productCard(Product product) {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, AppRoutes.manageProducts),
       child: Container(
         width: 160,
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-          border: Border.all(color: AppColors.borderLight),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,76 +595,37 @@ class ArtisanHomeScreen extends StatelessWidget {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusMD)),
-                  child: Image.network(
-                    product.imageUrl,
-                    width: 160,
-                    height: 90,
-                    fit: BoxFit.cover,
-                    cacheWidth: 320,
-                    cacheHeight: 180,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 160,
-                        height: 90,
-                        color: AppColors.warmBeige,
-                        child: Icon(Icons.image_outlined, color: AppColors.textSecondary),
-                      );
-                    },
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.network(product.imageUrl, width: 160, height: 110, fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(width: 160, height: 110, color: AppColors.warmBeige, child: Icon(Icons.image_outlined, color: AppColors.textSecondary)),
                   ),
                 ),
                 Positioned(
-                  top: 8,
-                  right: 8,
+                  top: 8, right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: isDraft ? AppColors.mustardGold : AppColors.oliveGreen,
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-                    ),
-                    child: Text(
-                      isDraft ? 'Draft' : 'Published',
-                      style: AppTextStyles.labelSmall.copyWith(color: AppColors.cream, fontSize: 9),
-                    ),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), shape: BoxShape.circle),
+                    child: Icon(Icons.more_vert, size: 14, color: AppColors.charcoal),
                   ),
                 ),
               ],
             ),
             Padding(
-              padding: const EdgeInsets.all(AppDimensions.sm),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(product.name, style: AppTextStyles.labelMedium.copyWith(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text('\u20B9${product.price}', style: AppTextStyles.titleSmall.copyWith(color: AppColors.terracotta, fontSize: 13)),
-                  if (isDraft) ...[
-                    const SizedBox(height: 6),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(2),
-                                child: LinearProgressIndicator(
-                                  value: 0.7,
-                                  backgroundColor: AppColors.warmBeige,
-                                  valueColor: AlwaysStoppedAnimation(AppColors.terracotta),
-                                  minHeight: 4,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text('70%', style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, fontSize: 9)),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text('Complete Listing', style: AppTextStyles.labelSmall.copyWith(color: AppColors.terracotta, fontSize: 9)),
-                      ],
-                    ),
-                  ],
+                  Text(product.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.charcoal), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Text('\u20B9${product.price}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.brown)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.oliveGreen, shape: BoxShape.circle)),
+                      const SizedBox(width: 4),
+                      Text('In Stock', style: TextStyle(fontSize: 11, color: AppColors.oliveGreen)),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -544,126 +635,73 @@ class ArtisanHomeScreen extends StatelessWidget {
     );
   }
 
-  // ─── 8. RECENT ORDERS ──────────────────────────────────────────────────────
+  // ─── 7. SCHEMES AND EXHIBITIONS ────────────────────────────────────────────
 
-  Widget _buildRecentOrders(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDimensions.xl, AppDimensions.xxl, AppDimensions.xl, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Recent Orders', style: AppTextStyles.titleMedium),
-              GestureDetector(
-                onTap: () => Navigator.pushNamed(context, AppRoutes.artisanOrders),
-                child: Row(
-                  children: [
-                    Text('View All', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
-                    Icon(Icons.chevron_right, size: 16, color: AppColors.terracotta),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.md),
-          _orderCard('#HK12568', MockProducts.all[0], 1, 'Packed', AppColors.mustardGold),
-          const SizedBox(height: AppDimensions.sm),
-          _orderCard('#HK12572', MockProducts.all[1], 2, 'Shipped', AppColors.oliveGreen),
-        ],
-      ),
+  Widget _buildSchemesAndExhibitions() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmall = constraints.maxWidth < 360;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildGovernmentSchemesCard(isSmall)),
+            SizedBox(width: constraints.maxWidth * 0.03),
+            Expanded(child: _buildExhibitionsCard(isSmall)),
+          ],
+        );
+      },
     );
   }
 
-  Widget _orderCard(String id, Product product, int qty, String status, Color statusColor) {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
-            child: Image.network(
-              product.imageUrl,
-              width: 44,
-              height: 44,
-              fit: BoxFit.cover,
-              cacheWidth: 100,
-              cacheHeight: 100,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 44,
-                  height: 44,
-                  color: AppColors.warmBeige,
-                  child: Icon(Icons.shopping_bag_outlined, color: AppColors.brown, size: 20),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: AppDimensions.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(id, style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
-                Text(product.name, style: AppTextStyles.titleSmall),
-                Text('\u20B9${product.price} \u00D7 $qty', style: AppTextStyles.bodySmall.copyWith(color: AppColors.terracotta)),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppDimensions.sm, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-            ),
-            child: Text(status, style: AppTextStyles.labelSmall.copyWith(color: statusColor, fontSize: 10)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─── 9. AI BUSINESS ASSISTANT ──────────────────────────────────────────────
-
-  Widget _buildAIAssistant(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDimensions.xl, AppDimensions.xxl, AppDimensions.xl, 0),
+  Widget _buildGovernmentSchemesCard(bool isSmall) {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, AppRoutes.schemesEvents),
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppDimensions.lg),
+        padding: EdgeInsets.all(isSmall ? 10 : 14),
         decoration: BoxDecoration(
-          color: AppColors.warmBeige.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.auto_awesome, color: AppColors.mustardGold, size: 18),
-                const SizedBox(width: AppDimensions.sm),
-                Text('Ask HastKala', style: AppTextStyles.titleMedium.copyWith(color: AppColors.brown)),
+                Icon(Icons.account_balance_rounded, color: AppColors.terracotta, size: isSmall ? 16 : 18),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text('Government Schemes', style: TextStyle(fontSize: isSmall ? 12 : 14, fontWeight: FontWeight.w700, color: AppColors.charcoal)),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: AppDimensions.sm),
-            Text(
-              'Need help growing your craft business?',
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+            SizedBox(height: isSmall ? 8 : 10),
+            SizedBox(
+              height: isSmall ? 60 : 80,
+              child: PageView.builder(
+                controller: _schemePageController,
+                itemCount: _schemeImages.length,
+                onPageChanged: (i) => setState(() => _schemePage = i),
+                itemBuilder: (_, i) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(_schemeImages[i], fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(color: AppColors.terracotta.withValues(alpha: 0.1), child: Icon(Icons.account_balance, color: AppColors.terracotta, size: 24)),
+                    ),
+                  );
+                },
+              ),
             ),
-            const SizedBox(height: AppDimensions.md),
-            Wrap(
-              spacing: AppDimensions.sm,
-              runSpacing: AppDimensions.sm,
+            SizedBox(height: isSmall ? 8 : 10),
+            Row(
               children: [
-                _assistantChip('Improve My Listing', AppRoutes.smartCatalog, context),
-                _assistantChip('Suggest a Price', AppRoutes.aiPricing, context),
-                _assistantChip('Find Buyers', AppRoutes.marketLinkage, context),
+                Text('View All', style: TextStyle(fontSize: isSmall ? 10 : 12, fontWeight: FontWeight.w600, color: AppColors.terracotta)),
+                const SizedBox(width: 2),
+                Icon(Icons.arrow_forward_rounded, size: 12, color: AppColors.terracotta),
               ],
             ),
           ],
@@ -672,37 +710,65 @@ class ArtisanHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _assistantChip(String label, String route, BuildContext context) {
+  Widget _buildExhibitionsCard(bool isSmall) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, route),
+      onTap: () => Navigator.pushNamed(context, AppRoutes.schemesEvents),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppDimensions.md, vertical: AppDimensions.sm),
+        padding: EdgeInsets.all(isSmall ? 10 : 14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-          border: Border.all(color: AppColors.borderLight),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
         ),
-        child: Text(label, style: AppTextStyles.labelSmall.copyWith(color: AppColors.charcoal)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.event_rounded, color: AppColors.mustardGold, size: isSmall ? 16 : 18),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text('Exhibitions', style: TextStyle(fontSize: isSmall ? 12 : 14, fontWeight: FontWeight.w700, color: AppColors.charcoal)),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isSmall ? 8 : 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset('assets/exibitions-img.png', height: isSmall ? 60 : 80, width: double.infinity, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: isSmall ? 60 : 80, width: double.infinity,
+                  color: AppColors.mustardGold.withValues(alpha: 0.1),
+                  child: Icon(Icons.event, color: AppColors.mustardGold, size: 24),
+                ),
+              ),
+            ),
+            SizedBox(height: isSmall ? 8 : 10),
+            Row(
+              children: [
+                Text('View All', style: TextStyle(fontSize: isSmall ? 10 : 12, fontWeight: FontWeight.w600, color: AppColors.mustardGold)),
+                const SizedBox(width: 2),
+                Icon(Icons.arrow_forward_rounded, size: 12, color: AppColors.mustardGold),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // ─── 10. BOTTOM NAV ────────────────────────────────────────────────────────
+  // ─── 8. BOTTOM NAV ────────────────────────────────────────────────────────
 
-  Widget _buildBottomNav(BuildContext context) {
+  Widget _buildBottomNav() {
     return AppBottomNav(
       currentIndex: 0,
       onTap: (i) {
-        final routes = [
-          null,
-          AppRoutes.manageProducts,
-          AppRoutes.artisanAddProduct,
-          AppRoutes.artisanOrders,
-          AppRoutes.artisanProfile,
-        ];
-        if (routes[i] != null) {
-          Navigator.pushNamed(context, routes[i]!);
-        }
+        final routes = [null, AppRoutes.manageProducts, AppRoutes.artisanAddProduct, AppRoutes.artisanOrders, AppRoutes.artisanProfile];
+        if (routes[i] != null) Navigator.pushNamed(context, routes[i]!);
       },
       items: AppBottomNavItems.artisan,
     );

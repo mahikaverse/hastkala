@@ -13,6 +13,7 @@ import '../../../core/services/api_config.dart';
 import '../../../core/services/deepgram_stream_service.dart';
 import '../../../core/services/tts_service.dart';
 import '../models/product_draft.dart';
+import '../../../../core/localization/language_provider.dart';
 
 class VoiceStep3StoryScreen extends StatefulWidget {
   final ProductDraft draft;
@@ -104,15 +105,16 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     }
 
     if (!_showExtractedForm && !_ttsAutoPlayed) {
-      _ttsAutoPlayTimer = Timer(const Duration(seconds: 3), _autoPlayGuidance);
+      _ttsAutoPlayTimer = Timer(const Duration(seconds: 1), _autoPlayGuidance);
     }
   }
 
   void _autoPlayGuidance() {
     if (!mounted || _ttsAutoPlayed) return;
     _ttsAutoPlayed = true;
+    final lang = LanguageProvider.of(context);
     final langCode = _selectedLocaleId.split('_').first;
-    final text = langCode == 'hi' ? _ttsGuidanceHindi : _ttsGuidanceEnglish;
+    final text = langCode == 'hi' ? lang.t('step3TtsGuidanceHi') : lang.t('step3TtsGuidanceEn');
     _ttsService.speak(text, language: langCode);
   }
 
@@ -132,8 +134,9 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   }
 
   Future<void> _speakGuidance() async {
+    final lang = LanguageProvider.of(context);
     final langCode = _selectedLocaleId.split('_').first;
-    final text = langCode == 'hi' ? _ttsGuidanceHindi : _ttsGuidanceEnglish;
+    final text = langCode == 'hi' ? lang.t('step3TtsGuidanceHi') : lang.t('step3TtsGuidanceEn');
     await _ttsService.speak(text, language: langCode);
   }
 
@@ -217,8 +220,9 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     }
 
     if (mounted) {
+      final lang = LanguageProvider.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please speak or type the origin story of your craft.')),
+        SnackBar(content: Text(lang.t('speakOrTypeStory'))),
       );
     }
   }
@@ -352,6 +356,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   }
 
   void _showLanguageSheet() {
+    final lang = LanguageProvider.of(context);
     final languages = [
       {'name': 'Hindi', 'locale': 'hi_IN'},
       {'name': 'English', 'locale': 'en_IN'},
@@ -368,7 +373,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
               const SizedBox(height: AppDimensions.md),
               Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2))),
               const SizedBox(height: AppDimensions.md),
-              Text('Select Voice Language', style: AppTextStyles.titleMedium),
+              Text(lang.t('selectVoiceLanguage'), style: AppTextStyles.titleMedium),
               const SizedBox(height: AppDimensions.sm),
               ...languages.map((lang) {
                 final isSelected = _selectedLocaleId == lang['locale'];
@@ -403,6 +408,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -414,7 +420,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
         ),
         title: Column(
           children: [
-            Text('Step 3 of 3: Origin Story', style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream)),
+            Text(lang.t('step3Title'), style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream)),
             const SizedBox(height: 2),
             Text('विरासत और कहानी', style: AppTextStyles.bodySmall.copyWith(color: AppColors.cream.withValues(alpha: 0.8), fontSize: 11)),
           ],
@@ -436,6 +442,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   }
 
   Widget _buildStepProgressHeader() {
+    final lang = LanguageProvider.of(context);
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.lg, vertical: AppDimensions.md),
@@ -443,11 +450,11 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
         children: [
           Row(
             children: [
-              _buildStepDot(1, 'Details', true, false),
+              _buildStepDot(1, lang.t('details'), true, false),
               _buildStepLine(true),
-              _buildStepDot(2, 'Quantity', true, false),
+              _buildStepDot(2, lang.t('quantity'), true, false),
               _buildStepLine(true),
-              _buildStepDot(3, 'Origin Story', true, true),
+              _buildStepDot(3, lang.t('originStory'), true, true),
             ],
           ),
           const SizedBox(height: AppDimensions.sm),
@@ -460,15 +467,15 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.draft.productName ?? 'Product',
+                      widget.draft.productName ?? lang.t('productFallback'),
                       style: AppTextStyles.titleSmall.copyWith(fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       _showExtractedForm
-                          ? 'Review & refine your product story'
-                          : 'Apni parampara aur is kala ki kahani bolkar batayein',
+                          ? lang.t('reviewStory')
+                          : lang.t('kahaniBatayein'),
                       style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 11),
                     ),
                   ],
@@ -577,6 +584,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   }
 
   Widget _buildGuidingQuestionsCard() {
+    final lang = LanguageProvider.of(context);
     final langCode = _selectedLocaleId.split('_').first;
 
     String mainLabel;
@@ -584,20 +592,20 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     VoidCallback? mainOnTap;
 
     if (_isTtsSpeaking) {
-      mainLabel = langCode == 'hi' ? 'रुकें' : 'Pause';
+      mainLabel = lang.t('pause');
       mainIcon = Icons.pause_rounded;
       mainOnTap = _pauseGuidance;
     } else if (_isTtsPaused) {
-      mainLabel = langCode == 'hi' ? 'जारी रखें' : 'Resume';
+      mainLabel = lang.t('resume');
       mainIcon = Icons.play_arrow_rounded;
       mainOnTap = _resumeGuidance;
     } else {
-      mainLabel = langCode == 'hi' ? 'सुनें' : 'Listen';
+      mainLabel = lang.t('listen');
       mainIcon = Icons.volume_up_rounded;
       mainOnTap = _speakGuidance;
     }
 
-    final replayLabel = langCode == 'hi' ? 'फिर से' : 'Again';
+    final replayLabel = lang.t('again');
 
     return Container(
       width: double.infinity,
@@ -616,7 +624,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
               const SizedBox(width: AppDimensions.sm),
               Expanded(
                 child: Text(
-                  langCode == 'hi' ? 'Aap yeh baatein bol sakte hain:' : 'You can speak about these:',
+                  lang.t('youCanSpeak'),
                   style: AppTextStyles.titleSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -683,7 +691,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
             ],
           ),
           const SizedBox(height: AppDimensions.sm),
-          ..._guidingQuestions.map((q) => Padding(
+          ...[lang.t('step3GuidingQ1'), lang.t('step3GuidingQ2'), lang.t('step3GuidingQ3'), lang.t('step3GuidingQ4')].map((q) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -701,6 +709,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   }
 
   Widget _buildLanguageChip() {
+    final lang = LanguageProvider.of(context);
     return GestureDetector(
       onTap: _showLanguageSheet,
       child: Container(
@@ -715,7 +724,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
           children: [
             const Icon(Icons.language, size: 16, color: AppColors.terracotta),
             const SizedBox(width: 6),
-            Text('Voice Language: $_selectedLanguage', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
+            Text('${lang.t('voiceLanguage')}: $_selectedLanguage', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
             const SizedBox(width: 4),
             const Icon(Icons.arrow_drop_down, size: 18, color: AppColors.terracotta),
           ],
@@ -725,6 +734,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   }
 
   Widget _buildMicButton() {
+    final lang = LanguageProvider.of(context);
     return Column(
       children: [
         GestureDetector(
@@ -744,14 +754,15 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
           ),
         ),
         const SizedBox(height: AppDimensions.md),
-        Text('Tap to Speak Origin Story', style: AppTextStyles.titleMedium.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold)),
+        Text(lang.t('tapToSpeakStory'), style: AppTextStyles.titleMedium.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        Text('Kahani batayein — Buyers love authentic handmade stories!', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+        Text(lang.t('kahaniBolein'), style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
       ],
     );
   }
 
   Widget _buildLiveCaptionActiveView() {
+    final lang = LanguageProvider.of(context);
     return Column(
       children: [
         Row(
@@ -760,7 +771,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
             Container(width: 10, height: 10, decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle)),
             const SizedBox(width: AppDimensions.sm),
             Text(
-              'LIVE LISTENING  $_timerText',
+              '${lang.t('liveListening')}  $_timerText',
               style: AppTextStyles.titleSmall.copyWith(color: AppColors.error, fontWeight: FontWeight.bold, letterSpacing: 0.8),
             ),
           ],
@@ -789,14 +800,14 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
                 children: [
                   const Icon(Icons.record_voice_over_rounded, size: 16, color: AppColors.terracotta),
                   const SizedBox(width: 6),
-                  Text('Live Captions:', style: AppTextStyles.labelSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold)),
+                  Text(lang.t('liveCaptions'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: AppDimensions.sm),
               Text(
                 _liveCaption.isNotEmpty
                     ? _liveCaption
-                    : 'Listening to your voice... tell the story of your craft...',
+                    : lang.t('listeningToVoiceDetails'),
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: _liveCaption.isNotEmpty ? AppColors.charcoal : AppColors.textSecondary,
                   height: 1.45,
@@ -824,7 +835,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
               children: [
                 const Icon(Icons.auto_awesome, size: 20),
                 const SizedBox(width: AppDimensions.sm),
-                Text('Done Speaking — Generate Story', style: AppTextStyles.buttonMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text(lang.t('doneSpeakingGenerate'), style: AppTextStyles.buttonMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -857,6 +868,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   }
 
   Widget _buildExtractingIndicator() {
+    final lang = LanguageProvider.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimensions.xl),
@@ -875,15 +887,16 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
             child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation(AppColors.terracotta)),
           ),
           const SizedBox(height: AppDimensions.lg),
-          Text('HastKala AI Crafting Story...', style: AppTextStyles.titleMedium.copyWith(color: AppColors.charcoal, fontWeight: FontWeight.bold)),
+          Text(lang.t('aiCraftingStory'), style: AppTextStyles.titleMedium.copyWith(color: AppColors.charcoal, fontWeight: FontWeight.bold)),
           const SizedBox(height: AppDimensions.xs),
-          Text('Writing an authentic, compelling story celebrating your heritage...', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary), textAlign: TextAlign.center),
+          Text(lang.t('writingStory'), style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary), textAlign: TextAlign.center),
         ],
       ),
     );
   }
 
   Widget _buildCaptionPreview() {
+    final lang = LanguageProvider.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimensions.md),
@@ -895,7 +908,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Last Spoken:', style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
+          Text(lang.t('lastSpoken'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
           const SizedBox(height: 4),
           Text(_liveCaption, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal)),
         ],
@@ -904,6 +917,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   }
 
   Widget _buildManualToggle() {
+    final lang = LanguageProvider.of(context);
     return GestureDetector(
       onTap: () => setState(() => _showManualInput = !_showManualInput),
       child: Padding(
@@ -914,7 +928,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
             Icon(_showManualInput ? Icons.keyboard_hide : Icons.keyboard, size: 18, color: AppColors.terracotta),
             const SizedBox(width: 6),
             Text(
-              _showManualInput ? 'Hide typing input' : 'Or type craft story manually',
+              _showManualInput ? lang.t('hideTypingInput') : lang.t('orTypeStory'),
               style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
             ),
           ],
@@ -924,13 +938,14 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   }
 
   Widget _buildManualInputSection() {
+    final lang = LanguageProvider.of(context);
     return Column(
       children: [
         TextField(
           controller: _manualInputCtrl,
           maxLines: 3,
           decoration: InputDecoration(
-            hintText: 'e.g. Yeh paramparik Jaipur blue pottery hai jo pichle teen peedhiyon se hamara parivar bana raha hai...',
+            hintText: lang.t('hintStory'),
             hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             filled: true,
             fillColor: Colors.white,
@@ -953,7 +968,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMD)),
             ),
-            child: const Text('Extract from Typed Text'),
+            child: Text(lang.t('extractFromTyped')),
           ),
         ),
       ],
@@ -965,6 +980,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildExtractedFormView() {
+    final lang = LanguageProvider.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -981,24 +997,24 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
               const SizedBox(width: AppDimensions.sm),
               Expanded(
                 child: Text(
-                  'Origin story crafted! You can edit or personalize it below.',
+                  lang.t('storyCrafted'),
                   style: AppTextStyles.bodySmall.copyWith(color: AppColors.oliveGreen, fontWeight: FontWeight.bold),
                 ),
               ),
               TextButton(
                 onPressed: () => setState(() => _showExtractedForm = false),
-                child: const Text('Speak Again', style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
+                child: Text(lang.t('speakAgain'), style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
               ),
             ],
           ),
         ),
         const SizedBox(height: AppDimensions.lg),
 
-        _buildFormField('Craft Origin & Heritage Story', _craftStoryCtrl, Icons.auto_stories_outlined, 'Rich narrative describing the history, craft roots, and authentic story of the product', maxLines: 4),
+        _buildFormField(lang.t('craftOriginHeritage'), _craftStoryCtrl, Icons.auto_stories_outlined, lang.t('hintStory'), maxLines: 4),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Artisan Location / Region', _locationCtrl, Icons.location_on_outlined, 'e.g. Jaipur, Rajasthan'),
+        _buildFormField(lang.t('artisanLocation'), _locationCtrl, Icons.location_on_outlined, lang.t('hintLocation')),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Artisan Heritage / Tradition Note', _artisanIntroCtrl, Icons.person_pin_outlined, 'e.g. 3rd generation master potter keeping traditional art alive', maxLines: 2),
+        _buildFormField(lang.t('artisanHeritage'), _artisanIntroCtrl, Icons.person_pin_outlined, lang.t('hintHeritage'), maxLines: 2),
         const SizedBox(height: AppDimensions.xxl),
 
         // Save & Proceed to Pricing Button
@@ -1019,7 +1035,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
                 const Icon(Icons.currency_rupee, size: 20),
                 const SizedBox(width: AppDimensions.sm),
                 Text(
-                  'Save & Proceed to AI Pricing →',
+                  lang.t('saveAndProceedPricing'),
                   style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
                 ),
               ],

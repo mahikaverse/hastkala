@@ -18,18 +18,19 @@ class _B2BShellScreenState extends State<B2BShellScreen> {
   int _currentIndex = 0;
   late final PageController _pageController;
 
-  final List<Widget> _screens = [
-    const B2BHomeScreen(),
-    const B2BExploreScreen(),
-    const B2BRequirementsScreen(),
-    const B2BEnquiriesScreen(),
-    const B2BProfileScreen(),
-  ];
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
+    _screens = [
+      const B2BHomeScreen(),
+      const B2BExploreScreen(),
+      B2BRequirementsScreen(onBackToHome: () => _onTabTapped(0)),
+      const B2BEnquiriesScreen(),
+      const B2BProfileScreen(),
+    ];
   }
 
   @override
@@ -48,16 +49,24 @@ class _B2BShellScreenState extends State<B2BShellScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: _screens,
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        items: AppBottomNavItems.b2b,
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _currentIndex != 0) {
+          _onTabTapped(0);
+        }
+      },
+      child: Scaffold(
+        body: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: _screens,
+        ),
+        bottomNavigationBar: AppBottomNav(
+          currentIndex: _currentIndex,
+          onTap: _onTabTapped,
+          items: AppBottomNavItems.b2b,
+        ),
       ),
     );
   }

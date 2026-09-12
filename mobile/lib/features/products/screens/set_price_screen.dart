@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../models/product_draft.dart';
 
 class SetPriceScreen extends StatefulWidget {
@@ -38,8 +39,9 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
   void _onCheckPrice() {
     final entered = int.tryParse(_priceController.text.trim());
     if (entered == null || entered <= 0) {
+      final lang = LanguageProvider.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid price')),
+        SnackBar(content: Text(lang.t('invalidPrice'))),
       );
       return;
     }
@@ -57,6 +59,7 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
   Widget _buildProductSummary() {
     Widget imageWidget;
     final path = widget.draft.imagePath;
+    final lang = LanguageProvider.of(context);
 
     if (widget.draft.isBase64Image && path != null) {
       final base64Str = path.contains(',') ? path.split(',').last : path;
@@ -102,14 +105,14 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.draft.productName ?? 'Product',
+                  widget.draft.productName ?? lang.t('productFallback'),
                   style: AppTextStyles.titleMedium.copyWith(color: AppColors.charcoal),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  widget.draft.craft ?? widget.draft.material ?? 'Traditional Craft',
+                  widget.draft.craft ?? widget.draft.material ?? lang.t('traditionalCraft'),
                   style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -131,6 +134,7 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -141,7 +145,7 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Set Your Price',
+          lang.t('setYourPrice'),
           style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream),
         ),
         centerTitle: true,
@@ -158,7 +162,7 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
 
               // Title
               Text(
-                'How much do you want to sell this for?',
+                lang.t('howMuchSell'),
                 style: AppTextStyles.headlineMedium.copyWith(
                   color: AppColors.charcoal,
                   fontWeight: FontWeight.bold,
@@ -169,7 +173,7 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
 
               // Subtitle
               Text(
-                'Tell us the price you have in mind.',
+                lang.t('tellUsPrice'),
                 style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
@@ -212,9 +216,9 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
                           color: AppColors.terracotta,
                           fontWeight: FontWeight.bold,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           border: InputBorder.none,
-                          hintText: '700',
+                          hintText: lang.t('priceHint'),
                           hintStyle: TextStyle(color: AppColors.warmBeige),
                           contentPadding: EdgeInsets.zero,
                           isDense: true,
@@ -226,7 +230,7 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
               ),
               const SizedBox(height: AppDimensions.md),
               Text(
-                'Example: ₹700',
+                lang.t('examplePrice'),
                 style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppDimensions.xxl),
@@ -245,7 +249,7 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
                     const SizedBox(width: AppDimensions.sm),
                     Expanded(
                       child: Text(
-                        'Next, our AI Price Assistant will check current online craft market rates to help guide you.',
+                        lang.t('aiCheckPrice'),
                         style: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal),
                       ),
                     ),
@@ -274,7 +278,7 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
                       const Icon(Icons.auto_awesome, size: 20, color: Colors.white),
                       const SizedBox(width: AppDimensions.sm),
                       Text(
-                        'Check Price',
+                        lang.t('checkPrice'),
                         style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
                       ),
                     ],

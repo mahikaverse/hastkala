@@ -208,7 +208,11 @@ class AppRouter {
       case AppRoutes.myProducts:
         return _buildRoute(const MyProductsScreen(), settings: settings);
       case AppRoutes.schemesEvents:
-        return _buildRoute(const SchemesEventsScreen(), settings: settings);
+        final initialTab = settings.arguments as int? ?? 0;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => SchemesEventsScreen(initialTab: initialTab),
+        );
       case AppRoutes.analyticsPlaceholder:
         return _buildRoute(const AnalyticsPlaceholderScreen(), settings: settings);
       case AppRoutes.artisanProfileNew:

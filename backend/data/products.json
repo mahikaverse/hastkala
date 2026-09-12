@@ -1,5 +1,29 @@
 [
   {
+    "id": "prod_1789239500019",
+    "name": "Product",
+    "price": 150.0,
+    "original_price": 150.0,
+    "category": "Pottery & Ceramics",
+    "craft": "",
+    "material": "",
+    "color": "",
+    "artisan_name": "Ramesh Kumar",
+    "artisan_id": "ap_1",
+    "store_id": "st_1",
+    "location": "Jaipur, Rajasthan",
+    "description": "",
+    "craft_story": "",
+    "making_time": "",
+    "tags": [
+      "Handmade"
+    ],
+    "image_url": "https://acutpnwhubbmptbgtnih.supabase.co/storage/v1/object/public/products/prod_1789239500019.jpg",
+    "stock": 10,
+    "is_published": true,
+    "created_at": "2026-09-12T18:58:19Z"
+  },
+  {
     "id": "prod_1789125403156",
     "name": "Product",
     "price": 790000.0,

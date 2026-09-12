@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/models/marketplace_product.dart';
-import '../models/b2b_models.dart';
 
 class CompareScreen extends StatefulWidget {
   final MarketplaceProduct? initialProduct;

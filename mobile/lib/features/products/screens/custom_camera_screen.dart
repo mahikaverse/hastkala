@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 
 class CustomCameraScreen extends StatefulWidget {
   const CustomCameraScreen({super.key});
@@ -13,16 +14,27 @@ class CustomCameraScreen extends StatefulWidget {
   State<CustomCameraScreen> createState() => _CustomCameraScreenState();
 }
 
-class _CustomCameraScreenState extends State<CustomCameraScreen> {
+class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTickerProviderStateMixin {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   int _currentCameraIndex = 0;
   bool _isInitialized = false;
   bool _isCapturing = false;
+  bool _showCapturedOverlay = false;
+  bool _showProcessing = false;
+  late AnimationController _flashController;
+  late Animation<double> _flashOpacity;
 
   @override
   void initState() {
     super.initState();
+    _flashController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _flashOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _flashController, curve: Curves.easeOut),
+    );
     _initCamera();
   }
 
@@ -36,9 +48,10 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> {
       await _setupCamera(_cameras[_currentCameraIndex]);
     } catch (e) {
       if (mounted) {
+        final lang = LanguageProvider.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Camera not available'),
+            content: Text(lang.t('cameraNotAvailable')),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusSM)),
             backgroundColor: AppColors.charcoal,
@@ -61,9 +74,10 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> {
       if (mounted) setState(() => _isInitialized = true);
     } catch (e) {
       if (mounted) {
+        final lang = LanguageProvider.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Could not start camera'),
+            content: Text(lang.t('couldNotStartCamera')),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusSM)),
             backgroundColor: AppColors.charcoal,
@@ -78,14 +92,48 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> {
     if (_controller == null || !_controller!.value.isInitialized || _isCapturing) return;
     setState(() => _isCapturing = true);
     try {
+      // Flash effect
+      await _flashController.forward();
+      _flashController.reverse();
+      
       final XFile photo = await _controller!.takePicture();
-      if (mounted) Navigator.pop(context, photo.path);
-    } catch (e) {
-      setState(() => _isCapturing = false);
+      
+      if (!mounted) return;
+      
+      // Show captured overlay
+      setState(() {
+        _showCapturedOverlay = true;
+        _isCapturing = false;
+      });
+      
+      // Wait a moment to show the checkmark
+      await Future.delayed(const Duration(milliseconds: 800));
+      
+      if (!mounted) return;
+      
+      // Show processing state
+      setState(() {
+        _showCapturedOverlay = false;
+        _showProcessing = true;
+      });
+      
+      // Wait to show processing
+      await Future.delayed(const Duration(milliseconds: 600));
+      
       if (mounted) {
+        Navigator.pop(context, photo.path);
+      }
+    } catch (e) {
+      setState(() {
+        _isCapturing = false;
+        _showCapturedOverlay = false;
+        _showProcessing = false;
+      });
+      if (mounted) {
+        final lang = LanguageProvider.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Failed to capture photo'),
+            content: Text(lang.t('failedToCapture')),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusSM)),
             backgroundColor: AppColors.charcoal,
@@ -118,9 +166,10 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final lang = LanguageProvider.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Could not open gallery'),
+            content: Text(lang.t('couldNotOpenGallery')),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusSM)),
             backgroundColor: AppColors.charcoal,
@@ -132,6 +181,7 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> {
 
   @override
   void dispose() {
+    _flashController.dispose();
     _controller?.dispose();
     super.dispose();
   }
@@ -151,6 +201,21 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> {
             ),
           _buildTopBar(),
           _buildBottomBar(),
+          // Flash overlay
+          AnimatedBuilder(
+            animation: _flashOpacity,
+            builder: (context, child) {
+              if (_flashOpacity.value == 0) return const SizedBox.shrink();
+              return Opacity(
+                opacity: _flashOpacity.value,
+                child: Container(color: Colors.white),
+              );
+            },
+          ),
+          // Captured overlay
+          if (_showCapturedOverlay) _buildCapturedOverlay(),
+          // Processing overlay
+          if (_showProcessing) _buildProcessingOverlay(),
         ],
       ),
     );
@@ -170,7 +235,98 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> {
     );
   }
 
+  Widget _buildCapturedOverlay() {
+    final lang = LanguageProvider.of(context);
+    return Container(
+      color: Colors.black.withValues(alpha: 0.6),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: AppColors.oliveGreen,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.oliveGreen.withValues(alpha: 0.4),
+                    blurRadius: 30,
+                    spreadRadius: 10,
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.check_rounded, color: Colors.white, size: 50),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              lang.t('photoCaptured'),
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              lang.t('enhancingWithAI'),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProcessingOverlay() {
+    final lang = LanguageProvider.of(context);
+    return Container(
+      color: Colors.black.withValues(alpha: 0.7),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.terracotta.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const SizedBox(
+                width: 44,
+                height: 44,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation(AppColors.terracotta),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              lang.t('processingImage'),
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              lang.t('aiEnhancingPhoto'),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTopBar() {
+    final lang = LanguageProvider.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppDimensions.md, vertical: AppDimensions.sm),
@@ -182,7 +338,7 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> {
             ),
             const Spacer(),
             Text(
-              'Take a Photo',
+              lang.t('takePhoto'),
               style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream),
             ),
             const Spacer(),

@@ -6,14 +6,15 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 
 class SchemesEventsScreen extends StatefulWidget {
-  const SchemesEventsScreen({super.key});
+  final int initialTab;
+  const SchemesEventsScreen({super.key, this.initialTab = 0});
 
   @override
   State<SchemesEventsScreen> createState() => _SchemesEventsScreenState();
 }
 
 class _SchemesEventsScreenState extends State<SchemesEventsScreen> {
-  int _selectedTab = 0;
+  late int _selectedTab = widget.initialTab;
 
   // Exhibition carousel
   final PageController _exhibitionPageController = PageController();

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
 import '../models/b2b_models.dart';
 import '../services/b2b_service.dart';
+import 'b2b_ai_matches_screen.dart';
 
 class B2BRequirementFormScreen extends StatefulWidget {
   final B2BRequirement? requirement;
@@ -26,12 +27,32 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
   bool _isSubmitting = false;
   String? _selectedCategory;
   DateTime? _deadline;
-  List<String> _categories = [];
+  static const List<String> _defaultCategories = [
+    'Pottery & Ceramics',
+    'Textiles & Handloom',
+    'Woodwork',
+    'Bamboo & Cane',
+    'Metal Craft',
+    'Leather Craft',
+    'Stone Craft',
+    'Jewelry & Accessories',
+    'Home Decor',
+    'Paintings & Art',
+    'Other',
+  ];
+  late List<String> _categories = List.from(_defaultCategories);
+
+  String get _currentUserId {
+    try {
+      return Supabase.instance.client.auth.currentUser?.id ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadCategories();
     if (widget.requirement != null) {
       final r = widget.requirement!;
       _titleController.text = r.title;
@@ -41,14 +62,29 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
       _budgetMaxController.text = r.budgetMax != null ? '${r.budgetMax!.toInt()}' : '';
       _locationController.text = r.deliveryLocation ?? '';
       _customizationController.text = r.customization ?? '';
-      _selectedCategory = r.category;
+      if (r.category.isNotEmpty) {
+        _selectedCategory = r.category;
+        if (!_categories.contains(r.category)) {
+          _categories.add(r.category);
+        }
+      } else {
+        _selectedCategory = null;
+      }
       _deadline = r.deadline;
     }
+    _loadCategories();
   }
 
   Future<void> _loadCategories() async {
-    final cats = await _service.getCategories();
-    setState(() => _categories = cats);
+    try {
+      final cats = await _service.getCategories();
+      if (cats.isNotEmpty && mounted) {
+        setState(() {
+          final set = {..._categories, ...cats}.toList()..sort();
+          _categories = set;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -66,74 +102,89 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.requirement != null;
-    return Scaffold(
-      backgroundColor: const Color(0xFFFDF8F0),
-      appBar: AppBar(
+    final uniqueCategories = _categories.toSet().toList();
+    final validCategory = (_selectedCategory != null &&
+                           _selectedCategory!.isNotEmpty &&
+                           uniqueCategories.contains(_selectedCategory))
+        ? _selectedCategory
+        : null;
+
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
         backgroundColor: const Color(0xFFFDF8F0),
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.brown),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          isEdit ? 'Edit Requirement' : 'Post Requirement',
-          style: TextStyle(
-            color: AppColors.brown,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFFDF8F0),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.brown),
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.of(context).maybePop();
+              }
+            },
+          ),
+          title: Text(
+            isEdit ? 'Edit Requirement' : 'Post Requirement',
+            style: const TextStyle(
+              color: AppColors.brown,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title
-              Text(
-                'Title *',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
-                controller: _titleController,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                decoration: _inputDecoration('e.g. Handwoven cotton dupattas'),
-              ),
-              const SizedBox(height: 16),
-
-              // Category
-              Text(
-                'Category',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.brown.withValues(alpha: 0.15)),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                Text(
+                  'Title *',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedCategory,
-                    isExpanded: true,
-                    hint: Text(
-                      'Select category',
-                      style: TextStyle(color: AppColors.brown.withValues(alpha: 0.4), fontSize: 14),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _titleController,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  decoration: _inputDecoration('e.g. Handwoven cotton dupattas'),
+                ),
+                const SizedBox(height: 16),
+
+                // Category
+                Text(
+                  'Category',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.brown.withValues(alpha: 0.15)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: validCategory,
+                      isExpanded: true,
+                      hint: Text(
+                        'Select category',
+                        style: TextStyle(color: AppColors.brown.withValues(alpha: 0.4), fontSize: 14),
+                      ),
+                      items: uniqueCategories.map((c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(c, style: const TextStyle(color: AppColors.brown)),
+                      )).toList(),
+                      onChanged: (v) => setState(() => _selectedCategory = v),
                     ),
-                    items: _categories.map((c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(c, style: TextStyle(color: AppColors.brown)),
-                    )).toList(),
-                    onChanged: (v) => setState(() => _selectedCategory = v),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
               // Quantity
               Text(
@@ -262,7 +313,72 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 decoration: _inputDecoration('Describe your full requirement in detail...'),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
+
+              // AI Matcher Quick Card
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.terracotta.withValues(alpha: 0.08),
+                      AppColors.mustardGold.withValues(alpha: 0.12),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.terracotta.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.terracotta.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.auto_awesome, color: AppColors.terracotta, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'AI Artisan Matcher',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.brown,
+                            ),
+                          ),
+                          Text(
+                            'Analyze with Groq & find artisans who can make this',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.brown.withValues(alpha: 0.65),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: _previewAIMatches,
+                      icon: const Icon(Icons.bolt, size: 14),
+                      label: const Text('Match AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.terracotta,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
 
               // Submit
               SizedBox(
@@ -285,7 +401,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                         )
                       : Text(
-                          isEdit ? 'Update Requirement' : 'Post Requirement',
+                          isEdit ? 'Update Requirement' : 'Post & Find Matching Artisans',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                 ),
@@ -294,8 +410,9 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
@@ -319,11 +436,49 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
     );
   }
 
+  void _previewAIMatches() {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter what you need (Title) first!'),
+          backgroundColor: AppColors.terracotta,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+
+    final userId = _currentUserId;
+    final requirement = B2BRequirement(
+      id: widget.requirement?.id ?? '',
+      buyerId: userId,
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      category: _selectedCategory ?? '',
+      quantity: int.tryParse(_quantityController.text) ?? 0,
+      budgetMin: double.tryParse(_budgetMinController.text),
+      budgetMax: double.tryParse(_budgetMaxController.text),
+      deliveryLocation: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
+      deadline: _deadline,
+      customization: _customizationController.text.trim().isEmpty ? null : _customizationController.text.trim(),
+      createdAt: widget.requirement?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => B2BAIMatchesScreen(requirement: requirement),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
 
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = _currentUserId;
     final requirement = B2BRequirement(
       id: widget.requirement?.id ?? '',
       buyerId: userId,
@@ -349,13 +504,19 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
       if (result != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.requirement != null ? 'Requirement updated!' : 'Requirement posted!'),
+            content: Text(widget.requirement != null ? 'Requirement updated!' : 'Requirement posted! Finding matching artisans...'),
             backgroundColor: AppColors.oliveGreen,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
-        Navigator.pop(context, true);
+        // Automatically navigate to AI matched artisans
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => B2BAIMatchesScreen(requirement: result),
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -369,3 +530,4 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
     }
   }
 }
+

@@ -14,6 +14,7 @@ import '../../../core/services/api_config.dart';
 import '../../../core/services/deepgram_stream_service.dart';
 import '../../../core/services/tts_service.dart';
 import '../models/product_draft.dart';
+import '../../../../core/localization/language_provider.dart';
 import 'voice_step2_quantity_screen.dart';
 
 class VoiceStep1DetailsScreen extends StatefulWidget {
@@ -122,7 +123,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     }
 
     if (!_showExtractedForm && !_ttsAutoPlayed) {
-      _ttsAutoPlayTimer = Timer(const Duration(seconds: 3), _autoPlayGuidance);
+      _ttsAutoPlayTimer = Timer(const Duration(seconds: 1), _autoPlayGuidance);
     }
   }
 
@@ -130,7 +131,8 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     if (!mounted || _ttsAutoPlayed) return;
     _ttsAutoPlayed = true;
     final langCode = _selectedLocaleId.split('_').first;
-    final text = langCode == 'hi' ? _ttsGuidanceHindi : _ttsGuidanceEnglish;
+    final lang = LanguageProvider.of(context);
+    final text = langCode == 'hi' ? lang.t('step1TtsGuidanceHi') : lang.t('step1TtsGuidanceEn');
     _ttsService.speak(text, language: langCode);
   }
 
@@ -156,7 +158,8 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
 
   Future<void> _speakGuidance() async {
     final langCode = _selectedLocaleId.split('_').first;
-    final text = langCode == 'hi' ? _ttsGuidanceHindi : _ttsGuidanceEnglish;
+    final lang = LanguageProvider.of(context);
+    final text = langCode == 'hi' ? lang.t('step1TtsGuidanceHi') : lang.t('step1TtsGuidanceEn');
     await _ttsService.speak(text, language: langCode);
   }
 
@@ -241,14 +244,15 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     }
 
     if (mounted) {
+      final lang = LanguageProvider.of(context);
       setState(() {
-        _errorMessage = 'No speech detected. Please speak clearly and try again.';
+        _errorMessage = lang.t('noSpeechDetected');
         _isExtracting = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please speak clearly about your product, then tap Done.'),
-          duration: Duration(seconds: 4),
+        SnackBar(
+          content: Text(lang.t('speakClearly')),
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -286,11 +290,12 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
           _populateControllersFromServer(extracted);
           _saveTowardsDraft(text);
           if (mounted) {
+            final lang = LanguageProvider.of(context);
             setState(() {
               _isExtracting = false;
               _showExtractedForm = true;
               _extractionHadData = _hasAnyData(extracted);
-              _errorMessage = _extractionHadData ? null : 'Extraction returned no data. Please speak more clearly.';
+              _errorMessage = _extractionHadData ? null : lang.t('extractionNoData');
             });
           }
           return;
@@ -305,11 +310,12 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     // Backend failed — show form with whatever we have
     _saveTowardsDraft(text);
     if (mounted) {
+      final lang = LanguageProvider.of(context);
       setState(() {
         _isExtracting = false;
         _showExtractedForm = true;
         _extractionHadData = false;
-        _errorMessage = 'Could not reach AI. Please check connection and try again, or fill manually.';
+        _errorMessage = lang.t('couldNotReachAI');
       });
     }
   }
@@ -354,7 +360,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             debugPrint('[AudioUpload] extracted=$extracted');
 
             if (!success) {
-              final errorMsg = data['error'] as String? ?? 'Transcription failed';
+              final errorMsg = data['error'] as String? ?? LanguageProvider.of(context).t('transcriptionFailed');
               if (mounted) {
                 setState(() {
                   _isExtracting = false;
@@ -381,21 +387,23 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
               _saveTowardsDraft(transcript);
               final hadData = _hasAnyData(extracted);
               if (mounted) {
+                final lang = LanguageProvider.of(context);
                 setState(() {
                   _isExtracting = false;
                   _showExtractedForm = true;
                   _extractionHadData = hadData;
-                  _errorMessage = hadData ? null : 'Speech was heard but details could not be extracted. Please edit manually.';
+                  _errorMessage = hadData ? null : lang.t('speechHeardButNoExtract');
                 });
               }
             } else {
               _saveTowardsDraft(transcript);
               if (mounted) {
+                final lang = LanguageProvider.of(context);
                 setState(() {
                   _isExtracting = false;
                   _showExtractedForm = true;
                   _extractionHadData = false;
-                  _errorMessage = 'No product details extracted. Please fill in manually.';
+                  _errorMessage = lang.t('noDetailsExtracted');
                 });
               }
             }
@@ -412,11 +420,12 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
 
     // All hosts failed
     if (mounted) {
+      final lang = LanguageProvider.of(context);
       setState(() {
         _isExtracting = false;
         _showExtractedForm = true;
         _extractionHadData = false;
-        _errorMessage = 'Could not connect to AI server. Please fill in details manually.';
+        _errorMessage = lang.t('couldNotConnectAI');
       });
     }
   }
@@ -488,6 +497,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   void _showLanguageSheet() {
+    final lang = LanguageProvider.of(context);
     final languages = [
       {'name': 'Hindi', 'locale': 'hi_IN'},
       {'name': 'English', 'locale': 'en_IN'},
@@ -510,7 +520,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
                 decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)),
               ),
               const SizedBox(height: AppDimensions.md),
-              Text('Select Voice Language', style: AppTextStyles.titleMedium),
+              Text(lang.t('selectVoiceLanguage'), style: AppTextStyles.titleMedium),
               const SizedBox(height: AppDimensions.sm),
               ...languages.map((lang) {
                 final isSelected = _selectedLocaleId == lang['locale'];
@@ -552,6 +562,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -564,7 +575,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         title: Column(
           children: [
             Text(
-              'Step 1 of 3: Product Details',
+              lang.t('step1Title'),
               style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream),
             ),
             const SizedBox(height: 2),
@@ -591,6 +602,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildStepProgressHeader() {
+    final lang = LanguageProvider.of(context);
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.lg, vertical: AppDimensions.md),
@@ -598,11 +610,11 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         children: [
           Row(
             children: [
-              _buildStepDot(1, 'Details', true, true),
+              _buildStepDot(1, lang.t('details'), true, true),
               _buildStepLine(false),
-              _buildStepDot(2, 'Quantity', false, false),
+              _buildStepDot(2, lang.t('quantity'), false, false),
               _buildStepLine(false),
-              _buildStepDot(3, 'Origin Story', false, false),
+              _buildStepDot(3, lang.t('originStory'), false, false),
             ],
           ),
           const SizedBox(height: AppDimensions.sm),
@@ -615,13 +627,13 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _showExtractedForm ? 'Review Product Details' : 'Tell About Your Product',
+                      _showExtractedForm ? lang.t('reviewProductDetails') : lang.t('tellAboutYourProduct'),
                       style: AppTextStyles.titleSmall.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       _showExtractedForm
-                          ? 'AI has extracted details. You can edit before saving.'
-                          : 'Speak naturally — HastKala AI extracts all details live!',
+                          ? lang.t('aiExtractedDetails')
+                          : lang.t('speakNaturally'),
                       style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 11),
                     ),
                   ],
@@ -732,27 +744,27 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildGuidingQuestionsCard() {
-    final langCode = _selectedLocaleId.split('_').first;
+    final lang = LanguageProvider.of(context);
 
     String mainLabel;
     IconData mainIcon;
     VoidCallback? mainOnTap;
 
     if (_isTtsSpeaking) {
-      mainLabel = langCode == 'hi' ? 'रुकें' : 'Pause';
+      mainLabel = lang.t('pause');
       mainIcon = Icons.pause_rounded;
       mainOnTap = _pauseGuidance;
     } else if (_isTtsPaused) {
-      mainLabel = langCode == 'hi' ? 'जारी रखें' : 'Resume';
+      mainLabel = lang.t('resume');
       mainIcon = Icons.play_arrow_rounded;
       mainOnTap = _resumeGuidance;
     } else {
-      mainLabel = langCode == 'hi' ? 'सुनें' : 'Listen';
+      mainLabel = lang.t('listen');
       mainIcon = Icons.volume_up_rounded;
       mainOnTap = _speakGuidance;
     }
 
-    final replayLabel = langCode == 'hi' ? 'फिर से' : 'Again';
+    final replayLabel = lang.t('again');
 
     return Container(
       width: double.infinity,
@@ -771,7 +783,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
               const SizedBox(width: AppDimensions.sm),
               Expanded(
                 child: Text(
-                  langCode == 'hi' ? 'Aap yeh baatein bol sakte hain:' : 'You can speak about these:',
+                  lang.t('youCanSpeak'),
                   style: AppTextStyles.titleSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -838,7 +850,12 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             ],
           ),
           const SizedBox(height: AppDimensions.sm),
-          ..._guidingQuestions.map((q) => Padding(
+          ...[
+            lang.t('step1GuidingQ1'),
+            lang.t('step1GuidingQ2'),
+            lang.t('step1GuidingQ3'),
+            lang.t('step1GuidingQ4'),
+          ].map((q) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -856,6 +873,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildLanguageChip() {
+    final lang = LanguageProvider.of(context);
     return GestureDetector(
       onTap: _showLanguageSheet,
       child: Container(
@@ -871,7 +889,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             const Icon(Icons.language, size: 16, color: AppColors.terracotta),
             const SizedBox(width: 6),
             Text(
-              'Voice Language: $_selectedLanguage',
+              '${lang.t('voiceLanguage')}: $_selectedLanguage',
               style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta),
             ),
             const SizedBox(width: 4),
@@ -883,6 +901,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildMicButton() {
+    final lang = LanguageProvider.of(context);
     return Column(
       children: [
         GestureDetector(
@@ -907,12 +926,12 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         ),
         const SizedBox(height: AppDimensions.md),
         Text(
-          'Tap to Speak',
+          lang.t('tapToSpeakDetails'),
           style: AppTextStyles.titleMedium.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
-          'Bolna shuru karein — bolo aur AI extract karega',
+          lang.t('bolnaShuru'),
           style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
       ],
@@ -920,6 +939,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildLiveCaptionActiveView() {
+    final lang = LanguageProvider.of(context);
     return Column(
       children: [
         Row(
@@ -932,7 +952,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             ),
             const SizedBox(width: AppDimensions.sm),
             Text(
-              'LIVE LISTENING  $_timerText',
+              '${lang.t('liveListening')}  $_timerText',
               style: AppTextStyles.titleSmall.copyWith(
                 color: AppColors.error,
                 fontWeight: FontWeight.bold,
@@ -968,7 +988,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
                   const Icon(Icons.record_voice_over_rounded, size: 16, color: AppColors.terracotta),
                   const SizedBox(width: 6),
                   Text(
-                    'Live Captions:',
+                    lang.t('liveCaptions'),
                     style: AppTextStyles.labelSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -977,7 +997,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
               Text(
                 _liveCaption.isNotEmpty
                     ? _liveCaption
-                    : 'Listening to your voice... speak about your product now...',
+                    : lang.t('listeningToVoiceDetails'),
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: _liveCaption.isNotEmpty ? AppColors.charcoal : AppColors.textSecondary,
                   height: 1.45,
@@ -1005,7 +1025,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
                 const Icon(Icons.auto_awesome, size: 20),
                 const SizedBox(width: AppDimensions.sm),
                 Text(
-                  'Done Speaking — Extract Details',
+                  lang.t('doneSpeakingExtract'),
                   style: AppTextStyles.buttonMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -1040,6 +1060,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildExtractingIndicator() {
+    final lang = LanguageProvider.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimensions.xl),
@@ -1059,12 +1080,12 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
           ),
           const SizedBox(height: AppDimensions.lg),
           Text(
-            'HastKala AI Extracting...',
+            lang.t('aiExtracting'),
             style: AppTextStyles.titleMedium.copyWith(color: AppColors.charcoal, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppDimensions.xs),
           Text(
-            'Identifying product name, category, material & craft...',
+            lang.t('identifyingProduct'),
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -1074,6 +1095,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildCaptionPreview() {
+    final lang = LanguageProvider.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimensions.md),
@@ -1085,7 +1107,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Last Spoken:', style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
+          Text(lang.t('lastSpoken'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
           const SizedBox(height: 4),
           Text(_liveCaption, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal)),
         ],
@@ -1094,6 +1116,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildManualToggle() {
+    final lang = LanguageProvider.of(context);
     return GestureDetector(
       onTap: () => setState(() => _showManualInput = !_showManualInput),
       child: Padding(
@@ -1108,7 +1131,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             ),
             const SizedBox(width: 6),
             Text(
-              _showManualInput ? 'Hide typing input' : 'Or type product details manually',
+              _showManualInput ? lang.t('hideTypingInput') : lang.t('orTypeDetails'),
               style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
             ),
           ],
@@ -1118,6 +1141,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildManualInputSection() {
+    final lang = LanguageProvider.of(context);
     return Column(
       children: [
         TextField(
@@ -1149,7 +1173,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMD)),
             ),
-            child: const Text('Extract from Typed Text'),
+            child: Text(lang.t('extractFromTyped')),
           ),
         ),
       ],
@@ -1161,6 +1185,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildExtractedFormView() {
+    final lang = LanguageProvider.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1178,25 +1203,25 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         if (kDebugMode && (_debugTranscript != null || _debugExtracted != null))
           _buildDebugPanel(),
 
-        _buildFormField('Product Title / Name', _productNameCtrl, Icons.shopping_bag_outlined, 'e.g. Bamboo Basket, Clay Diya'),
+        _buildFormField(lang.t('productTitle'), _productNameCtrl, Icons.shopping_bag_outlined, lang.t('hintProductTitle')),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Category', _categoryCtrl, Icons.category_outlined, 'e.g. Bamboo & Cane, Pottery & Ceramics'),
+        _buildFormField(lang.t('category'), _categoryCtrl, Icons.category_outlined, lang.t('hintCategory')),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Material', _materialCtrl, Icons.texture_outlined, 'e.g. Bamboo, Terracotta Clay, Wood'),
+        _buildFormField(lang.t('material'), _materialCtrl, Icons.texture_outlined, lang.t('hintMaterial')),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Craft Technique', _craftCtrl, Icons.handyman_outlined, 'e.g. Blue Pottery, Hand Carved (leave blank if none)'),
+        _buildFormField(lang.t('craftTechnique'), _craftCtrl, Icons.handyman_outlined, lang.t('hintCraft')),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Color(s)', _colorCtrl, Icons.palette_outlined, 'e.g. Brown, Blue & Gold'),
+        _buildFormField(lang.t('colors'), _colorCtrl, Icons.palette_outlined, lang.t('hintColors')),
         const SizedBox(height: AppDimensions.md),
         Row(
           children: [
-            Expanded(child: _buildFormField('Size / Dimensions', _sizeCtrl, Icons.straighten_outlined, 'e.g. 12 inch')),
+            Expanded(child: _buildFormField(lang.t('sizeDimensions'), _sizeCtrl, Icons.straighten_outlined, lang.t('hintSize'))),
             const SizedBox(width: AppDimensions.md),
-            Expanded(child: _buildFormField('Weight', _weightCtrl, Icons.scale_outlined, 'e.g. 400 grams')),
+            Expanded(child: _buildFormField(lang.t('weight'), _weightCtrl, Icons.scale_outlined, lang.t('hintWeight'))),
           ],
         ),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Description', _descriptionCtrl, Icons.description_outlined, 'Short description of your product'),
+        _buildFormField(lang.t('description'), _descriptionCtrl, Icons.description_outlined, lang.t('hintDescription')),
         const SizedBox(height: AppDimensions.xxl),
 
         SizedBox(
@@ -1214,7 +1239,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Save & Continue to Step 2 (Quantity) →',
+                  lang.t('saveAndContinueStep2'),
                   style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
                 ),
               ],
@@ -1227,6 +1252,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildSuccessBanner() {
+    final lang = LanguageProvider.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimensions.md),
       decoration: BoxDecoration(
@@ -1240,7 +1266,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
           const SizedBox(width: AppDimensions.sm),
           Expanded(
             child: Text(
-              'Details extracted! Review or edit below.',
+              lang.t('detailsExtracted'),
               style: AppTextStyles.bodySmall.copyWith(color: AppColors.oliveGreen, fontWeight: FontWeight.bold),
             ),
           ),
@@ -1249,7 +1275,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
               _showExtractedForm = false;
               _errorMessage = null;
             }),
-            child: const Text('Speak Again', style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
+            child: Text(lang.t('speakAgain'), style: const TextStyle(color: AppColors.terracotta, fontSize: 12)),
           ),
         ],
       ),
@@ -1257,6 +1283,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildWarningBanner() {
+    final lang = LanguageProvider.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimensions.md),
       decoration: BoxDecoration(
@@ -1270,7 +1297,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
           const SizedBox(width: AppDimensions.sm),
           Expanded(
             child: Text(
-              'Speech heard but no details extracted. Please fill in manually.',
+              lang.t('speechHeardNoDetails'),
               style: AppTextStyles.bodySmall.copyWith(color: Colors.orange.shade800, fontWeight: FontWeight.bold),
             ),
           ),
@@ -1279,7 +1306,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
               _showExtractedForm = false;
               _errorMessage = null;
             }),
-            child: const Text('Try Again', style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
+            child: Text(lang.t('tryAgain'), style: const TextStyle(color: AppColors.terracotta, fontSize: 12)),
           ),
         ],
       ),
@@ -1287,6 +1314,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildErrorBanner() {
+    final lang = LanguageProvider.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimensions.md),
       decoration: BoxDecoration(
@@ -1309,7 +1337,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
               _showExtractedForm = false;
               _errorMessage = null;
             }),
-            child: const Text('Try Again', style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
+            child: Text(lang.t('tryAgain'), style: const TextStyle(color: AppColors.terracotta, fontSize: 12)),
           ),
         ],
       ),

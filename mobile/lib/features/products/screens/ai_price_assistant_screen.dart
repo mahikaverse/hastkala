@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/services/api_config.dart';
 import '../models/product_draft.dart';
 
@@ -302,6 +303,7 @@ class _AIPriceAssistantScreenState extends State<AIPriceAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -312,7 +314,7 @@ class _AIPriceAssistantScreenState extends State<AIPriceAssistantScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'AI Price Assistant',
+          lang.t('aiPriceAssistant'),
           style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream),
         ),
         centerTitle: true,
@@ -324,6 +326,7 @@ class _AIPriceAssistantScreenState extends State<AIPriceAssistantScreen> {
   }
 
   Widget _buildLoadingView() {
+    final lang = LanguageProvider.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.xxl),
@@ -340,7 +343,7 @@ class _AIPriceAssistantScreenState extends State<AIPriceAssistantScreen> {
             ),
             const SizedBox(height: AppDimensions.xxl),
             Text(
-              "Let's check the market",
+              lang.t('letsCheckMarket'),
               style: AppTextStyles.headlineMedium.copyWith(
                 color: AppColors.charcoal,
                 fontWeight: FontWeight.bold,
@@ -349,7 +352,7 @@ class _AIPriceAssistantScreenState extends State<AIPriceAssistantScreen> {
             ),
             const SizedBox(height: AppDimensions.sm),
             Text(
-              'Researching comparable handcrafted listings in India...',
+              lang.t('researchingListings'),
               style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),

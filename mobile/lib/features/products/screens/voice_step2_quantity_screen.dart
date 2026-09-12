@@ -13,6 +13,7 @@ import '../../../core/services/api_config.dart';
 import '../../../core/services/deepgram_stream_service.dart';
 import '../../../core/services/tts_service.dart';
 import '../models/product_draft.dart';
+import '../../../../core/localization/language_provider.dart';
 import 'voice_step3_story_screen.dart';
 
 class VoiceStep2QuantityScreen extends StatefulWidget {
@@ -60,21 +61,6 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   bool _ttsAutoPlayed = false;
   Timer? _ttsAutoPlayTimer;
 
-  static const _guidingQuestions = [
-    'Abhi kitne piece ready stock mein hain?',
-    'Har mahine ya hafte kitna bana sakte ho (Production Capacity)?',
-    'Ek piece banane mein kitna samay lagta hai?',
-    'Banane ka process kya hai (chaak, haath se ghada, carving)?',
-  ];
-
-  static const _ttsGuidanceHindi = 'Abhi aapke paas kitne pieces ready stock mein hain, '
-      'aap har hafte ya mahine kitne pieces bana sakte hain, '
-      'aur ek piece banane mein kitna samay lagta hai, ye batayein.';
-
-  static const _ttsGuidanceEnglish = 'Tell us how many pieces you have in ready stock, '
-      'how many pieces you can make per week or month, '
-      'and how long it takes to make one piece.';
-
   @override
   void initState() {
     super.initState();
@@ -105,15 +91,16 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
     }
 
     if (!_showExtractedForm && !_ttsAutoPlayed) {
-      _ttsAutoPlayTimer = Timer(const Duration(seconds: 3), _autoPlayGuidance);
+      _ttsAutoPlayTimer = Timer(const Duration(seconds: 1), _autoPlayGuidance);
     }
   }
 
   void _autoPlayGuidance() {
     if (!mounted || _ttsAutoPlayed) return;
     _ttsAutoPlayed = true;
+    final lang = LanguageProvider.of(context);
     final langCode = _selectedLocaleId.split('_').first;
-    final text = langCode == 'hi' ? _ttsGuidanceHindi : _ttsGuidanceEnglish;
+    final text = langCode == 'hi' ? lang.t('step2TtsGuidanceHi') : lang.t('step2TtsGuidanceEn');
     _ttsService.speak(text, language: langCode);
   }
 
@@ -134,8 +121,9 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   Future<void> _speakGuidance() async {
+    final lang = LanguageProvider.of(context);
     final langCode = _selectedLocaleId.split('_').first;
-    final text = langCode == 'hi' ? _ttsGuidanceHindi : _ttsGuidanceEnglish;
+    final text = langCode == 'hi' ? lang.t('step2TtsGuidanceHi') : lang.t('step2TtsGuidanceEn');
     await _ttsService.speak(text, language: langCode);
   }
 
@@ -220,8 +208,9 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
     }
 
     if (mounted) {
+      final lang = LanguageProvider.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please speak clearly about quantity and making details.')),
+        SnackBar(content: Text(lang.t('speakClearlyQty'))),
       );
     }
   }
@@ -360,6 +349,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   void _showLanguageSheet() {
+    final lang = LanguageProvider.of(context);
     final languages = [
       {'name': 'Hindi', 'locale': 'hi_IN'},
       {'name': 'English', 'locale': 'en_IN'},
@@ -376,21 +366,21 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
               const SizedBox(height: AppDimensions.md),
               Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2))),
               const SizedBox(height: AppDimensions.md),
-              Text('Select Voice Language', style: AppTextStyles.titleMedium),
+              Text(lang.t('selectVoiceLanguage'), style: AppTextStyles.titleMedium),
               const SizedBox(height: AppDimensions.sm),
-              ...languages.map((lang) {
-                final isSelected = _selectedLocaleId == lang['locale'];
+              ...languages.map((langItem) {
+                final isSelected = _selectedLocaleId == langItem['locale'];
                 return ListTile(
-                  title: Text(lang['name']!, style: AppTextStyles.bodyMedium.copyWith(color: isSelected ? AppColors.terracotta : AppColors.charcoal)),
+                  title: Text(langItem['name']!, style: AppTextStyles.bodyMedium.copyWith(color: isSelected ? AppColors.terracotta : AppColors.charcoal)),
                   trailing: isSelected ? const Icon(Icons.check, color: AppColors.terracotta) : null,
                   onTap: () async {
                     await _stopSpeaking();
                     _ttsAutoPlayTimer?.cancel();
                     if (!ctx.mounted) return;
                     setState(() {
-                      _selectedLanguage = lang['name']!.split(' ').first;
-                      _selectedLocaleId = lang['locale']!;
-                      widget.draft.voiceLanguage = lang['locale']!;
+                      _selectedLanguage = langItem['name']!.split(' ').first;
+                      _selectedLocaleId = langItem['locale']!;
+                      widget.draft.voiceLanguage = langItem['locale']!;
                     });
                     Navigator.pop(ctx);
                   },
@@ -411,6 +401,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -422,9 +413,9 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
         ),
         title: Column(
           children: [
-            Text('Step 2 of 3: Quantity & Making', style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream)),
+            Text(lang.t('step2Title'), style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream)),
             const SizedBox(height: 2),
-            Text('मात्रा और निर्माण क्षमता', style: AppTextStyles.bodySmall.copyWith(color: AppColors.cream.withValues(alpha: 0.8), fontSize: 11)),
+            Text(lang.t('step2TitleSub'), style: AppTextStyles.bodySmall.copyWith(color: AppColors.cream.withValues(alpha: 0.8), fontSize: 11)),
           ],
         ),
         centerTitle: true,
@@ -444,6 +435,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   Widget _buildStepProgressHeader() {
+    final lang = LanguageProvider.of(context);
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.lg, vertical: AppDimensions.md),
@@ -451,11 +443,11 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
         children: [
           Row(
             children: [
-              _buildStepDot(1, 'Details', true, false),
+              _buildStepDot(1, lang.t('details'), true, false),
               _buildStepLine(true),
-              _buildStepDot(2, 'Quantity', true, true),
+              _buildStepDot(2, lang.t('quantity'), true, true),
               _buildStepLine(false),
-              _buildStepDot(3, 'Origin Story', false, false),
+              _buildStepDot(3, lang.t('originStory'), false, false),
             ],
           ),
           const SizedBox(height: AppDimensions.sm),
@@ -468,15 +460,15 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.draft.productName ?? 'Product',
+                      widget.draft.productName ?? lang.t('productFallback'),
                       style: AppTextStyles.titleSmall.copyWith(fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       _showExtractedForm
-                          ? 'Review quantity & production capacity below'
-                          : 'Batayein kitna bana sakte ho aur kitna ready stock hai',
+                          ? lang.t('reviewQuantity')
+                          : lang.t('batayeinKitna'),
                       style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 11),
                     ),
                   ],
@@ -586,26 +578,34 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
 
   Widget _buildGuidingQuestionsCard() {
     final langCode = _selectedLocaleId.split('_').first;
+    final lang = LanguageProvider.of(context);
 
     String mainLabel;
     IconData mainIcon;
     VoidCallback? mainOnTap;
 
     if (_isTtsSpeaking) {
-      mainLabel = langCode == 'hi' ? 'रुकें' : 'Pause';
+      mainLabel = lang.t('pause');
       mainIcon = Icons.pause_rounded;
       mainOnTap = _pauseGuidance;
     } else if (_isTtsPaused) {
-      mainLabel = langCode == 'hi' ? 'जारी रखें' : 'Resume';
+      mainLabel = lang.t('resume');
       mainIcon = Icons.play_arrow_rounded;
       mainOnTap = _resumeGuidance;
     } else {
-      mainLabel = langCode == 'hi' ? 'सुनें' : 'Listen';
+      mainLabel = lang.t('listen');
       mainIcon = Icons.volume_up_rounded;
       mainOnTap = _speakGuidance;
     }
 
-    final replayLabel = langCode == 'hi' ? 'फिर से' : 'Again';
+    final replayLabel = lang.t('again');
+
+    final guidingQuestions = [
+      lang.t('step2GuidingQ1'),
+      lang.t('step2GuidingQ2'),
+      lang.t('step2GuidingQ3'),
+      lang.t('step2GuidingQ4'),
+    ];
 
     return Container(
       width: double.infinity,
@@ -624,7 +624,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
               const SizedBox(width: AppDimensions.sm),
               Expanded(
                 child: Text(
-                  langCode == 'hi' ? 'Aap yeh baatein bol sakte hain:' : 'You can speak about these:',
+                  lang.t('youCanSpeak'),
                   style: AppTextStyles.titleSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -691,7 +691,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
             ],
           ),
           const SizedBox(height: AppDimensions.sm),
-          ..._guidingQuestions.map((q) => Padding(
+          ...guidingQuestions.map((q) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -709,6 +709,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   Widget _buildLanguageChip() {
+    final lang = LanguageProvider.of(context);
     return GestureDetector(
       onTap: _showLanguageSheet,
       child: Container(
@@ -723,7 +724,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
           children: [
             const Icon(Icons.language, size: 16, color: AppColors.terracotta),
             const SizedBox(width: 6),
-            Text('Voice Language: $_selectedLanguage', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
+            Text('${lang.t('voiceLanguage')}: $_selectedLanguage', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
             const SizedBox(width: 4),
             const Icon(Icons.arrow_drop_down, size: 18, color: AppColors.terracotta),
           ],
@@ -733,6 +734,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   Widget _buildMicButton() {
+    final lang = LanguageProvider.of(context);
     return Column(
       children: [
         GestureDetector(
@@ -752,14 +754,15 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
           ),
         ),
         const SizedBox(height: AppDimensions.md),
-        Text('Tap to Speak Quantity', style: AppTextStyles.titleMedium.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold)),
+        Text(lang.t('tapToSpeakQuantity'), style: AppTextStyles.titleMedium.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        Text('Stock, capacity aur banane ka samay batayein', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+        Text(lang.t('stockCapacity'), style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
       ],
     );
   }
 
   Widget _buildLiveCaptionActiveView() {
+    final lang = LanguageProvider.of(context);
     return Column(
       children: [
         Row(
@@ -768,7 +771,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
             Container(width: 10, height: 10, decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle)),
             const SizedBox(width: AppDimensions.sm),
             Text(
-              'LIVE LISTENING  $_timerText',
+              '${lang.t('liveListening')}  $_timerText',
               style: AppTextStyles.titleSmall.copyWith(color: AppColors.error, fontWeight: FontWeight.bold, letterSpacing: 0.8),
             ),
           ],
@@ -797,14 +800,14 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
                 children: [
                   const Icon(Icons.record_voice_over_rounded, size: 16, color: AppColors.terracotta),
                   const SizedBox(width: 6),
-                  Text('Live Captions:', style: AppTextStyles.labelSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold)),
+                  Text(lang.t('liveCaptions'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: AppDimensions.sm),
               Text(
                 _liveCaption.isNotEmpty
                     ? _liveCaption
-                    : 'Listening to your voice... speak about stock quantity and making capacity...',
+                    : lang.t('listeningToVoiceDetails'),
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: _liveCaption.isNotEmpty ? AppColors.charcoal : AppColors.textSecondary,
                   height: 1.45,
@@ -832,7 +835,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
               children: [
                 const Icon(Icons.auto_awesome, size: 20),
                 const SizedBox(width: AppDimensions.sm),
-                Text('Done Speaking — Extract Quantity', style: AppTextStyles.buttonMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text(lang.t('doneSpeakingExtractQty'), style: AppTextStyles.buttonMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -865,6 +868,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   Widget _buildExtractingIndicator() {
+    final lang = LanguageProvider.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimensions.xl),
@@ -883,15 +887,16 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
             child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation(AppColors.terracotta)),
           ),
           const SizedBox(height: AppDimensions.lg),
-          Text('HastKala AI Extracting Quantity...', style: AppTextStyles.titleMedium.copyWith(color: AppColors.charcoal, fontWeight: FontWeight.bold)),
+          Text(lang.t('aiExtractingQty'), style: AppTextStyles.titleMedium.copyWith(color: AppColors.charcoal, fontWeight: FontWeight.bold)),
           const SizedBox(height: AppDimensions.xs),
-          Text('Identifying ready stock count, monthly capacity & making time...', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary), textAlign: TextAlign.center),
+          Text(lang.t('identifyingStock'), style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary), textAlign: TextAlign.center),
         ],
       ),
     );
   }
 
   Widget _buildCaptionPreview() {
+    final lang = LanguageProvider.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimensions.md),
@@ -903,7 +908,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Last Spoken:', style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
+          Text(lang.t('lastSpoken'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
           const SizedBox(height: 4),
           Text(_liveCaption, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal)),
         ],
@@ -912,6 +917,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   Widget _buildManualToggle() {
+    final lang = LanguageProvider.of(context);
     return GestureDetector(
       onTap: () => setState(() => _showManualInput = !_showManualInput),
       child: Padding(
@@ -922,7 +928,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
             Icon(_showManualInput ? Icons.keyboard_hide : Icons.keyboard, size: 18, color: AppColors.terracotta),
             const SizedBox(width: 6),
             Text(
-              _showManualInput ? 'Hide typing input' : 'Or type quantity & making details',
+              _showManualInput ? lang.t('hideTypingInput') : lang.t('orTypeQuantity'),
               style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
             ),
           ],
@@ -932,13 +938,14 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   Widget _buildManualInputSection() {
+    final lang = LanguageProvider.of(context);
     return Column(
       children: [
         TextField(
           controller: _manualInputCtrl,
           maxLines: 3,
           decoration: InputDecoration(
-            hintText: 'e.g. Mere paas 20 piece ready hain aur mahine me 60 piece bana sakte hain. Ek piece me 2 din lagte hain...',
+            hintText: lang.t('step2HintManualInput'),
             hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             filled: true,
             fillColor: Colors.white,
@@ -961,7 +968,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMD)),
             ),
-            child: const Text('Extract from Typed Text'),
+            child: Text(lang.t('extractFromTyped')),
           ),
         ),
       ],
@@ -973,6 +980,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildExtractedFormView() {
+    final lang = LanguageProvider.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -989,26 +997,26 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
               const SizedBox(width: AppDimensions.sm),
               Expanded(
                 child: Text(
-                  'Quantity & Making details auto-filled! Review or edit below.',
+                  lang.t('quantityExtracted'),
                   style: AppTextStyles.bodySmall.copyWith(color: AppColors.oliveGreen, fontWeight: FontWeight.bold),
                 ),
               ),
               TextButton(
                 onPressed: () => setState(() => _showExtractedForm = false),
-                child: const Text('Speak Again', style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
+                child: Text(lang.t('speakAgain'), style: const TextStyle(color: AppColors.terracotta, fontSize: 12)),
               ),
             ],
           ),
         ),
         const SizedBox(height: AppDimensions.lg),
 
-        _buildFormField('Ready Stock Quantity', _quantityCtrl, Icons.inventory_2_outlined, 'e.g. 15 pieces ready', keyboardType: TextInputType.number),
+        _buildFormField(lang.t('readyStockQty'), _quantityCtrl, Icons.inventory_2_outlined, lang.t('hintReadyStock'), keyboardType: TextInputType.number),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Production Capacity (Kitna bana sakte ho?)', _capacityCtrl, Icons.precision_manufacturing_outlined, 'e.g. 50 pieces per month'),
+        _buildFormField(lang.t('productionCapacity'), _capacityCtrl, Icons.precision_manufacturing_outlined, lang.t('hintCapacity')),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Time to Make 1 Piece (Making Time)', _makingTimeCtrl, Icons.timer_outlined, 'e.g. 2 days, 4 hours'),
+        _buildFormField(lang.t('makingTime'), _makingTimeCtrl, Icons.timer_outlined, lang.t('hintMakingTime')),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField('Making Process / Technique', _makingProcessCtrl, Icons.handyman_outlined, 'e.g. Wheel-turned, dried in sun, kiln-baked, hand-painted', maxLines: 2),
+        _buildFormField(lang.t('makingProcess'), _makingProcessCtrl, Icons.handyman_outlined, lang.t('hintMakingProcess'), maxLines: 2),
         const SizedBox(height: AppDimensions.xxl),
 
         // Save & Next Button
@@ -1027,7 +1035,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Save & Continue to Step 3 (Origin Story) →',
+                  lang.t('saveAndContinueStep3'),
                   style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
                 ),
               ],

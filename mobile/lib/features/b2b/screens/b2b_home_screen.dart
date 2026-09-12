@@ -332,7 +332,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
-                            Icons.add_task,
+                            Icons.auto_awesome,
                             color: Colors.white,
                             size: 24,
                           ),
@@ -342,19 +342,40 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Post a Requirement',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Post a Requirement',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.25),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'AI MATCH',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Tell artisans what you need, get quotes fast',
+                                'Groq AI matches your requirement with top artisans',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
+                                  color: Colors.white.withValues(alpha: 0.85),
                                   fontSize: 12,
                                 ),
                               ),
