@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
-import '../../../core/services/auth_service.dart';
+import '../../../core/services/app_intro_audio_service.dart';
 import '../../../core/widgets/hast_kala_background.dart';
 
 /// Splash screen for the HastKala application.
@@ -21,7 +21,7 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
@@ -30,6 +30,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
@@ -39,11 +40,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1800),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -52,30 +53,32 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    _navigationTimer = Timer(const Duration(milliseconds: 1800), () {
+    AppIntroAudioService().startIntroMusic();
+
+    _navigationTimer = Timer(const Duration(milliseconds: 2200), () {
       _checkAuthAndNavigate();
     });
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final audio = AppIntroAudioService();
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      audio.pause();
+    } else if (state == AppLifecycleState.resumed) {
+      audio.resume();
+    }
+  }
+
   void _checkAuthAndNavigate() {
     if (!mounted) return;
-
-    final auth = AuthService();
-    if (auth.isLoggedIn) {
-      // User is logged in, navigate straight to role dashboard! No re-login!
-      final targetRoute = auth.getHomeRouteForRole();
-      Navigator.of(context).pushReplacementNamed(targetRoute);
-    } else if (auth.hasSeenOnboarding) {
-      // Onboarding seen earlier, go straight to login
-      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-    } else {
-      // First time user, show onboarding
-      Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
-    }
+    AppIntroAudioService().stopIntroMusic();
+    Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _navigationTimer?.cancel();
     _controller.dispose();
     super.dispose();

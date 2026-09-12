@@ -70,15 +70,19 @@ def _transcribe_deepgram(
 
     params = {
         "model": "nova-3",
-        "smart_format": "true",
-        "detect_language": "true",
         "paragraphs": "true",
         "utt_split": "true",
     }
     if language:
         params["language"] = language
+        params["detect_language"] = "false"
+        logger.info(f"[STT] Explicit language={language}, detect_language=false")
     else:
         params["language"] = "hi"
+        params["detect_language"] = "false"
+        logger.info(f"[STT] Default language=hi, detect_language=false")
+
+    logger.info(f"[STT] Deepgram params: {params}, mime={mime}")
 
     headers = {
         "Authorization": f"Token {api_key}",

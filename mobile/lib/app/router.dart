@@ -7,8 +7,14 @@ import '../features/artisan/presentation/artisan_profile_screen.dart';
 import '../features/artisan/presentation/manage_products_screen.dart';
 import '../features/artisan_store/presentation/screens/artisan_dashboard_screen.dart';
 import '../features/artisan_store/presentation/screens/artisan_store_screen.dart';
+import '../features/artisan_store/presentation/screens/my_products_screen.dart';
+import '../features/artisan_store/presentation/screens/schemes_events_screen.dart';
+import '../features/artisan_store/presentation/screens/analytics_placeholder_screen.dart';
+import '../features/artisan_store/presentation/screens/artisan_profile_new_screen.dart';
+import '../features/artisan_store/presentation/screens/edit_profile_screen.dart';
 import '../features/artisan_store/presentation/screens/voice_add_product_screen.dart';
-import '../features/auth/presentation/auth_screen.dart';
+import '../features/artisan_store/presentation/screens/seller_product_detail_screen.dart';
+import '../features/artisan_store/presentation/screens/seller_edit_product_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/buyer/presentation/buyer_home_screen.dart';
 import '../features/cart/presentation/cart_screen.dart';
@@ -31,7 +37,6 @@ import '../features/products/screens/artisan_add_product_screen.dart';
 import '../features/products/screens/voice_step1_details_screen.dart';
 import '../features/products/screens/voice_step2_quantity_screen.dart';
 import '../features/products/screens/voice_step3_story_screen.dart';
-import '../features/products/screens/tell_about_product_screen.dart';
 import '../features/products/screens/review_details_screen.dart';
 import '../features/products/screens/catalog_preview_screen.dart';
 import '../features/products/screens/set_price_screen.dart';
@@ -79,6 +84,15 @@ abstract final class AppRoutes {
   static const String voiceStep1Details = '/voice-step-1';
   static const String voiceStep2Quantity = '/voice-step-2';
   static const String voiceStep3Story = '/voice-step-3';
+
+  // New seller experience routes
+  static const String myProducts = '/my-products';
+  static const String schemesEvents = '/schemes-events';
+  static const String analyticsPlaceholder = '/analytics-placeholder';
+  static const String artisanProfileNew = '/artisan-profile-new';
+  static const String editProfile = '/edit-profile';
+  static const String sellerProductDetail = '/seller-product-detail';
+  static const String editProduct = '/edit-product';
   static const String tellAboutProduct = '/tell-about-product';
   static const String reviewDetails = '/review-details';
   static const String catalogPreview = '/catalog-preview';
@@ -175,6 +189,31 @@ class AppRouter {
         return _buildRoute(const ExploreArtisansScreen(), settings: settings);
       case AppRoutes.voiceAddProduct:
         return _buildRoute(const VoiceAddProductScreen(), settings: settings);
+      case AppRoutes.myProducts:
+        return _buildRoute(const MyProductsScreen(), settings: settings);
+      case AppRoutes.schemesEvents:
+        return _buildRoute(const SchemesEventsScreen(), settings: settings);
+      case AppRoutes.analyticsPlaceholder:
+        return _buildRoute(const AnalyticsPlaceholderScreen(), settings: settings);
+      case AppRoutes.artisanProfileNew:
+        return _buildRoute(const ArtisanProfileNewScreen(), settings: settings);
+      case AppRoutes.editProfile:
+        return _buildRoute(const EditProfileScreen(), settings: settings);
+      case AppRoutes.sellerProductDetail:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final productId = args?['productId'] as String? ?? '';
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => SellerProductDetailScreen(productId: productId),
+        );
+      case AppRoutes.editProduct:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final productId = args?['productId'] as String? ?? '';
+        final newImagePath = args?['newImagePath'] as String?;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => SellerEditProductScreen(productId: productId, newImagePath: newImagePath),
+        );
       case AppRoutes.voiceStep1Details:
       case AppRoutes.tellAboutProduct:
         final draft = settings.arguments as ProductDraft;

@@ -12,6 +12,7 @@ import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/api_config.dart';
 import '../../../core/services/deepgram_stream_service.dart';
+import '../../../core/services/tts_service.dart';
 import '../models/product_draft.dart';
 import 'voice_step2_quantity_screen.dart';
 
@@ -63,12 +64,28 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   String? _debugTranscript;
   Map<String, dynamic>? _debugExtracted;
 
-  final List<String> _guidingQuestions = [
+  // TTS
+  final TtsService _ttsService = TtsService();
+  bool _isTtsSpeaking = false;
+  bool _isTtsPaused = false;
+  bool _ttsAutoPlayed = false;
+  Timer? _ttsAutoPlayTimer;
+
+  static const _guidingQuestions = [
     'Product ka naam kya hai? (e.g. bamboo ki tokri)',
     'Kis material se bana hai? (mitti, lakdi, pital, silk, bamboo)',
     'Kaunsi kala ya craft hai? (Blue Pottery, Chikankari, etc.)',
     'Rang (color) aur size / weight kya hai?',
   ];
+
+  static const _ttsGuidanceHindi = 'Apne product ke baare mein batayein. '
+      'Product ka naam kya hai, ye kis material se bana hai, '
+      'iska rang, size aur wazan kya hai. '
+      'Agar aapko craft ya banane ki technique pata hai to woh bhi batayein.';
+
+  static const _ttsGuidanceEnglish = 'Please tell us about your product. '
+      'Tell us its name, material, color, size and weight. '
+      'If you know the craft or making technique, you can tell us that too.';
 
   @override
   void initState() {
@@ -77,6 +94,15 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
+    _ttsService.initialize();
+    _ttsService.onStateChanged = () {
+      if (mounted) {
+        setState(() {
+          _isTtsSpeaking = _ttsService.isSpeaking;
+          _isTtsPaused = _ttsService.isPaused;
+        });
+      }
+    };
 
     final d = widget.draft;
     _selectedLocaleId = d.voiceLanguage;
@@ -90,18 +116,31 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     _weightCtrl = TextEditingController(text: d.weight ?? '');
     _descriptionCtrl = TextEditingController(text: d.description ?? '');
 
-    // If draft already has product name, show form
     if (d.productName != null && d.productName!.isNotEmpty) {
       _showExtractedForm = true;
       _extractionHadData = true;
     }
 
+    if (!_showExtractedForm && !_ttsAutoPlayed) {
+      _ttsAutoPlayTimer = Timer(const Duration(seconds: 3), _autoPlayGuidance);
+    }
+  }
+
+  void _autoPlayGuidance() {
+    if (!mounted || _ttsAutoPlayed) return;
+    _ttsAutoPlayed = true;
+    final langCode = _selectedLocaleId.split('_').first;
+    final text = langCode == 'hi' ? _ttsGuidanceHindi : _ttsGuidanceEnglish;
+    _ttsService.speak(text, language: langCode);
   }
 
   @override
   void dispose() {
+    _ttsAutoPlayTimer?.cancel();
+    _ttsService.stop();
     _recordingTimer?.cancel();
     _waveController.dispose();
+    _ttsService.dispose();
     _productNameCtrl.dispose();
     _categoryCtrl.dispose();
     _materialCtrl.dispose();
@@ -115,8 +154,35 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     super.dispose();
   }
 
+  Future<void> _speakGuidance() async {
+    final langCode = _selectedLocaleId.split('_').first;
+    final text = langCode == 'hi' ? _ttsGuidanceHindi : _ttsGuidanceEnglish;
+    await _ttsService.speak(text, language: langCode);
+  }
+
+  Future<void> _pauseGuidance() async {
+    await _ttsService.pause();
+  }
+
+  Future<void> _resumeGuidance() async {
+    await _ttsService.resume();
+  }
+
+  Future<void> _replayGuidance() async {
+    await _ttsService.replay();
+  }
+
+  Future<void> _stopSpeaking() async {
+    await _ttsService.stop();
+    if (mounted) setState(() { _isTtsSpeaking = false; _isTtsPaused = false; });
+  }
+
   Future<void> _startRecording() async {
     if (_isExtracting) return;
+
+    // Stop TTS before starting mic
+    await _stopSpeaking();
+    _ttsAutoPlayTimer?.cancel();
 
     setState(() {
       _isRecording = true;
@@ -457,11 +523,14 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
                     ),
                   ),
                   trailing: isSelected ? const Icon(Icons.check, color: AppColors.terracotta) : null,
-                  onTap: () {
+                  onTap: () async {
+                    await _stopSpeaking();
+                    _ttsAutoPlayTimer?.cancel();
+                    if (!ctx.mounted) return;
                     setState(() {
                       _selectedLanguage = lang['name']!.split(' ').first;
                       _selectedLocaleId = lang['locale']!;
-        widget.draft.voiceLanguage = lang['locale']!;
+                      widget.draft.voiceLanguage = lang['locale']!;
                     });
                     Navigator.pop(ctx);
                   },
@@ -663,6 +732,28 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Widget _buildGuidingQuestionsCard() {
+    final langCode = _selectedLocaleId.split('_').first;
+
+    String mainLabel;
+    IconData mainIcon;
+    VoidCallback? mainOnTap;
+
+    if (_isTtsSpeaking) {
+      mainLabel = langCode == 'hi' ? 'रुकें' : 'Pause';
+      mainIcon = Icons.pause_rounded;
+      mainOnTap = _pauseGuidance;
+    } else if (_isTtsPaused) {
+      mainLabel = langCode == 'hi' ? 'जारी रखें' : 'Resume';
+      mainIcon = Icons.play_arrow_rounded;
+      mainOnTap = _resumeGuidance;
+    } else {
+      mainLabel = langCode == 'hi' ? 'सुनें' : 'Listen';
+      mainIcon = Icons.volume_up_rounded;
+      mainOnTap = _speakGuidance;
+    }
+
+    final replayLabel = langCode == 'hi' ? 'फिर से' : 'Again';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimensions.lg),
@@ -678,10 +769,72 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             children: [
               const Icon(Icons.help_outline_rounded, size: 18, color: AppColors.terracotta),
               const SizedBox(width: AppDimensions.sm),
-              Text(
-                'Aap yeh baatein bol sakte hain:',
-                style: AppTextStyles.titleSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  langCode == 'hi' ? 'Aap yeh baatein bol sakte hain:' : 'You can speak about these:',
+                  style: AppTextStyles.titleSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: mainOnTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: (_isTtsSpeaking || _isTtsPaused)
+                        ? AppColors.terracotta.withValues(alpha: 0.15)
+                        : AppColors.terracotta,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        mainIcon,
+                        size: 16,
+                        color: (_isTtsSpeaking || _isTtsPaused) ? AppColors.terracotta : Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        mainLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: (_isTtsSpeaking || _isTtsPaused) ? AppColors.terracotta : Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (_isTtsSpeaking || _isTtsPaused) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _replayGuidance,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.brown.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.replay_rounded, size: 14, color: AppColors.brown),
+                        const SizedBox(width: 3),
+                        Text(
+                          replayLabel,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.brown),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: AppDimensions.sm),

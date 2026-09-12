@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/services/app_intro_audio_service.dart';
 import '../../../core/services/auth_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -12,17 +13,35 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with WidgetsBindingObserver {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final audio = AppIntroAudioService();
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      audio.pause();
+    } else if (state == AppLifecycleState.resumed) {
+      audio.resume();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
   }
 
-  void _nextPage() {
+  void _nextPage() async {
     if (_currentPage < 2) {
       _pageController.animateToPage(
         _currentPage + 1,
@@ -30,8 +49,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      // Mark onboarding as completed so returning user goes straight to login
-      AuthService().setOnboardingSeen(true);
+      await AppIntroAudioService().stopIntroMusic();
+      if (!mounted) return;
+      _navigateAfterOnboarding();
+    }
+  }
+
+  void _navigateAfterOnboarding() {
+    final auth = AuthService();
+    if (auth.isLoggedIn) {
+      final targetRoute = auth.getHomeRouteForRole();
+      Navigator.pushReplacementNamed(context, targetRoute);
+    } else {
       Navigator.pushReplacementNamed(context, AppRoutes.login);
     }
   }

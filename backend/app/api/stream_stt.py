@@ -44,15 +44,15 @@ def _build_deepgram_url(language: str = "hi") -> str:
     params = urllib.parse.urlencode({
         "model": "nova-3",
         "language": dg_lang,
-        "smart_format": "true",
-        "detect_language": "true",
+        "detect_language": "false",
         "interim_results": "true",
         "endpointing": "300",
         "utterance_end_ms": "1000",
         "encoding": "linear16",
-        "sample_rate": "8000",
+        "sample_rate": "16000",
         "channels": "1",
     })
+    logger.info(f"[LIVE STT] Deepgram WS config: language={dg_lang}, encoding=linear16, sample_rate=16000")
     return f"{DEEPGRAM_WS_HOST}?{params}"
 
 

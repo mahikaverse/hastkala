@@ -19,7 +19,6 @@ class AuthService {
 
   static const String _keyUserRole = 'hastkala_user_role';
   static const String _keyUserName = 'hastkala_user_name';
-  static const String _keyOnboardingSeen = 'hastkala_onboarding_seen';
 
   SharedPreferences? _prefs;
 
@@ -109,13 +108,6 @@ class AuthService {
     } catch (e) {
       developer.log('Error updating user role metadata: $e', name: 'AuthService');
     }
-  }
-
-  /// Onboarding status
-  bool get hasSeenOnboarding => _prefs?.getBool(_keyOnboardingSeen) ?? false;
-
-  Future<void> setOnboardingSeen(bool seen) async {
-    await _prefs?.setBool(_keyOnboardingSeen, seen);
   }
 
   /// Map role to destination home screen

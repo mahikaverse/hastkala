@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../../../app/router.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/services/data_service.dart';
 import '../../../../core/widgets/adaptive_product_image.dart';
-
-const _pad = EdgeInsets.symmetric(horizontal: AppDimensions.lg);
+import 'my_products_screen.dart';
+import 'schemes_events_screen.dart';
+import 'analytics_placeholder_screen.dart';
+import 'artisan_profile_new_screen.dart';
 
 class ArtisanDashboardScreen extends StatefulWidget {
   const ArtisanDashboardScreen({super.key});
@@ -23,883 +24,506 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
   ArtisanStore? get _store =>
       _data.stores.isNotEmpty ? _data.stores.first : null;
 
+  ArtisanProfile? get _profile =>
+      _data.artisanProfiles.isNotEmpty ? _data.artisanProfiles.first : null;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.xxl,
-                vertical: 12,
-              ),
-              child: Center(
-                child: Image.asset(
-                  'assets/horizontal-logo.png',
-                  height: 44,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Text(
-                    'HastKala',
-                    style: AppTextStyles.headlineMedium.copyWith(
-                      color: AppColors.brown,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const Divider(height: 1, color: AppColors.divider),
-          Expanded(
-            child: _currentNavIndex == 0
-                ? _buildOverviewTab()
-                : _currentNavIndex == 1
-                    ? _buildMyStoreTab()
-                    : _currentNavIndex == 2
-                        ? _buildProductsTab()
-                        : _currentNavIndex == 3
-                            ? _buildOrdersTab()
-                            : _buildProfileTab(),
-          ),
-        ],
-      ),
+      body: _currentNavIndex == 0
+          ? _buildHomeTab()
+          : _currentNavIndex == 1
+              ? const SchemesEventsScreen()
+              : _currentNavIndex == 3
+                  ? const AnalyticsPlaceholderScreen()
+                  : const ArtisanProfileNewScreen(),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
 
-  // ─── OVERVIEW ──────────────────────────────────────────────────────────────
+  // ─── HOME TAB ──────────────────────────────────────────────────────────────
 
-  Widget _buildOverviewTab() {
+  Widget _buildHomeTab() {
     final store = _store;
+    final profile = _profile;
     if (store == null) return const Center(child: Text('No store found'));
     final stats = _data.getStoreStats(store.id);
+    final products = _data.getProductsByStore(store.id);
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 100),
       children: [
-        const SizedBox(height: 10),
-        // Greeting
-        Padding(
-          padding: _pad,
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Welcome back,',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary)),
-                    const SizedBox(height: 2),
-                    Text(store.name,
-                        style: AppTextStyles.headlineLarge
-                            .copyWith(color: AppColors.brown)),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: store.isVerified
-                      ? AppColors.oliveGreen.withValues(alpha: 0.1)
-                      : AppColors.warmBeige,
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusFull),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      store.isVerified
-                          ? Icons.verified
-                          : Icons.pending_outlined,
-                      size: 14,
-                      color: store.isVerified
-                          ? AppColors.oliveGreen
-                          : AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      store.isVerified ? 'Verified' : 'Pending',
-                      style: AppTextStyles.labelSmall.copyWith(
-                          color: store.isVerified
-                              ? AppColors.oliveGreen
-                              : AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Stats
-        Padding(
-          padding: _pad,
-          child: GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 1.6,
-            children: [
-              _buildStatCard('Total Sales', '${stats['totalSales']}',
-                  Icons.shopping_bag_outlined, AppColors.terracotta),
-              _buildStatCard(
-                  'Revenue',
-                  '₹${(stats['totalRevenue'] as double).toStringAsFixed(0)}',
-                  Icons.account_balance_wallet_outlined,
-                  AppColors.oliveGreen),
-              _buildStatCard('Orders', '${stats['totalOrders']}',
-                  Icons.receipt_long_outlined, AppColors.mustardGold),
-              _buildStatCard('Pending', '${stats['pendingOrders']}',
-                  Icons.pending_actions_outlined, AppColors.brown),
-              _buildStatCard('Products', '${stats['publishedProducts']}',
-                  Icons.inventory_2_outlined, AppColors.terracotta),
-              _buildStatCard('Store Visits', '${stats['totalViews']}',
-                  Icons.visibility_outlined, AppColors.oliveGreen),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        // Quick Actions
-        Padding(
-          padding: _pad,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Quick Actions',
-                  style: AppTextStyles.titleLarge
-                      .copyWith(color: AppColors.brown)),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildActionCard('Add Product',
-                        Icons.add_box_outlined, AppColors.terracotta,
-                        () => Navigator.pushNamed(context, AppRoutes.artisanAddProduct)),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildActionCard(
-                        'My Store', Icons.store_outlined, AppColors.oliveGreen,
-                        () => setState(() => _currentNavIndex = 1)),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildActionCard('Analytics',
-                        Icons.analytics_outlined, AppColors.mustardGold,
-                        () {}),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        // Recent Orders
-        if (_buildRecentOrdersList().isNotEmpty) ...[
-          Padding(
-            padding: _pad,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Recent Orders',
-                    style: AppTextStyles.titleLarge
-                        .copyWith(color: AppColors.brown)),
-                TextButton(
-                  onPressed: () =>
-                      setState(() => _currentNavIndex = 3),
-                  child: Text('View All',
-                      style: AppTextStyles.labelMedium
-                          .copyWith(color: AppColors.terracotta)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          ..._buildRecentOrdersList(),
-        ],
+        _buildHeader(store, profile),
+        _buildStatsRow(stats),
+        _buildMyProductsSection(products),
+        _buildQuickActions(),
       ],
     );
   }
 
-  List<Widget> _buildRecentOrdersList() {
-    final store = _store;
-    if (store == null) return [];
-    final orders = _data.getOrdersByStore(store.id).take(5).toList();
-    if (orders.isEmpty) return [];
-    return orders
-        .map((order) => Padding(
-              padding: _pad.add(const EdgeInsets.only(bottom: 8)),
-              child: _buildOrderTile(order),
-            ))
-        .toList();
+  // ─── HEADER ────────────────────────────────────────────────────────────────
+
+  Widget _buildHeader(ArtisanStore store, ArtisanProfile? profile) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        border: Border(bottom: BorderSide(color: AppColors.borderLight)),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Stack(
+          children: [
+            Positioned(
+              right: -30,
+              top: -20,
+              child: Opacity(
+                opacity: 0.12,
+                child: Image.asset(
+                  'assets/app-logo.png',
+                  width: 160,
+                  height: 160,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Image.asset(
+                          'assets/horizontal-logo.png',
+                          height: 36,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => Text(
+                            'HastKala',
+                            style: AppTextStyles.headlineMedium.copyWith(
+                              color: AppColors.brown,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined, size: 22),
+                        onPressed: () {},
+                        color: AppColors.brown,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: AppColors.terracotta.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.person_outline, size: 18, color: AppColors.terracotta),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text('Welcome back,', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontSize: 13)),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          store.name.isNotEmpty ? store.name : 'Artisan',
+                          style: AppTextStyles.headlineLarge.copyWith(color: AppColors.brown, fontSize: 22),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (store.isVerified) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.oliveGreen.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.verified_rounded, size: 12, color: AppColors.oliveGreen),
+                              const SizedBox(width: 2),
+                              Text('Verified', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.oliveGreen)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Keep creating. The world values your craft.',
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _buildStatCard(
-      String label, String value, IconData icon, Color color) {
+  // ─── STATISTICS ────────────────────────────────────────────────────────────
+
+  Widget _buildStatsRow(Map<String, dynamic> stats) {
+    final items = [
+      _StatItem(Icons.inventory_2_outlined, AppColors.terracotta, '${stats['totalProducts'] ?? 0}', 'Products'),
+      _StatItem(Icons.shopping_bag_outlined, AppColors.oliveGreen, '${stats['totalOrders'] ?? 0}', 'Orders'),
+      _StatItem(Icons.currency_rupee_rounded, AppColors.mustardGold, '₹${(stats['totalRevenue'] ?? 0).toInt()}', 'Revenue'),
+      _StatItem(Icons.visibility_outlined, Colors.blue.shade600, '${stats['totalViews'] ?? 0}', 'Visits'),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+      child: Row(
+        children: items.map((item) => Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: _buildStatCard(item),
+          ),
+        )).toList(),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(_StatItem item) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+        border: Border.all(color: AppColors.borderLight),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 26,
-            height: 26,
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+              color: item.color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 14, color: color),
+            child: Icon(item.icon, size: 16, color: item.color),
           ),
           const SizedBox(height: 6),
           FittedBox(
             fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(value,
-                style: AppTextStyles.headlineMedium.copyWith(
-                    color: AppColors.brown, fontWeight: FontWeight.w700)),
+            child: Text(item.value, style: AppTextStyles.titleSmall.copyWith(
+              fontWeight: FontWeight.bold, color: AppColors.charcoal, fontSize: 14,
+            )),
           ),
           const SizedBox(height: 2),
-          Text(label,
-              style: AppTextStyles.caption,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(item.label, style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary, fontSize: 10,
+            ), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis)),
         ],
       ),
     );
   }
 
-  Widget _buildActionCard(String label, IconData icon, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
+  // ─── MY PRODUCTS SECTION ───────────────────────────────────────────────────
+
+  Widget _buildMyProductsSection(List<MarketplaceProduct> products) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 16, 14, 10),
+          child: Row(
+            children: [
+              Text('My Products', style: AppTextStyles.titleMedium.copyWith(
+                fontWeight: FontWeight.bold, color: AppColors.charcoal, fontSize: 16,
+              )),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyProductsScreen()),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('View All', style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.terracotta, fontWeight: FontWeight.w600, fontSize: 13,
+                    )),
+                    const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.terracotta),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (products.isEmpty)
+          _buildEmptyProducts()
+        else
+          SizedBox(
+            height: 190,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemCount: products.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) => _buildProductHorizontalCard(products[i]),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyProducts() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.inventory_2_outlined, size: 36, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+            const SizedBox(height: 10),
+            Text('No products yet', style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 13,
+            )),
+            const SizedBox(height: 4),
+            Text(
+              'Add your first product to get started',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 12),
+              textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/voice-add-product'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.terracotta,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusFull)),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                textStyle: const TextStyle(fontSize: 12),
+              ),
+              child: const Text('Add Product'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductHorizontalCard(MarketplaceProduct product) {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(
+        context,
+        '/seller-product-detail',
+        arguments: {'productId': product.id},
+      ),
+      child: Container(
+        width: 140,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+          border: Border.all(color: AppColors.borderLight),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+            Expanded(
+              flex: 3,
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusMD)),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: AdaptiveProductImage(
+                        imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls.first : '',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.more_vert_rounded, size: 12, color: AppColors.charcoal),
+                    ),
+                  ),
+                ],
               ),
-              child: Icon(icon, size: 20, color: color),
             ),
-            const SizedBox(height: 8),
-            Text(label,
-                style: AppTextStyles.labelMedium
-                    .copyWith(color: AppColors.charcoal)),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      product.name,
+                      style: AppTextStyles.titleSmall.copyWith(fontWeight: FontWeight.bold, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '₹${product.effectivePrice.toInt()}',
+                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.brown, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: product.stockQuantity > 0 ? AppColors.oliveGreen : AppColors.error,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            product.stockQuantity > 0 ? 'In Stock (${product.stockQuantity})' : 'Out',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: product.stockQuantity > 0 ? AppColors.oliveGreen : AppColors.error,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildOrderTile(MarketplaceOrder order) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.warmBeige.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
-            ),
-            child: const Icon(Icons.receipt_long,
-                size: 16, color: AppColors.brown),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(order.orderNumber,
-                    style: AppTextStyles.labelMedium
-                        .copyWith(color: AppColors.charcoal),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text(
-                  '${order.items.length} item${order.items.length > 1 ? 's' : ''} • ₹${order.total.toStringAsFixed(0)}',
-                  style: AppTextStyles.caption,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          _buildStatusBadge(order.status),
-        ],
-      ),
-    );
-  }
+  // ─── QUICK ACTIONS ─────────────────────────────────────────────────────────
 
-  Widget _buildStatusBadge(OrderStatus status) {
-    Color color;
-    String text;
-    switch (status) {
-      case OrderStatus.pending:
-        color = AppColors.mustardGold;
-        text = 'Pending';
-        break;
-      case OrderStatus.confirmed:
-        color = AppColors.info;
-        text = 'Confirmed';
-        break;
-      case OrderStatus.processing:
-        color = AppColors.terracotta;
-        text = 'Processing';
-        break;
-      case OrderStatus.shipped:
-        color = AppColors.oliveGreen;
-        text = 'Shipped';
-        break;
-      case OrderStatus.delivered:
-        color = AppColors.success;
-        text = 'Delivered';
-        break;
-      case OrderStatus.cancelled:
-        color = AppColors.error;
-        text = 'Cancelled';
-        break;
-      case OrderStatus.returned:
-        color = AppColors.textSecondary;
-        text = 'Returned';
-        break;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-      ),
-      child:
-          Text(text, style: AppTextStyles.labelSmall.copyWith(color: color)),
-    );
-  }
+  Widget _buildQuickActions() {
+    final actions = [
+      _ActionItem(Icons.camera_alt_rounded, AppColors.terracotta, 'Add Product', 'Camera / Voice', () {
+        Navigator.pushNamed(context, '/voice-add-product');
+      }),
+      _ActionItem(Icons.store_outlined, AppColors.oliveGreen, 'My Store', 'Manage store', () {
+        Navigator.pushNamed(context, '/artisan-store', arguments: _store?.slug ?? 'store');
+      }),
+      _ActionItem(Icons.analytics_outlined, AppColors.mustardGold, 'Analytics', 'Performance', () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AnalyticsPlaceholderScreen()),
+        );
+      }),
+      _ActionItem(Icons.menu_book_outlined, Colors.blue.shade600, 'Help', 'Learn & grow', () {}),
+    ];
 
-  // ─── MY STORE ──────────────────────────────────────────────────────────────
-
-  Widget _buildMyStoreTab() {
-    final store = _store;
-    if (store == null) return const Center(child: Text('No store'));
-
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 100),
-      children: [
-        const SizedBox(height: 16),
-        Padding(
-          padding: _pad,
-          child: Text('My Store',
-              style: AppTextStyles.headlineMedium
-                  .copyWith(color: AppColors.brown)),
-        ),
-        const SizedBox(height: 16),
-        // Banner
-        Padding(
-          padding: _pad,
-          child: Container(
-            height: 150,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
-              gradient: const LinearGradient(
-                  colors: [AppColors.brown, AppColors.brownLight]),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.store,
-                      size: 40,
-                      color: AppColors.cream.withValues(alpha: 0.7)),
-                  const SizedBox(height: 8),
-                  Text(store.name,
-                      style: AppTextStyles.headlineMedium
-                          .copyWith(color: AppColors.cream)),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Info cards
-        Padding(
-          padding: _pad,
-          child: Column(
-            children: [
-              _buildInfoCard('Store Name', store.name, Icons.store_outlined),
-              _buildInfoCard(
-                  'Category', store.craftCategory, Icons.category_outlined),
-              _buildInfoCard('Location', '${store.location}, ${store.state}',
-                  Icons.location_on_outlined),
-              _buildInfoCard(
-                  'Slug', '/artisan/${store.slug}', Icons.link),
-              _buildInfoCard(
-                  'Rating',
-                  '${store.averageRating.toStringAsFixed(1)} (${store.totalReviews} reviews)',
-                  Icons.star_outline),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        // Buttons
-        Padding(
-          padding: _pad,
-          child: Column(
-            children: [
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  label: const Text('Edit Store'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.terracotta,
-                    foregroundColor: AppColors.cream,
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusMD)),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton.icon(
-                  onPressed: () => Navigator.pushNamed(
-                      context, '/artisan-store',
-                      arguments: store.slug),
-                  icon: const Icon(Icons.visibility_outlined, size: 20),
-                  label: const Text('Preview Store'),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.terracotta),
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusMD)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoCard(String label, String value, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.terracotta),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: AppTextStyles.caption),
-                const SizedBox(height: 2),
-                Text(value,
-                    style: AppTextStyles.bodyMedium
-                        .copyWith(color: AppColors.charcoal)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─── PRODUCTS ──────────────────────────────────────────────────────────────
-
-  Widget _buildProductsTab() {
-    final store = _store;
-    if (store == null) return const Center(child: Text('No store'));
-    final products = _data.getProductsByStore(store.id);
-
-    return Column(
-      children: [
-        Padding(
-          padding: _pad.add(const EdgeInsets.only(top: 16)),
-          child: Row(
-            children: [
-              Text('Products',
-                  style: AppTextStyles.headlineMedium
-                      .copyWith(color: AppColors.brown)),
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.artisanAddProduct),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.terracotta,
-                  foregroundColor: AppColors.cream,
-                  shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppDimensions.radiusMD)),
-                  elevation: 0,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (products.isEmpty)
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.inventory_2_outlined,
-                      size: 56, color: AppColors.warmBeige),
-                  const SizedBox(height: 12),
-                  Text('No products yet',
-                      style: AppTextStyles.titleLarge
-                          .copyWith(color: AppColors.textSecondary)),
-                ],
-              ),
-            ),
-          )
-        else
-          Expanded(
-            child: ListView.separated(
-              padding:
-                  _pad.add(const EdgeInsets.only(bottom: 100)),
-              itemCount: products.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) =>
-                  _buildProductTile(products[index]),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildProductTile(MarketplaceProduct product) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
-              color: AppColors.warmBeige.withValues(alpha: 0.5),
-            ),
-            child: product.imageUrls.isNotEmpty
-                ? ClipRRect(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusSM),
-                    child: AdaptiveProductImage(
-                      imageUrl: product.imageUrls.first,
-                      fit: BoxFit.cover,
-                      width: 56,
-                      height: 56,
-                    ),
-                  )
-                : const Icon(Icons.image, color: AppColors.brown),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(product.name,
-                    style: AppTextStyles.titleSmall
-                        .copyWith(color: AppColors.charcoal),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text('₹${product.effectivePrice.toStringAsFixed(0)}',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.terracotta,
-                        fontWeight: FontWeight.w600)),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: product.isPublished
-                            ? AppColors.oliveGreen.withValues(alpha: 0.1)
-                            : AppColors.warmBeige,
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusXS),
-                      ),
-                      child: Text(
-                          product.isPublished ? 'Published' : 'Draft',
-                          style: AppTextStyles.labelSmall.copyWith(
-                              color: product.isPublished
-                                  ? AppColors.oliveGreen
-                                  : AppColors.textSecondary)),
-                    ),
-                    const SizedBox(width: 8),
-                    Text('${product.totalSales} sold',
-                        style: AppTextStyles.caption),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert,
-                size: 20, color: AppColors.textSecondary),
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'edit', child: Text('Edit')),
-              const PopupMenuItem(
-                  value: 'duplicate', child: Text('Duplicate')),
-              PopupMenuItem(
-                  value: 'toggle',
-                  child: Text(
-                      product.isPublished ? 'Unpublish' : 'Publish')),
-              const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Delete',
-                      style: TextStyle(color: AppColors.error))),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─── ORDERS ────────────────────────────────────────────────────────────────
-
-  Widget _buildOrdersTab() {
-    final store = _store;
-    if (store == null) return const Center(child: Text('No store'));
-    final orders = _data.getOrdersByStore(store.id);
-
-    return Column(
-      children: [
-        Padding(
-          padding: _pad.add(const EdgeInsets.only(top: 16)),
-          child: Text('Orders',
-              style: AppTextStyles.headlineMedium
-                  .copyWith(color: AppColors.brown)),
-        ),
-        const SizedBox(height: 12),
-        if (orders.isEmpty)
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.receipt_long_outlined,
-                      size: 56, color: AppColors.warmBeige),
-                  const SizedBox(height: 12),
-                  Text('No orders yet',
-                      style: AppTextStyles.titleLarge
-                          .copyWith(color: AppColors.textSecondary)),
-                ],
-              ),
-            ),
-          )
-        else
-          Expanded(
-            child: ListView.separated(
-              padding:
-                  _pad.add(const EdgeInsets.only(bottom: 100)),
-              itemCount: orders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) =>
-                  _buildOrderCard(orders[index]),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildOrderCard(MarketplaceOrder order) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text('Quick Actions', style: AppTextStyles.titleMedium.copyWith(
+            fontWeight: FontWeight.bold, color: AppColors.charcoal,
+          )),
+          const SizedBox(height: 4),
+          Text('Turn your craft into opportunity', style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary, fontSize: 11,
+          )),
+          const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(order.orderNumber,
-                  style: AppTextStyles.titleMedium.copyWith(
-                      color: AppColors.brown,
-                      fontWeight: FontWeight.w600)),
-              _buildStatusBadge(order.status),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ...order.items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                        child: Text(item.productName,
-                            style: AppTextStyles.bodySmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis)),
-                    Flexible(
-                      child: Text('x${item.quantity}',
-                          style: AppTextStyles.caption,
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                    const SizedBox(width: 8),
-                    Text('₹${item.totalPrice.toStringAsFixed(0)}',
-                        style: AppTextStyles.labelMedium
-                            .copyWith(color: AppColors.brown)),
-                  ],
-                ),
-              )),
-          const Divider(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Total: ₹${order.total.toStringAsFixed(0)}',
-                  style: AppTextStyles.titleSmall.copyWith(
-                      color: AppColors.brown,
-                      fontWeight: FontWeight.w600)),
-              Text(order.isPaid ? 'Paid' : 'Unpaid',
-                  style: AppTextStyles.labelSmall.copyWith(
-                      color: order.isPaid
-                          ? AppColors.oliveGreen
-                          : AppColors.error)),
-            ],
+            children: actions.map((a) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _buildActionCard(a),
+              ),
+            )).toList(),
           ),
         ],
       ),
     );
   }
 
-  // ─── PROFILE ───────────────────────────────────────────────────────────────
-
-  Widget _buildProfileTab() {
-    final store = _store;
-    final profile =
-        store != null ? _data.getArtisanProfile(store.artisanId) : null;
-    if (profile == null) return const Center(child: Text('No profile'));
-
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 100),
-      children: [
-        const SizedBox(height: 24),
-        CircleAvatar(
-          radius: 44,
-          backgroundColor: AppColors.warmBeige,
-          child: Text(profile.name[0],
-              style: AppTextStyles.displaySmall
-                  .copyWith(color: AppColors.brown)),
+  Widget _buildActionCard(_ActionItem item) {
+    return GestureDetector(
+      onTap: item.onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+          border: Border.all(color: AppColors.borderLight),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2)),
+          ],
         ),
-        const SizedBox(height: 12),
-        Text(profile.name,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.headlineLarge
-                .copyWith(color: AppColors.brown)),
-        const SizedBox(height: 4),
-        Text(profile.craftSpecialization,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMedium
-                .copyWith(color: AppColors.textSecondary)),
-        const SizedBox(height: 24),
-        Padding(
-          padding: _pad,
-          child: Column(
-            children: [
-              _buildProfileOption(Icons.store_outlined, 'My Store',
-                  () => setState(() => _currentNavIndex = 1)),
-              _buildProfileOption(Icons.inventory_2_outlined, 'Products',
-                  () => setState(() => _currentNavIndex = 2)),
-              _buildProfileOption(Icons.receipt_long_outlined, 'Orders',
-                  () => setState(() => _currentNavIndex = 3)),
-              _buildProfileOption(
-                  Icons.analytics_outlined, 'Analytics', () {}),
-              _buildProfileOption(
-                  Icons.settings_outlined, 'Store Settings', () {}),
-              _buildProfileOption(
-                  Icons.help_outline, 'Help & Support', () {}),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: item.color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(item.icon, size: 18, color: item.color),
+            ),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(item.title, style: AppTextStyles.bodySmall.copyWith(
+                fontWeight: FontWeight.bold, color: AppColors.charcoal, fontSize: 12,
+              ), textAlign: TextAlign.center, maxLines: 1),
+            ),
+            const SizedBox(height: 1),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(item.subtitle, style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary, fontSize: 9,
+              ), textAlign: TextAlign.center, maxLines: 1),
+            ),
+          ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildProfileOption(
-      IconData icon, String label, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.brown),
-      title: Text(label, style: AppTextStyles.bodyLarge),
-      trailing: const Icon(Icons.arrow_forward_ios_rounded,
-          size: 16, color: AppColors.textSecondary),
-      onTap: onTap,
-      contentPadding: EdgeInsets.zero,
+      ),
     );
   }
 
@@ -911,43 +535,132 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
-      child: NavigationBar(
-        selectedIndex: _currentNavIndex,
-        onDestinationSelected: (i) => setState(() => _currentNavIndex = i),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        height: 60,
-        indicatorColor: AppColors.terracotta.withValues(alpha: 0.1),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined, size: 22),
-              selectedIcon: Icon(Icons.dashboard, size: 22),
-              label: 'Home'),
-          NavigationDestination(
-              icon: Icon(Icons.store_outlined, size: 22),
-              selectedIcon: Icon(Icons.store, size: 22),
-              label: 'Store'),
-          NavigationDestination(
-              icon: Icon(Icons.inventory_2_outlined, size: 22),
-              selectedIcon: Icon(Icons.inventory_2, size: 22),
-              label: 'Products'),
-          NavigationDestination(
-              icon: Icon(Icons.receipt_long_outlined, size: 22),
-              selectedIcon: Icon(Icons.receipt_long, size: 22),
-              label: 'Orders'),
-          NavigationDestination(
-              icon: Icon(Icons.person_outlined, size: 22),
-              selectedIcon: Icon(Icons.person, size: 22),
-              label: 'Profile'),
-        ],
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 4, top: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
+              _buildNavItem(1, Icons.festival_outlined, Icons.festival_rounded, 'Schemes'),
+              _buildCenterButton(),
+              _buildNavItem(3, Icons.analytics_outlined, Icons.analytics_rounded, 'Analytics'),
+              _buildNavItem(4, Icons.person_outlined, Icons.person_rounded, 'Profile'),
+            ],
+          ),
+        ),
       ),
     );
   }
+
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+    final isSelected = _currentNavIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentNavIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 64,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(6),
+              decoration: isSelected
+                  ? BoxDecoration(
+                      color: AppColors.terracotta.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    )
+                  : null,
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                size: 22,
+                color: isSelected ? AppColors.terracotta : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? AppColors.terracotta : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCenterButton() {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/voice-add-product'),
+      child: SizedBox(
+        width: 68,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.terracotta, AppColors.brown],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.terracotta.withValues(alpha: 0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.camera_alt_rounded, size: 24, color: Colors.white),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Add',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.terracotta,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatItem {
+  final IconData icon;
+  final Color color;
+  final String value;
+  final String label;
+  const _StatItem(this.icon, this.color, this.value, this.label);
+}
+
+class _ActionItem {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _ActionItem(this.icon, this.color, this.title, this.subtitle, this.onTap);
 }

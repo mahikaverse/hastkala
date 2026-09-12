@@ -11,6 +11,7 @@ import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/api_config.dart';
 import '../../../core/services/deepgram_stream_service.dart';
+import '../../../core/services/tts_service.dart';
 import '../models/product_draft.dart';
 import 'voice_step3_story_screen.dart';
 
@@ -52,12 +53,27 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   bool _showManualInput = false;
   final TextEditingController _manualInputCtrl = TextEditingController();
 
-  final List<String> _guidingQuestions = [
+  // TTS
+  final TtsService _ttsService = TtsService();
+  bool _isTtsSpeaking = false;
+  bool _isTtsPaused = false;
+  bool _ttsAutoPlayed = false;
+  Timer? _ttsAutoPlayTimer;
+
+  static const _guidingQuestions = [
     'Abhi kitne piece ready stock mein hain?',
     'Har mahine ya hafte kitna bana sakte ho (Production Capacity)?',
     'Ek piece banane mein kitna samay lagta hai?',
     'Banane ka process kya hai (chaak, haath se ghada, carving)?',
   ];
+
+  static const _ttsGuidanceHindi = 'Abhi aapke paas kitne pieces ready stock mein hain, '
+      'aap har hafte ya mahine kitne pieces bana sakte hain, '
+      'aur ek piece banane mein kitna samay lagta hai, ye batayein.';
+
+  static const _ttsGuidanceEnglish = 'Tell us how many pieces you have in ready stock, '
+      'how many pieces you can make per week or month, '
+      'and how long it takes to make one piece.';
 
   @override
   void initState() {
@@ -66,6 +82,15 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
+    _ttsService.initialize();
+    _ttsService.onStateChanged = () {
+      if (mounted) {
+        setState(() {
+          _isTtsSpeaking = _ttsService.isSpeaking;
+          _isTtsPaused = _ttsService.isPaused;
+        });
+      }
+    };
 
     final d = widget.draft;
     _selectedLocaleId = d.voiceLanguage;
@@ -78,12 +103,27 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
     if (d.quantity != null || d.makingTime != null) {
       _showExtractedForm = true;
     }
+
+    if (!_showExtractedForm && !_ttsAutoPlayed) {
+      _ttsAutoPlayTimer = Timer(const Duration(seconds: 3), _autoPlayGuidance);
+    }
+  }
+
+  void _autoPlayGuidance() {
+    if (!mounted || _ttsAutoPlayed) return;
+    _ttsAutoPlayed = true;
+    final langCode = _selectedLocaleId.split('_').first;
+    final text = langCode == 'hi' ? _ttsGuidanceHindi : _ttsGuidanceEnglish;
+    _ttsService.speak(text, language: langCode);
   }
 
   @override
   void dispose() {
+    _ttsAutoPlayTimer?.cancel();
+    _ttsService.stop();
     _recordingTimer?.cancel();
     _waveController.dispose();
+    _ttsService.dispose();
     _quantityCtrl.dispose();
     _capacityCtrl.dispose();
     _makingTimeCtrl.dispose();
@@ -93,8 +133,35 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
     super.dispose();
   }
 
+  Future<void> _speakGuidance() async {
+    final langCode = _selectedLocaleId.split('_').first;
+    final text = langCode == 'hi' ? _ttsGuidanceHindi : _ttsGuidanceEnglish;
+    await _ttsService.speak(text, language: langCode);
+  }
+
+  Future<void> _pauseGuidance() async {
+    await _ttsService.pause();
+  }
+
+  Future<void> _resumeGuidance() async {
+    await _ttsService.resume();
+  }
+
+  Future<void> _replayGuidance() async {
+    await _ttsService.replay();
+  }
+
+  Future<void> _stopSpeaking() async {
+    await _ttsService.stop();
+    if (mounted) setState(() { _isTtsSpeaking = false; _isTtsPaused = false; });
+  }
+
   Future<void> _startRecording() async {
     if (_isExtracting) return;
+
+    // Stop TTS before starting mic
+    await _stopSpeaking();
+    _ttsAutoPlayTimer?.cancel();
 
     setState(() {
       _isRecording = true;
@@ -316,11 +383,14 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
                 return ListTile(
                   title: Text(lang['name']!, style: AppTextStyles.bodyMedium.copyWith(color: isSelected ? AppColors.terracotta : AppColors.charcoal)),
                   trailing: isSelected ? const Icon(Icons.check, color: AppColors.terracotta) : null,
-                  onTap: () {
+                  onTap: () async {
+                    await _stopSpeaking();
+                    _ttsAutoPlayTimer?.cancel();
+                    if (!ctx.mounted) return;
                     setState(() {
                       _selectedLanguage = lang['name']!.split(' ').first;
                       _selectedLocaleId = lang['locale']!;
-        widget.draft.voiceLanguage = lang['locale']!;
+                      widget.draft.voiceLanguage = lang['locale']!;
                     });
                     Navigator.pop(ctx);
                   },
@@ -515,6 +585,28 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   Widget _buildGuidingQuestionsCard() {
+    final langCode = _selectedLocaleId.split('_').first;
+
+    String mainLabel;
+    IconData mainIcon;
+    VoidCallback? mainOnTap;
+
+    if (_isTtsSpeaking) {
+      mainLabel = langCode == 'hi' ? 'रुकें' : 'Pause';
+      mainIcon = Icons.pause_rounded;
+      mainOnTap = _pauseGuidance;
+    } else if (_isTtsPaused) {
+      mainLabel = langCode == 'hi' ? 'जारी रखें' : 'Resume';
+      mainIcon = Icons.play_arrow_rounded;
+      mainOnTap = _resumeGuidance;
+    } else {
+      mainLabel = langCode == 'hi' ? 'सुनें' : 'Listen';
+      mainIcon = Icons.volume_up_rounded;
+      mainOnTap = _speakGuidance;
+    }
+
+    final replayLabel = langCode == 'hi' ? 'फिर से' : 'Again';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimensions.lg),
@@ -530,10 +622,72 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
             children: [
               const Icon(Icons.production_quantity_limits_rounded, size: 18, color: AppColors.terracotta),
               const SizedBox(width: AppDimensions.sm),
-              Text(
-                'Aap yeh baatein bol sakte hain:',
-                style: AppTextStyles.titleSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  langCode == 'hi' ? 'Aap yeh baatein bol sakte hain:' : 'You can speak about these:',
+                  style: AppTextStyles.titleSmall.copyWith(color: AppColors.terracotta, fontWeight: FontWeight.bold),
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: mainOnTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: (_isTtsSpeaking || _isTtsPaused)
+                        ? AppColors.terracotta.withValues(alpha: 0.15)
+                        : AppColors.terracotta,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        mainIcon,
+                        size: 16,
+                        color: (_isTtsSpeaking || _isTtsPaused) ? AppColors.terracotta : Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        mainLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: (_isTtsSpeaking || _isTtsPaused) ? AppColors.terracotta : Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (_isTtsSpeaking || _isTtsPaused) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _replayGuidance,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.brown.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.replay_rounded, size: 14, color: AppColors.brown),
+                        const SizedBox(width: 3),
+                        Text(
+                          replayLabel,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.brown),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: AppDimensions.sm),

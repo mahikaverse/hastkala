@@ -59,13 +59,14 @@ class DeepgramStreamService {
     try {
       final dir = await getTemporaryDirectory();
       _chunkIndex++;
-      _currentChunkPath = '${dir.path}/live_chunk_${_chunkIndex}.m4a';
+      _currentChunkPath = '${dir.path}/live_chunk_${_chunkIndex}.wav';
       await _recorder.startRecorder(
         toFile: _currentChunkPath,
-        codec: Codec.aacMP4,
-        bitRate: 128000,
-        sampleRate: 44100,
+        codec: Codec.pcm16WAV,
+        numChannels: 1,
+        sampleRate: 16000,
       );
+      debugPrint('[LIVE STT] Recording chunk $_chunkIndex (WAV PCM16 16kHz mono)');
     } catch (e) {
       debugPrint('[LIVE STT ERROR] Failed to start chunk: $e');
       onError?.call('Recording error: $e');
@@ -109,8 +110,8 @@ class DeepgramStreamService {
           req.files.add(http.MultipartFile.fromBytes(
             'file',
             bytes,
-            filename: 'chunk.m4a',
-            contentType: MediaType('audio', 'mp4'),
+            filename: 'chunk.wav',
+            contentType: MediaType('audio', 'wav'),
           ));
           if (_language.isNotEmpty) {
             req.fields['language'] = _language;
