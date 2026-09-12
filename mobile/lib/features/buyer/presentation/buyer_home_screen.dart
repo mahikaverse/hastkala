@@ -6,6 +6,7 @@ import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/product_model.dart';
 import '../../../core/widgets/adaptive_product_image.dart';
+import '../../../core/widgets/app_bottom_nav.dart';
 import '../../products/presentation/product_details_screen.dart';
 
 class BuyerHomeScreen extends StatefulWidget {
@@ -578,7 +579,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Widget _buildBottomNav() {
-    return BottomNavigationBar(
+    return AppBottomNav(
       currentIndex: 0,
       onTap: (i) {
         final routes = [
@@ -592,19 +593,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: AppColors.surface,
-      selectedItemColor: AppColors.terracotta,
-      unselectedItemColor: AppColors.textSecondary,
-      selectedLabelStyle: AppTextStyles.labelSmall.copyWith(color: AppColors.terracotta),
-      unselectedLabelStyle: AppTextStyles.labelSmall,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), activeIcon: Icon(Icons.explore), label: 'Explore'),
-        BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_outlined), activeIcon: Icon(Icons.shopping_cart), label: 'Cart'),
-        BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), activeIcon: Icon(Icons.receipt_long), label: 'Orders'),
-        BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-      ],
+      items: AppBottomNavItems.buyer,
     );
   }
 }

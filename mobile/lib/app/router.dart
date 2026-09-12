@@ -16,6 +16,7 @@ import '../features/artisan_store/presentation/screens/voice_add_product_screen.
 import '../features/artisan_store/presentation/screens/seller_product_detail_screen.dart';
 import '../features/artisan_store/presentation/screens/seller_edit_product_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/signup_screen.dart';
 import '../features/buyer/presentation/buyer_home_screen.dart';
 import '../features/cart/presentation/cart_screen.dart';
 import '../features/catalog/presentation/ai_pricing_screen.dart';
@@ -47,12 +48,19 @@ import '../features/products/models/product_draft.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/role_selection/presentation/role_selection_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
+import '../features/b2b/screens/b2b_shell_screen.dart';
+import '../features/b2b/screens/b2b_product_detail_screen.dart';
+import '../features/b2b/screens/b2b_enquiry_form_screen.dart';
+import '../features/b2b/screens/b2b_requirement_form_screen.dart';
+import '../features/b2b/screens/compare_screen.dart';
+import '../features/b2b/screens/b2b_orders_screen.dart';
 
 abstract final class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String onboarding = '/onboarding';
   static const String roleSelection = '/role-selection';
+  static const String signup = '/signup';
   static const String sellerAuth = '/seller-auth';
   static const String buyerAuth = '/buyer-auth';
   static const String home = '/home';
@@ -100,6 +108,9 @@ abstract final class AppRoutes {
   static const String aiPriceAssistant = '/ai-price-assistant';
   static const String readyToPublish = '/ready-to-publish';
   static const String publishSuccess = '/publish-success';
+
+  // B2B routes
+  static const String b2bHome = '/b2b-home';
 }
 
 class AppRouter {
@@ -110,19 +121,24 @@ class AppRouter {
       case AppRoutes.onboarding:
         return _buildRoute(const OnboardingScreen(), settings: settings);
       case AppRoutes.login:
-        final role = settings.arguments as UserRole?;
-        return _buildRoute(LoginScreen(initialRole: role), settings: settings);
+        return _buildRoute(const LoginScreen(), settings: settings);
       case AppRoutes.roleSelection:
         return _buildRoute(const RoleSelectionScreen(), settings: settings);
+      case AppRoutes.signup:
+        final role = settings.arguments as UserRole?;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => SignupScreen(role: role ?? UserRole.seller),
+        );
       case AppRoutes.sellerAuth:
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => const LoginScreen(initialRole: UserRole.seller),
+          builder: (context) => const RoleSelectionScreen(),
         );
       case AppRoutes.buyerAuth:
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => const LoginScreen(initialRole: UserRole.buyer),
+          builder: (context) => const RoleSelectionScreen(),
         );
       case AppRoutes.home:
         return _buildRoute(const HomeScreen(), settings: settings);
@@ -269,6 +285,10 @@ class AppRouter {
           settings: settings,
           builder: (context) => PublishSuccessScreen(draft: draft),
         );
+
+      // B2B routes
+      case AppRoutes.b2bHome:
+        return _buildRoute(const B2BShellScreen(), settings: settings);
 
       default:
         return _buildRoute(_NotFoundScreen(routeName: settings.name ?? 'unknown'), settings: settings);

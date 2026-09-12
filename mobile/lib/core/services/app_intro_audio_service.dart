@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class AppIntroAudioService {
   static final AppIntroAudioService _instance = AppIntroAudioService._internal();
@@ -12,34 +12,55 @@ class AppIntroAudioService {
   bool get isPlaying => _isPlaying;
 
   Future<void> startIntroMusic() async {
-    if (_isPlaying) return;
+    await _stopInternal();
 
     try {
-      _player = AudioPlayer();
-      await _player!.setAsset('assets/audio/hastkala_intro.wav');
-      await _player!.setVolume(0.30);
-      await _player!.setLoopMode(LoopMode.one);
-      await _player!.play();
-      _isPlaying = true;
-    } catch (e) {
-      debugPrint('[INTRO AUDIO] Failed to load audio: $e');
+      final player = AudioPlayer();
+      _player = player;
+
+      player.onPlayerComplete.listen((_) {
+        debugPrint('[INTRO AUDIO] Player complete event');
+      });
+
+      player.onPlayerStateChanged.listen((state) {
+        debugPrint('[INTRO AUDIO] State: $state');
+        _isPlaying = state == PlayerState.playing;
+      });
+
+      player.onPositionChanged.listen((pos) {
+        debugPrint('[INTRO AUDIO] Position: $pos');
+      });
+
+      await player.setReleaseMode(ReleaseMode.loop);
+      debugPrint('[INTRO AUDIO] ReleaseMode set to loop');
+
+      await player.setVolume(1.0);
+      debugPrint('[INTRO AUDIO] Volume set to 1.0');
+
+      await player.play(AssetSource('audio/videoplayback.m4a'));
+      debugPrint('[INTRO AUDIO] play() called');
+    } catch (e, stack) {
+      debugPrint('[INTRO AUDIO] FAILED: $e');
+      debugPrint('[INTRO AUDIO] Stack: $stack');
       _player?.dispose();
-      _player = null;
-    }
-  }
-
-  Future<void> stopIntroMusic() async {
-    if (!_isPlaying || _player == null) return;
-
-    try {
-      await _player!.stop();
-      await _player!.dispose();
-    } catch (e) {
-      debugPrint('[INTRO AUDIO] Error stopping audio: $e');
-    } finally {
       _player = null;
       _isPlaying = false;
     }
+  }
+
+  Future<void> _stopInternal() async {
+    if (_player != null) {
+      try {
+        await _player!.stop();
+        await _player!.dispose();
+      } catch (_) {}
+      _player = null;
+    }
+    _isPlaying = false;
+  }
+
+  Future<void> stopIntroMusic() async {
+    await _stopInternal();
   }
 
   void pause() {
@@ -49,8 +70,8 @@ class AppIntroAudioService {
   }
 
   void resume() {
-    if (_player != null && !_player!.playing) {
-      _player!.play();
+    if (_player != null && _player!.state != PlayerState.playing) {
+      _player!.resume();
     }
   }
 

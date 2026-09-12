@@ -17,224 +17,242 @@ class RoleSelectionScreen extends StatefulWidget {
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   UserRole? _selectedRole;
 
+  void _onContinue() {
+    if (_selectedRole == null) return;
+    Navigator.pushNamed(context, AppRoutes.signup, arguments: _selectedRole);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return HastKalaBackground(
-      child: Material(
-        type: MaterialType.transparency,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppDimensions.xxl),
-            child: Column(
-              children: [
-                const SizedBox(height: 48),
-                _buildLogo(),
-                const SizedBox(height: 48),
-                _buildTitle(),
-                const SizedBox(height: 40),
-                _buildRoleCards(),
-                const SizedBox(height: 40),
-                _buildContinueButton(),
-                const SizedBox(height: 32),
-              ],
+    return Scaffold(
+      body: HastKalaBackground(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: AppDimensions.xxl),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: AppDimensions.xxxxl),
+
+                    // Brand logo
+                    Center(
+                      child: Image.asset(
+                        'assets/horizontal-logo.png',
+                        height: 48,
+                        errorBuilder: (_, __, ___) => Text(
+                          'HastKala',
+                          style: AppTextStyles.headlineLarge.copyWith(
+                            color: AppColors.terracotta,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.xxxl),
+
+                    // Title
+                    Text(
+                      'How will you use HastKala?',
+                      style: AppTextStyles.headlineLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppDimensions.sm),
+                    Text(
+                      'Choose your role to get started.',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppDimensions.xxl),
+
+                    // Role cards
+                    _RoleCard(
+                      title: 'Artisan / Seller',
+                      subtitle: 'Create and sell your handmade products.',
+                      imagePath: 'assets/seller-enum-img.png',
+                      isSelected: _selectedRole == UserRole.seller,
+                      onTap: () => setState(() => _selectedRole = UserRole.seller),
+                    ),
+                    const SizedBox(height: AppDimensions.md),
+
+                    _RoleCard(
+                      title: 'B2B Buyer',
+                      subtitle: 'Source products in bulk from artisans.',
+                      imagePath: 'assets/b2b-enum-img.png',
+                      isSelected: _selectedRole == UserRole.b2bSeller,
+                      onTap: () => setState(() => _selectedRole = UserRole.b2bSeller),
+                    ),
+                    const SizedBox(height: AppDimensions.md),
+
+                    _RoleCard(
+                      title: 'Individual Buyer',
+                      subtitle: 'Discover and buy handmade products.',
+                      imagePath: 'assets/buyer-enum-img.png',
+                      isSelected: _selectedRole == UserRole.buyer,
+                      onTap: () => setState(() => _selectedRole = UserRole.buyer),
+                    ),
+                    const SizedBox(height: AppDimensions.xxxl),
+                  ],
+                ),
+              ),
             ),
-          ),
+
+            // Continue button
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppDimensions.xxl,
+                0,
+                AppDimensions.xxl,
+                AppDimensions.xxl,
+              ),
+              child: SizedBox(
+                height: AppDimensions.buttonHeightLG,
+                child: ElevatedButton(
+                  onPressed: _selectedRole != null ? _onContinue : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.terracotta,
+                    foregroundColor: AppColors.textOnPrimary,
+                    disabledBackgroundColor: AppColors.border,
+                    disabledForegroundColor: AppColors.textSecondary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+                    ),
+                    elevation: _selectedRole != null ? AppDimensions.elevationSM : 0,
+                  ),
+                  child: Text(
+                    'Continue',
+                    style: AppTextStyles.buttonLarge.copyWith(
+                      color: _selectedRole != null
+                          ? AppColors.textOnPrimary
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildLogo() {
-    return Center(
-      child: Image.asset(
-        'assets/horizontal-logo.png',
-        height: 48,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          return Text(
-            'HastKala',
-            style: AppTextStyles.displayMedium.copyWith(
-              color: AppColors.brown,
-              fontWeight: FontWeight.w800,
-            ),
-          );
-        },
-      ),
-    );
-  }
+class _RoleCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String? imagePath;
+  final bool isSelected;
+  final VoidCallback onTap;
 
-  Widget _buildTitle() {
-    return Column(
-      children: [
-        Text(
-          'I am a',
-          style: AppTextStyles.displaySmall.copyWith(
-            color: AppColors.brown,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Choose how you want to use HastKala',
-          style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
-        ),
-      ],
-    );
-  }
+  const _RoleCard({
+    required this.title,
+    required this.subtitle,
+    this.imagePath,
+    required this.isSelected,
+    required this.onTap,
+  });
 
-  Widget _buildRoleCards() {
-    return Column(
-      children: [
-        _roleCard(
-          role: UserRole.seller,
-          title: 'Seller / Artisan',
-          subtitle: 'Sell your handmade products\nand grow your craft business.',
-          selectedColor: AppColors.terracotta,
-          imageAsset: 'assets/seller-enum-img.png',
-        ),
-        const SizedBox(height: AppDimensions.lg),
-        _roleCard(
-          role: UserRole.b2bSeller,
-          title: 'B2B Wholesale Seller',
-          subtitle: 'Bulk orders, wholesale catalogs\nand enterprise buyers.',
-          selectedColor: AppColors.terracotta,
-          imageAsset: 'assets/seller-enum-img.png',
-          icon: Icons.business_outlined,
-        ),
-        const SizedBox(height: AppDimensions.lg),
-        _roleCard(
-          role: UserRole.buyer,
-          title: 'Buyer / Customer',
-          subtitle: 'Discover and shop unique\nhandmade Indian crafts.',
-          selectedColor: AppColors.terracotta,
-          imageAsset: 'assets/buyer-enum-img.png',
-        ),
-      ],
-    );
-  }
-
-  Widget _roleCard({
-    required UserRole role,
-    required String title,
-    required String subtitle,
-    required String imageAsset,
-    required Color selectedColor,
-    IconData icon = Icons.circle,
-  }) {
-    final isSelected = _selectedRole == role;
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => setState(() => _selectedRole = role),
+      onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        width: double.infinity,
-        constraints: const BoxConstraints(minHeight: 140),
-        padding: const EdgeInsets.all(AppDimensions.lg),
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.xl,
+          vertical: AppDimensions.xl,
+        ),
         decoration: BoxDecoration(
-          color: isSelected ? selectedColor.withValues(alpha: 0.05) : AppColors.surface,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
+          color: isSelected
+              ? AppColors.terracotta.withAlpha(15)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
           border: Border.all(
-            color: isSelected ? selectedColor : AppColors.borderLight,
-            width: isSelected ? 2 : 1,
+            color: isSelected ? AppColors.terracotta : AppColors.border,
+            width: isSelected ? 2.0 : 1.0,
           ),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isSelected ? 0.08 : 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
+            if (isSelected)
+              BoxShadow(
+                color: AppColors.terracotta.withAlpha(25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
           ],
         ),
         child: Row(
           children: [
-            // Role illustration image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-              child: Image.asset(
-                imageAsset,
-                width: 100,
-                height: 120,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  // Fallback to icon if image fails to load
-                  return Container(
-                    width: 100,
-                    height: 120,
+            // Image or empty space
+            if (imagePath != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+                child: Image.asset(
+                  imagePath!,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
-                      color: isSelected ? selectedColor.withValues(alpha: 0.1) : AppColors.warmBeige,
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
                     ),
-                    child: Icon(
-                      icon,
-                      size: 40,
-                      color: isSelected ? selectedColor : AppColors.brown,
+                    child: const Icon(
+                      Icons.image_not_supported_outlined,
+                      color: AppColors.textSecondary,
+                      size: 28,
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: AppDimensions.lg),
-            // Text content
+              const SizedBox(width: AppDimensions.xl),
+            ],
+
+            // Text
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: AppTextStyles.titleLarge.copyWith(
-                      color: AppColors.brown,
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: isSelected ? AppColors.terracotta : AppColors.charcoal,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: AppDimensions.sm),
+                  const SizedBox(height: AppDimensions.xs),
                   Text(
                     subtitle,
-                    style: AppTextStyles.bodySmall.copyWith(height: 1.4),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
-            if (isSelected)
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: selectedColor,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check, size: 16, color: AppColors.cream),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildContinueButton() {
-    final isEnabled = _selectedRole != null;
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: isEnabled
-            ? () {
-                Navigator.pushNamed(context, AppRoutes.login, arguments: _selectedRole);
-              }
-            : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.terracotta,
-          disabledBackgroundColor: AppColors.warmBeige,
-          foregroundColor: AppColors.cream,
-          disabledForegroundColor: AppColors.textSecondary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-          ),
-          elevation: 0,
-        ),
-        child: Text(
-          'Continue',
-          style: AppTextStyles.buttonLarge.copyWith(
-            color: isEnabled ? AppColors.cream : AppColors.textSecondary,
-          ),
+            // Radio indicator
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? AppColors.terracotta : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? AppColors.terracotta : AppColors.border,
+                  width: 2.0,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, color: Colors.white, size: 14)
+                  : null,
+            ),
+          ],
         ),
       ),
     );

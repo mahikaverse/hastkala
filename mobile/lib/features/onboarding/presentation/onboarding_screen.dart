@@ -22,6 +22,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final audio = AppIntroAudioService();
+      if (!audio.isPlaying) {
+        audio.startIntroMusic();
+      }
+    });
   }
 
   @override

@@ -6,6 +6,7 @@ import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/product_model.dart';
 import '../../../core/widgets/adaptive_product_image.dart';
+import '../../../core/widgets/app_bottom_nav.dart';
 
 class ManageProductsScreen extends StatefulWidget {
   const ManageProductsScreen({super.key});
@@ -721,7 +722,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
   // ─── BOTTOM NAV ────────────────────────────────────────────────────────────
 
   Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
+    return AppBottomNav(
       currentIndex: 1,
       onTap: (i) {
         final routes = [
@@ -735,19 +736,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: AppColors.surface,
-      selectedItemColor: AppColors.terracotta,
-      unselectedItemColor: AppColors.textSecondary,
-      selectedLabelStyle: AppTextStyles.labelSmall.copyWith(color: AppColors.terracotta),
-      unselectedLabelStyle: AppTextStyles.labelSmall,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), activeIcon: Icon(Icons.inventory_2), label: 'Products'),
-        BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), activeIcon: Icon(Icons.add_circle), label: 'Add Product'),
-        BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), activeIcon: Icon(Icons.receipt_long), label: 'Orders'),
-        BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-      ],
+      items: AppBottomNavItems.artisan,
     );
   }
 }

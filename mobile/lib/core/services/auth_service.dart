@@ -115,8 +115,9 @@ class AuthService {
     final r = role ?? userRole;
     switch (r) {
       case UserRole.seller:
-      case UserRole.b2bSeller:
         return AppRoutes.artisanDashboard;
+      case UserRole.b2bSeller:
+        return AppRoutes.b2bHome;
       case UserRole.buyer:
         return AppRoutes.buyerHome;
     }

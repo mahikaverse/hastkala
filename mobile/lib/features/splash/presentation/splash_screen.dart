@@ -24,8 +24,8 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
-  late final Animation<double> _fadeAnimation;
   Timer? _navigationTimer;
+  bool _navigated = false;
 
   @override
   void initState() {
@@ -40,22 +40,20 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(seconds: 5),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    _scaleAnimation = Tween<double>(begin: 0.12, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
 
     _controller.forward();
 
-    AppIntroAudioService().startIntroMusic();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppIntroAudioService().startIntroMusic();
+    });
 
-    _navigationTimer = Timer(const Duration(milliseconds: 2200), () {
+    _navigationTimer = Timer(const Duration(seconds: 5), () {
       _checkAuthAndNavigate();
     });
   }
@@ -71,8 +69,8 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _checkAuthAndNavigate() {
-    if (!mounted) return;
-    AppIntroAudioService().stopIntroMusic();
+    if (!mounted || _navigated) return;
+    _navigated = true;
     Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
   }
 
@@ -91,18 +89,15 @@ class _SplashScreenState extends State<SplashScreen>
         children: [
           // Centered content
           Center(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: const Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _BrandLogo(),
-                    SizedBox(height: AppDimensions.xxl),
-                    _Tagline(),
-                  ],
-                ),
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _BrandLogo(),
+                  SizedBox(height: AppDimensions.xxl),
+                  _Tagline(),
+                ],
               ),
             ),
           ),

@@ -1,77 +1,50 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
-import '../../../core/models/user_role.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/hast_kala_background.dart';
 
 class LoginScreen extends StatefulWidget {
-  final UserRole? initialRole;
-  final bool initialIsLoginTab;
-
-  const LoginScreen({
-    super.key,
-    this.initialRole,
-    this.initialIsLoginTab = true,
-  });
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  late bool _isLoginTab;
   bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Selected role for registration
-  late UserRole _selectedRole;
-
-  // Text controllers
-  final _loginEmailController = TextEditingController();
-  final _loginPasswordController = TextEditingController();
-
-  final _signupNameController = TextEditingController();
-  final _signupEmailController = TextEditingController();
-  final _signupPasswordController = TextEditingController();
-  final _signupConfirmController = TextEditingController();
-  final _signupCraftController = TextEditingController();
-  final _signupBusinessController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _isLoginTab = widget.initialIsLoginTab;
-    _selectedRole = widget.initialRole ?? UserRole.seller;
-  }
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
 
   @override
   void dispose() {
-    _loginEmailController.dispose();
-    _loginPasswordController.dispose();
-    _signupNameController.dispose();
-    _signupEmailController.dispose();
-    _signupPasswordController.dispose();
-    _signupConfirmController.dispose();
-    _signupCraftController.dispose();
-    _signupBusinessController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
     super.dispose();
   }
 
-  // ─── LOGIN HANDLER ────────────────────────────────────────────────────────
   Future<void> _handleLogin() async {
-    final email = _loginEmailController.text.trim();
-    final password = _loginPasswordController.text;
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
     if (email.isEmpty) {
       setState(() => _errorMessage = 'Please enter your email address');
+      _emailFocus.requestFocus();
       return;
     }
     if (password.isEmpty) {
       setState(() => _errorMessage = 'Please enter your password');
+      _passwordFocus.requestFocus();
       return;
     }
 
@@ -96,100 +69,169 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // ─── SIGN UP / CREATE ACCOUNT HANDLER ─────────────────────────────────────
-  Future<void> _handleSignUp() async {
-    final name = _signupNameController.text.trim();
-    final email = _signupEmailController.text.trim();
-    final password = _signupPasswordController.text;
-    final confirm = _signupConfirmController.text;
-
-    if (name.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your full name');
-      return;
-    }
-    if (email.isEmpty || !email.contains('@')) {
-      setState(() => _errorMessage = 'Please enter a valid email address');
-      return;
-    }
-    if (password.length < 6) {
-      setState(() => _errorMessage = 'Password must be at least 6 characters long');
-      return;
-    }
-    if (password != confirm) {
-      setState(() => _errorMessage = 'Passwords do not match');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    final result = await AuthService().register(
-      name: name,
-      email: email,
-      password: password,
-      role: _selectedRole,
-      craft: _selectedRole == UserRole.seller ? _signupCraftController.text.trim() : null,
-      businessName: _selectedRole == UserRole.b2bSeller ? _signupBusinessController.text.trim() : null,
-    );
-
-    if (!mounted) return;
-
-    if (result.isSuccess) {
-      final role = result.role ?? _selectedRole;
-      final targetRoute = AuthService().getHomeRouteForRole(role);
-      Navigator.pushNamedAndRemoveUntil(context, targetRoute, (route) => false);
-    } else {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = result.errorMessage ?? 'Registration failed. Please try again.';
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return HastKalaBackground(
-      child: Material(
-        type: MaterialType.transparency,
-        child: SafeArea(
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+
+    return Scaffold(
+      body: HastKalaBackground(
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.translucent,
           child: Column(
             children: [
-              const SizedBox(height: 16),
-              // Brand Header Logo
-              Center(
-                child: Image.asset(
-                  'assets/horizontal-logo.png',
-                  width: 150,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Text(
-                      'HastKala',
-                      style: AppTextStyles.headlineLarge.copyWith(
-                        color: AppColors.brown,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Direct Bridge for Artisans & Handloom',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Main Form Card
               Expanded(
                 child: SingleChildScrollView(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                    child: _buildCard(),
+                  padding: EdgeInsets.fromLTRB(
+                    AppDimensions.xxl,
+                    AppDimensions.xxxl,
+                    AppDimensions.xxl,
+                    bottomPadding + AppDimensions.xxl,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: AppDimensions.xl),
+
+                      // Brand
+                      Center(
+                        child: Image.asset(
+                          'assets/horizontal-logo.png',
+                          height: 52,
+                          errorBuilder: (_, __, ___) => Text(
+                            'HastKala',
+                            style: AppTextStyles.displaySmall.copyWith(
+                              color: AppColors.terracotta,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Center(
+                        child: Text(
+                          'Direct Bridge for Artisans & Handloom',
+                          style: AppTextStyles.caption.copyWith(
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppDimensions.xxxxl),
+
+                      // Welcome section
+                      Text(
+                        'Welcome Back',
+                        style: AppTextStyles.headlineLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppDimensions.xs),
+                      Text(
+                        'Sign in to your account',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppDimensions.xxl),
+
+                      // Form card
+                      Container(
+                        padding: const EdgeInsets.all(AppDimensions.xxl),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.charcoal.withAlpha(12),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Error banner
+                            if (_errorMessage != null) ...[
+                              _ErrorBanner(message: _errorMessage!),
+                              const SizedBox(height: AppDimensions.lg),
+                            ],
+
+                            // Email
+                            _AuthField(
+                              controller: _emailController,
+                              focusNode: _emailFocus,
+                              label: 'Email address',
+                              hint: 'you@example.com',
+                              icon: Icons.email_outlined,
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              onSubmitted: (_) => _passwordFocus.requestFocus(),
+                            ),
+                            const SizedBox(height: AppDimensions.lg),
+
+                            // Password
+                            _AuthField(
+                              controller: _passwordController,
+                              focusNode: _passwordFocus,
+                              label: 'Password',
+                              hint: 'Enter your password',
+                              icon: Icons.lock_outline,
+                              obscureText: !_isPasswordVisible,
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) => _handleLogin(),
+                              suffix: GestureDetector(
+                                onTap: () =>
+                                    setState(() => _isPasswordVisible = !_isPasswordVisible),
+                                child: Icon(
+                                  _isPasswordVisible
+                                      ? Icons.visibility_off_rounded
+                                      : Icons.visibility_rounded,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppDimensions.xxxl),
+
+                            // Login button
+                            _AuthButton(
+                              label: 'Login',
+                              isLoading: _isLoading,
+                              onPressed: _handleLogin,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Bottom link
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: AppDimensions.lg),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Don't have an account? ",
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () =>
+                            Navigator.pushNamed(context, AppRoutes.roleSelection),
+                        child: Text(
+                          'Sign Up',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.terracotta,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -199,507 +241,159 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+}
 
-  Widget _buildCard() {
+// ── Reusable widgets ────────────────────────────────────────────────────────
+
+class _ErrorBanner extends StatelessWidget {
+  final String message;
+  const _ErrorBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.md,
+        vertical: AppDimensions.md,
       ),
-      padding: const EdgeInsets.all(22.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildTabs(),
-          const SizedBox(height: 20),
-          if (_errorMessage != null) ...[
-            _buildErrorBanner(_errorMessage!),
-            const SizedBox(height: 16),
-          ],
-          if (_isLoginTab) _buildLoginForm() else _buildSignUpForm(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabs() {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              if (_isLoading) return;
-              setState(() {
-                _isLoginTab = true;
-                _errorMessage = null;
-              });
-            },
-            child: Container(
-              color: Colors.transparent,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                children: [
-                  Text(
-                    'Login',
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: _isLoginTab ? AppColors.terracotta : AppColors.charcoal,
-                      fontWeight: _isLoginTab ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: _isLoginTab ? AppColors.terracotta : Colors.transparent,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              if (_isLoading) return;
-              setState(() {
-                _isLoginTab = false;
-                _errorMessage = null;
-              });
-            },
-            child: Container(
-              color: Colors.transparent,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                children: [
-                  Text(
-                    'Create Account',
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: !_isLoginTab ? AppColors.terracotta : AppColors.charcoal,
-                      fontWeight: !_isLoginTab ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: !_isLoginTab ? AppColors.terracotta : Colors.transparent,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildErrorBanner(String message) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+        color: AppColors.error.withAlpha(12),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+        border: Border.all(color: AppColors.error.withAlpha(40)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline, color: AppColors.error, size: 20),
-          const SizedBox(width: 10),
+          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 18),
+          const SizedBox(width: AppDimensions.sm),
           Expanded(
             child: Text(
               message,
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.error,
+                height: 1.4,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  // ─── LOGIN FORM ───────────────────────────────────────────────────────────
-  Widget _buildLoginForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Welcome Back',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.headlineMedium.copyWith(
-            color: AppColors.brown,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Sign in to access your dashboard and products',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 24),
-        _buildTextField(
-          controller: _loginEmailController,
-          label: 'Email Address',
-          icon: Icons.email_outlined,
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          controller: _loginPasswordController,
-          label: 'Password',
-          icon: Icons.lock_outline,
-          isPassword: true,
-        ),
-        const SizedBox(height: 24),
-        _buildPrimaryButton(
-          text: 'Login',
-          isLoading: _isLoading,
-          onPressed: _handleLogin,
-        ),
-        const SizedBox(height: 20),
-        Center(
-          child: GestureDetector(
-            onTap: () {
-              if (_isLoading) return;
-              setState(() {
-                _isLoginTab = false;
-                _errorMessage = null;
-              });
-            },
-            child: RichText(
-              text: TextSpan(
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
-                children: const [
-                  TextSpan(text: "Don't have an account? "),
-                  TextSpan(
-                    text: 'Create Account',
-                    style: TextStyle(
-                      color: AppColors.terracotta,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+class _AuthField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode? focusNode;
+  final String label;
+  final String? hint;
+  final IconData icon;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final bool obscureText;
+  final Widget? suffix;
+  final ValueChanged<String>? onSubmitted;
 
-  // ─── SIGN UP FORM ─────────────────────────────────────────────────────────
-  Widget _buildSignUpForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Create Your Account',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.headlineMedium.copyWith(
-            color: AppColors.brown,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Join HastKala to connect directly with India’s craft world',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 20),
+  const _AuthField({
+    required this.controller,
+    this.focusNode,
+    required this.label,
+    this.hint,
+    required this.icon,
+    this.keyboardType,
+    this.textInputAction,
+    this.obscureText = false,
+    this.suffix,
+    this.onSubmitted,
+  });
 
-        // ─── ROLE SELECTOR (Artisan, B2B Seller, Buyer) ───────────────────
-        Text(
-          'I am a / मैं हूँ:',
-          style: AppTextStyles.labelMedium.copyWith(
-            color: AppColors.brown,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        _buildRoleOptions(),
-        const SizedBox(height: 20),
-
-        _buildTextField(
-          controller: _signupNameController,
-          label: 'Full Name',
-          icon: Icons.person_outline,
-        ),
-        const SizedBox(height: 14),
-        _buildTextField(
-          controller: _signupEmailController,
-          label: 'Email Address',
-          icon: Icons.email_outlined,
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 14),
-        if (_selectedRole == UserRole.seller) ...[
-          _buildTextField(
-            controller: _signupCraftController,
-            label: 'Craft Specialization (e.g. Pottery, Handloom)',
-            icon: Icons.brush_outlined,
-          ),
-          const SizedBox(height: 14),
-        ],
-        if (_selectedRole == UserRole.b2bSeller) ...[
-          _buildTextField(
-            controller: _signupBusinessController,
-            label: 'Enterprise / Business Name',
-            icon: Icons.store_outlined,
-          ),
-          const SizedBox(height: 14),
-        ],
-        _buildTextField(
-          controller: _signupPasswordController,
-          label: 'Password (min 6 characters)',
-          icon: Icons.lock_outline,
-          isPassword: true,
-        ),
-        const SizedBox(height: 14),
-        _buildTextField(
-          controller: _signupConfirmController,
-          label: 'Confirm Password',
-          icon: Icons.lock_outline,
-          isPassword: true,
-          isConfirmPassword: true,
-        ),
-        const SizedBox(height: 24),
-        _buildPrimaryButton(
-          text: 'Create Account',
-          isLoading: _isLoading,
-          onPressed: _handleSignUp,
-        ),
-        const SizedBox(height: 20),
-        Center(
-          child: GestureDetector(
-            onTap: () {
-              if (_isLoading) return;
-              setState(() {
-                _isLoginTab = true;
-                _errorMessage = null;
-              });
-            },
-            child: RichText(
-              text: TextSpan(
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
-                children: const [
-                  TextSpan(text: 'Already have an account? '),
-                  TextSpan(
-                    text: 'Login',
-                    style: TextStyle(
-                      color: AppColors.terracotta,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ─── ROLE CARDS ───────────────────────────────────────────────────────────
-  Widget _buildRoleOptions() {
-    return Column(
-      children: [
-        _roleCardTile(
-          role: UserRole.seller,
-          title: 'Artisan / Maker (कारीगर)',
-          subtitle: 'Create smart catalogs & sell handmade crafts',
-          icon: Icons.palette_outlined,
-        ),
-        const SizedBox(height: 8),
-        _roleCardTile(
-          role: UserRole.b2bSeller,
-          title: 'B2B Wholesale Seller (थोक विक्रेता)',
-          subtitle: 'Bulk orders, wholesale catalogs & B2B contracts',
-          icon: Icons.business_outlined,
-        ),
-        const SizedBox(height: 8),
-        _roleCardTile(
-          role: UserRole.buyer,
-          title: 'Buyer / Customer (खरीदार)',
-          subtitle: 'Explore authentic Indian crafts directly from makers',
-          icon: Icons.shopping_bag_outlined,
-        ),
-      ],
-    );
-  }
-
-  Widget _roleCardTile({
-    required UserRole role,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-  }) {
-    final isSelected = _selectedRole == role;
-    return GestureDetector(
-      onTap: () {
-        if (_isLoading) return;
-        setState(() => _selectedRole = role);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.terracotta.withValues(alpha: 0.06) : AppColors.background,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.terracotta : AppColors.borderLight,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.terracotta : AppColors.warmBeige,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: isSelected ? AppColors.cream : AppColors.brown,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.titleSmall.copyWith(
-                      color: isSelected ? AppColors.terracotta : AppColors.brown,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? AppColors.terracotta : AppColors.borderLight,
-                  width: 2,
-                ),
-                color: isSelected ? AppColors.terracotta : Colors.transparent,
-              ),
-              child: isSelected
-                  ? const Icon(Icons.check, size: 14, color: AppColors.cream)
-                  : null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ─── TEXT FIELD COMPONENT ─────────────────────────────────────────────────
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool isPassword = false,
-    bool isConfirmPassword = false,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    bool obscure = false;
-    if (isPassword) {
-      obscure = isConfirmPassword ? !_isConfirmPasswordVisible : !_isPasswordVisible;
-    }
-
-    return TextField(
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
       controller: controller,
-      obscureText: obscure,
+      focusNode: focusNode,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      obscureText: obscureText,
+      onFieldSubmitted: onSubmitted,
       style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+        hintText: hint,
         prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
-        filled: true,
-        fillColor: AppColors.background,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.borderLight),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.borderLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.terracotta, width: 1.5),
-        ),
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(
-                  obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                onPressed: () {
-                  setState(() {
-                    if (isConfirmPassword) {
-                      _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-                    } else {
-                      _isPasswordVisible = !_isPasswordVisible;
-                    }
-                  });
-                },
+        suffixIcon: suffix != null
+            ? Padding(
+                padding: const EdgeInsets.only(right: AppDimensions.sm),
+                child: suffix,
               )
             : null,
+        suffixIconConstraints: const BoxConstraints(maxWidth: 40, maxHeight: 40),
+        filled: true,
+        fillColor: AppColors.cream.withAlpha(80),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.lg,
+          vertical: AppDimensions.lg,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+          borderSide: BorderSide(color: AppColors.border.withAlpha(120)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+          borderSide: BorderSide(color: AppColors.border.withAlpha(120)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+          borderSide: const BorderSide(color: AppColors.terracotta, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+          borderSide: BorderSide(color: AppColors.error.withAlpha(150)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
+        labelStyle: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textSecondary,
+        ),
+        hintStyle: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textSecondary.withAlpha(120),
+        ),
+        errorStyle: AppTextStyles.caption.copyWith(
+          color: AppColors.error,
+          fontSize: 11,
+        ),
       ),
     );
   }
+}
 
-  // ─── PRIMARY ACTION BUTTON ────────────────────────────────────────────────
-  Widget _buildPrimaryButton({
-    required String text,
-    required bool isLoading,
-    required VoidCallback onPressed,
-  }) {
+class _AuthButton extends StatelessWidget {
+  final String label;
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  const _AuthButton({
+    required this.label,
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.terracotta,
-          disabledBackgroundColor: AppColors.terracotta.withValues(alpha: 0.6),
-          foregroundColor: AppColors.cream,
+          foregroundColor: AppColors.textOnPrimary,
+          disabledBackgroundColor: AppColors.terracotta.withAlpha(100),
+          disabledForegroundColor: AppColors.textOnPrimary.withAlpha(180),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
           ),
-          elevation: 0,
+          elevation: 3,
+          shadowColor: AppColors.terracotta.withAlpha(60),
         ),
         child: isLoading
             ? const SizedBox(
@@ -707,14 +401,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.cream),
+                  color: AppColors.textOnPrimary,
                 ),
               )
             : Text(
-                text,
+                label,
                 style: AppTextStyles.buttonLarge.copyWith(
-                  color: AppColors.cream,
-                  fontWeight: FontWeight.w700,
+                  color: AppColors.textOnPrimary,
+                  fontSize: 16,
+                  letterSpacing: 0.3,
                 ),
               ),
       ),

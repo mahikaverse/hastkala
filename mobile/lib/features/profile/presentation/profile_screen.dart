@@ -5,6 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/widgets/app_bottom_nav.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -142,7 +143,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
+    return AppBottomNav(
       currentIndex: 4,
       onTap: (i) {
         final routes = [
@@ -156,17 +157,7 @@ class ProfileScreen extends StatelessWidget {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: AppColors.surface,
-      selectedItemColor: AppColors.terracotta,
-      unselectedItemColor: AppColors.textSecondary,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: 'Explore'),
-        BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_outlined), label: 'Cart'),
-        BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), label: 'Orders'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-      ],
+      items: AppBottomNavItems.buyer,
     );
   }
 }

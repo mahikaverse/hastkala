@@ -46,7 +46,7 @@ dependencies:
   path_provider: ^2.1.6
   shared_preferences: ^2.5.5
   supabase_flutter: ^2.17.2
-  just_audio: ^0.9.42
+  audioplayers: ^6.8.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -77,8 +77,26 @@ flutter:
     - assets/login-bg.png
     - assets/seller-enum-img.png
     - assets/buyer-enum-img.png
+    - assets/b2b-enum-img.png
     - assets/.env
-    - assets/audio/hastkala_intro.wav
+    - assets/exibitions-img.png
+    - assets/exibitions2-img.png
+    - assets/government1-img.png
+    - assets/government2-img.png
+    - assets/government3-img.png
+    - assets/audio/videoplayback.m4a
+    - assets/craft/craft_blue_pottery_vase.jpg
+    - assets/craft/craft_block_printed_textile.jpg
+    - assets/craft/craft_terracotta_pot.jpg
+    - assets/craft/craft_bamboo_basket.jpg
+    - assets/craft/craft_wooden_carved_box.jpg
+    - assets/craft/craft_handwoven_fabric.jpg
+    - assets/craft/craft_brass_metal.jpg
+    - assets/craft/craft_marble_inlay.jpg
+    - assets/craft/craft_lac_bangles.jpg
+    - assets/craft/craft_papier_mache.jpg
+    - assets/craft/craft_chikankari_fabric.jpg
+    - assets/craft/craft_madhubani_painting.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/product_model.dart';
+import '../../../core/widgets/app_bottom_nav.dart';
 
 class ArtisanOrdersScreen extends StatelessWidget {
   const ArtisanOrdersScreen({super.key});
@@ -254,31 +256,21 @@ class ArtisanOrdersScreen extends StatelessWidget {
   }
 
   Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
+    return AppBottomNav(
       currentIndex: 3,
       onTap: (i) {
         final routes = [
-          '/artisan-home',
-          '/manage-products',
-          '/artisan-add-product',
+          AppRoutes.artisanHome,
+          AppRoutes.manageProducts,
+          AppRoutes.artisanAddProduct,
           null,
-          '/artisan-profile',
+          AppRoutes.artisanProfile,
         ];
         if (routes[i] != null) {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: AppColors.surface,
-      selectedItemColor: AppColors.terracotta,
-      unselectedItemColor: AppColors.textSecondary,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Products'),
-        BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), label: 'Add Product'),
-        BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Orders'),
-        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-      ],
+      items: AppBottomNavItems.artisan,
     );
   }
 }
