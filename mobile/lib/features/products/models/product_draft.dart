@@ -2,6 +2,7 @@ class ProductDraft {
   String? imagePath;
   bool useEnhanced;
   String voiceTranscript;
+  String voiceLanguage;
   String? productName;
   String? category;
   String? material;
@@ -35,6 +36,7 @@ class ProductDraft {
     this.imagePath,
     this.useEnhanced = false,
     this.voiceTranscript = '',
+    this.voiceLanguage = 'hi_IN',
     this.productName,
     this.category,
     this.material,

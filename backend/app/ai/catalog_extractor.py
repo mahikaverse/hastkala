@@ -21,6 +21,13 @@ Extract ONLY the facts explicitly stated or clearly implied by the artisan in th
 
 Transcript: "{transcript}"
 
+IMPORTANT: The transcript may be in Hindi, Hinglish, or English. ALL output values MUST be in English.
+Translate Hindi/Hinglish terms to English naturally. Examples:
+- "bamboo ki tokri" → material: "Bamboo", product_name: "Bamboo Basket"
+- "mitti ke diye" → material: "Clay", product_name: "Clay Diya"
+- "brown colour hai" → color: "Brown"
+- "baarah inch" → size: "12 inch"
+
 STRICT RULES:
 - Extract ONLY what the artisan actually said.
 - Do NOT invent, assume, or embellish any information.
@@ -28,7 +35,7 @@ STRICT RULES:
 - Do NOT use words like "handcrafted", "handmade", "traditional", "premium", "ancient", "heritage" unless the artisan literally said those words.
 - Product name must be derived from the actual product described (e.g. "Bamboo Basket", "Clay Diya").
 - Category must be inferred from the actual product/material (e.g. Bamboo & Cane, Pottery & Ceramics).
-- Description should be a simple factual sentence based ONLY on what was said.
+- description: MUST contain at least 2 factual sentences based ONLY on what was said. Do NOT add words like "premium", "traditional", "handcrafted" unless the artisan literally said them. Each sentence must be based on verified information.
 
 Output valid JSON ONLY with these exact keys:
 {{
@@ -55,16 +62,23 @@ Extract ONLY the product basic details that the artisan explicitly mentions in t
 
 Speech: "{transcript}"
 
+IMPORTANT: The transcript may be in Hindi, Hinglish, or English. ALL output values MUST be in English.
+Translate Hindi/Hinglish terms to English naturally. Examples:
+- "bamboo ki tokri" → material: "Bamboo", product_name: "Bamboo Basket"
+- "mitti ke diye" → material: "Clay", product_name: "Clay Diya"
+- "brown colour hai" → color: "Brown"
+- "baarah inch" → size: "12 inch"
+- "teen din" → making_time: "3 days"
+
 STRICT RULES:
 - Extract ONLY what the artisan actually said.
 - Do NOT invent, assume, or embellish any information.
 - If something was NOT mentioned, set it to null.
 - Do NOT use generic filler words like "handcrafted", "handmade", "traditional", "premium".
-- Product name must be the actual product described. Examples:
+- Product name must be the actual product described in English. Examples:
   - "Mai bamboo ki tokri banata hu" → product_name: "Bamboo Basket"
   - "Mai mitti ke diye banata hu" → product_name: "Clay Diya"
   - "Mai blue pottery ka vase banata hu" → product_name: "Blue Pottery Vase"
-  - "Mai mobile banata hu" → product_name: "Mobile"
   - NEVER: "Handcrafted Item", "Handmade Craft", "Handicraft Product"
 - Category must match the actual product/material:
   - Bamboo/Cane products → "Bamboo & Cane"
@@ -78,7 +92,10 @@ STRICT RULES:
   - Stone/Marble items → "Stone Craft"
   - Anything else → "Other"
   - Do NOT force a product into a handicraft category if it doesn't belong there.
-- description: A simple factual sentence based ONLY on what was said. Do NOT add words like "premium", "traditional", "handcrafted" unless the artisan literally said them. Example: "Bamboo basket that takes 3 days to make."
+- description: MUST contain at least 2 factual sentences based ONLY on what was said. Do NOT add words like "premium", "traditional", "handcrafted" unless the artisan literally said them. Each sentence must be based on verified information. Examples:
+  - "Bamboo basket" → "This product is a bamboo basket. It is made from bamboo."
+  - "Blue vase" → "This product is a blue vase. It is available in a blue color."
+  - "Bamboo basket, brown color, 12 inch, takes 3 days to make" → "This bamboo basket is brown in color and measures 12 inches. It takes approximately three days to make."
 
 Output valid JSON ONLY with these exact keys:
 {{
@@ -97,6 +114,14 @@ Extract ONLY the quantity and production details that the artisan explicitly men
 
 Speech: "{transcript}"
 
+IMPORTANT: The transcript may be in Hindi, Hinglish, or English. ALL output values MUST be in English.
+Translate Hindi/Hinglish numbers and terms to English. Examples:
+- "pachaas piece" → quantity: "50"
+- "sau piece" → quantity: "100"
+- "bees piece har hafte" → production_capacity: "20 per week"
+- "do ghante" → making_time: "2 hours"
+- "hafta" → use "week", "mahina" → use "month"
+
 STRICT RULES:
 - Extract ONLY what the artisan actually said.
 - Do NOT invent or assume any information.
@@ -114,6 +139,9 @@ EXTRACTION_PROMPT_STEP3 = """You are a factual data extractor for Indian artisan
 Extract ONLY the craft story, location, and artisan intro that the artisan explicitly shares.
 
 Speech: "{transcript}"
+
+IMPORTANT: The transcript may be in Hindi, Hinglish, or English. ALL output values MUST be in English.
+Translate Hindi/Hinglish terms to English naturally.
 
 STRICT RULES:
 - Extract ONLY what the artisan actually said about their story, location, and background.

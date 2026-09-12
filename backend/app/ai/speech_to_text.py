@@ -3,6 +3,8 @@ import os
 import tempfile
 from pathlib import Path
 
+import httpx
+
 from app.core.config import settings
 
 logger = logging.getLogger("hastkala.ai.stt")
@@ -27,26 +29,94 @@ ALLOWED_AUDIO_TYPES = {
 
 MAX_AUDIO_SIZE = 25 * 1024 * 1024  # 25MB
 
+# Deepgram content-type mapping for audio file extensions
+_DEEPGRAM_MIME = {
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+    ".flac": "audio/flac",
+    ".webm": "audio/webm",
+    ".mp4": "audio/mp4",
+    ".m4a": "audio/mp4",
+}
 
-def _transcribe_groq(audio_bytes: bytes, filename: str, language: str = None) -> dict:
-    import groq
 
-    client = groq.Groq(api_key=settings.GROQ_API_KEY)
-    logger.info(f"Transcribing audio via Groq whisper-large-v3-turbo ({len(audio_bytes)} bytes, lang={language})...")
+def _guess_mime(filename: str) -> str:
+    """Guess MIME type from filename extension."""
+    suffix = Path(filename).suffix.lower()
+    return _DEEPGRAM_MIME.get(suffix, "audio/mpeg")
 
-    fname = filename if filename and "." in filename else "audio.m4a"
-    kwargs = {
-        "file": (fname, audio_bytes),
-        "model": "whisper-large-v3-turbo",
-        "response_format": "verbose_json",
+
+# ──────────────────────────────────────────────────────────────────────────────
+# PRIMARY: Deepgram Nova-3 STT
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _transcribe_deepgram(
+    audio_bytes: bytes,
+    filename: str,
+    language: str = None,
+) -> dict:
+    """Transcribe audio using Deepgram Nova-3 REST API.
+
+    Deepgram Nova-3 supports 36+ languages natively including Hindi and Hinglish.
+    The API auto-detects language when not specified.
+    """
+    api_key = settings.DEEPGRAM_API_KEY
+    if not api_key:
+        raise ValueError("DEEPGRAM_API_KEY is not configured")
+
+    mime = _guess_mime(filename)
+    logger.info(f"[STT] Deepgram transcription started ({len(audio_bytes)} bytes, mime={mime})")
+
+    params = {
+        "model": "nova-3",
+        "smart_format": "true",
+        "detect_language": "true",
+        "paragraphs": "true",
+        "utt_split": "true",
     }
     if language:
-        kwargs["language"] = language
+        params["language"] = language
+    else:
+        params["language"] = "hi"
 
-    res = client.audio.transcriptions.create(**kwargs)
-    transcript = (res.text or "").strip()
-    detected_lang = getattr(res, "language", None) or "unknown"
-    logger.info(f"Groq transcription complete: lang={detected_lang}, chars={len(transcript)}")
+    headers = {
+        "Authorization": f"Token {api_key}",
+        "Content-Type": mime,
+    }
+
+    with httpx.Client(timeout=60.0) as client:
+        resp = client.post(
+            "https://api.deepgram.com/v1/listen",
+            params=params,
+            headers=headers,
+            content=audio_bytes,
+        )
+        resp.raise_for_status()
+
+    data = resp.json()
+    channels = data.get("results", {}).get("channels", [])
+    if not channels:
+        raise ValueError("Deepgram returned no channels in response")
+
+    alternatives = channels[0].get("alternatives", [])
+    if not alternatives:
+        raise ValueError("Deepgram returned no alternatives in response")
+
+    transcript = alternatives[0].get("transcript", "").strip()
+    detected_lang = data.get("results", {}).get("channels", [{}])[0].get(
+        "alternatives", [{}]
+    )[0].get("language") or data.get("results", {}).get("language", "unknown")
+
+    # Also try top-level language field
+    if detected_lang == "unknown":
+        detected_lang = data.get("results", {}).get("language", "unknown")
+
+    confidence = alternatives[0].get("confidence", 0)
+    logger.info(f"[STT] Transcript: \"{transcript[:200]}\"")
+    logger.info(f"[STT] Transcript length: {len(transcript)} chars")
+    logger.info(f"[STT] Detected language: {detected_lang}, confidence: {confidence}")
+
     return {
         "success": True,
         "language": detected_lang,
@@ -54,28 +124,37 @@ def _transcribe_groq(audio_bytes: bytes, filename: str, language: str = None) ->
     }
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# FALLBACK: Local faster-whisper STT
+# ──────────────────────────────────────────────────────────────────────────────
+
 def _get_local_model():
     global _model
     if _model is None:
         from faster_whisper import WhisperModel
-        logger.info(f"Loading local Whisper model '{_MODEL_SIZE}'...")
+
+        logger.info(f"[STT] Loading local Whisper model '{_MODEL_SIZE}'...")
         _model = WhisperModel(
             _MODEL_SIZE,
             device=_DEVICE,
             compute_type=_COMPUTE_TYPE,
         )
-        logger.info("Local Whisper model loaded successfully.")
+        logger.info("[STT] Local Whisper model loaded successfully.")
     return _model
 
 
 def _transcribe_local(audio_bytes: bytes, filename: str) -> dict:
+    """Fallback STT using local faster-whisper model."""
+    logger.info(f"[STT] Falling back to local faster-whisper ({len(audio_bytes)} bytes)")
     model = _get_local_model()
     suffix = Path(filename).suffix or ".wav"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(audio_bytes)
-        tmp_path = tmp.name
+    tmp_path = None
 
     try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(audio_bytes)
+            tmp_path = tmp.name
+
         segments, info = model.transcribe(
             tmp_path,
             beam_size=1,
@@ -91,31 +170,53 @@ def _transcribe_local(audio_bytes: bytes, filename: str) -> dict:
         transcript = " ".join(transcript_parts).strip()
         language = info.language if info.language else "unknown"
 
-        logger.info(f"Local transcription complete: lang={language}, chars={len(transcript)}")
+        logger.info(f"[STT] Local transcription complete: lang={language}, chars={len(transcript)}")
         return {
             "success": True,
             "language": language,
             "transcript": transcript,
         }
     finally:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
-def transcribe_audio(audio_bytes: bytes, filename: str = "audio.wav", language: str = None) -> dict:
-    if settings.GROQ_API_KEY:
+# ──────────────────────────────────────────────────────────────────────────────
+# MAIN ENTRY POINT — same interface as before
+# ──────────────────────────────────────────────────────────────────────────────
+
+def transcribe_audio(
+    audio_bytes: bytes,
+    filename: str = "audio.wav",
+    language: str = None,
+) -> dict:
+    """Transcribe audio to text.
+
+    Priority:
+        1. Deepgram Nova-3 (cloud, fast, accurate)
+        2. faster-whisper (local fallback)
+
+    Returns: { success: bool, language: str, transcript: str, error?: str }
+    """
+    logger.info(f"[STT] Audio received: {len(audio_bytes)} bytes, filename={filename}")
+
+    # 1. PRIMARY: Deepgram Nova-3
+    if settings.DEEPGRAM_API_KEY:
         try:
-            return _transcribe_groq(audio_bytes, filename, language=language)
+            return _transcribe_deepgram(audio_bytes, filename, language=language)
         except Exception as e:
-            logger.warning(f"Groq transcription failed ({e}). Falling back to local whisper...")
+            logger.warning(f"[STT] Deepgram transcription failed: {e}. Falling back to local whisper...")
+    else:
+        logger.warning("[STT] DEEPGRAM_API_KEY not configured. Skipping Deepgram.")
 
-    # 2. Secondary fallback: Local faster-whisper
+    # 2. FALLBACK: Local faster-whisper
     try:
         return _transcribe_local(audio_bytes, filename)
     except Exception as e:
-        logger.error(f"Local transcription failed: {e}")
+        logger.error(f"[STT] Local transcription also failed: {e}")
         return {
             "success": False,
             "language": None,

@@ -3,16 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_sound/flutter_sound.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/api_config.dart';
+import '../../../core/services/deepgram_stream_service.dart';
 import '../models/product_draft.dart';
 
 class VoiceStep3StoryScreen extends StatefulWidget {
@@ -38,15 +36,10 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   String _liveCaption = '';
   String? _audioPath;
 
-  // Speech to text
-  final SpeechToText _speech = SpeechToText();
-  bool _speechAvailable = false;
-  String _selectedLanguage = 'Hindi';
-  String _selectedLocaleId = 'hi_IN';
-
-  // Audio recording fallback
-  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
-  bool _recorderInitialized = false;
+  // Deepgram streaming STT
+  final DeepgramStreamService _sttService = DeepgramStreamService();
+  late String _selectedLanguage;
+  late String _selectedLocaleId;
 
   // Extracted Form Controllers
   late final TextEditingController _craftStoryCtrl;
@@ -73,6 +66,8 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     );
 
     final d = widget.draft;
+    _selectedLocaleId = d.voiceLanguage;
+    _selectedLanguage = _selectedLocaleId == 'en_IN' ? 'English' : 'Hindi';
     _craftStoryCtrl = TextEditingController(text: d.craftStory ?? '');
     _locationCtrl = TextEditingController(text: d.location ?? '');
     _artisanIntroCtrl = TextEditingController(text: d.artisanIntro ?? '');
@@ -80,9 +75,6 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     if (d.craftStory != null && d.craftStory!.isNotEmpty) {
       _showExtractedForm = true;
     }
-
-    _initSpeech();
-    _initRecorder();
   }
 
   @override
@@ -93,34 +85,8 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     _locationCtrl.dispose();
     _artisanIntroCtrl.dispose();
     _manualInputCtrl.dispose();
-    try {
-      _speech.stop();
-      _speech.cancel();
-    } catch (_) {}
-    if (_recorderInitialized) {
-      _recorder.closeRecorder();
-    }
+    _sttService.dispose();
     super.dispose();
-  }
-
-  Future<void> _initSpeech() async {
-    try {
-      final available = await _speech.initialize(
-        onError: (e) => debugPrint('STT Error: ${e.errorMsg}'),
-      );
-      if (mounted) setState(() => _speechAvailable = available);
-    } catch (e) {
-      debugPrint('STT init error: $e');
-    }
-  }
-
-  Future<void> _initRecorder() async {
-    try {
-      await _recorder.openRecorder();
-      _recorderInitialized = true;
-    } catch (e) {
-      debugPrint('Recorder init error: $e');
-    }
   }
 
   Future<void> _startRecording() async {
@@ -138,70 +104,37 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
       if (mounted) setState(() => _recordingSeconds++);
     });
 
-    if (_speechAvailable) {
-      try {
-        await _speech.listen(
-          onResult: (result) {
-            if (mounted) {
-              setState(() => _liveCaption = result.recognizedWords);
-            }
-          },
-          listenOptions: SpeechListenOptions(
-            localeId: _selectedLocaleId,
-            listenMode: ListenMode.dictation,
-            partialResults: true,
-            cancelOnError: false,
-          ),
-        );
-      } catch (e) {
-        debugPrint('Speech listen error: $e');
-        if (mounted) {
-          setState(() => _liveCaption = '[Audio recording mode - speak about your craft story and location]');
-        }
-      }
-    } else {
-      if (mounted) {
-        setState(() => _liveCaption = '[Audio recording mode - speak about your craft story and location]');
-      }
-    }
-
-    try {
-      if (!_recorderInitialized) await _initRecorder();
-      final dir = await getTemporaryDirectory();
-      final path = '${dir.path}/step3_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      await _recorder.startRecorder(
-        toFile: path,
-        codec: Codec.aacMP4,
-        bitRate: 128000,
-        sampleRate: 44100,
-      );
-      _audioPath = path;
-    } catch (e) {
-      debugPrint('Audio recording error: $e');
-    }
+    _sttService.onTranscript = (text, isFinal) {
+      if (mounted) setState(() => _liveCaption = text);
+    };
+    _sttService.onError = (error) {
+      debugPrint('[LIVE STT ERROR] $error');
+    };
+    final langCode = _selectedLocaleId.split('_').first;
+    _sttService.start(language: langCode);
   }
 
   Future<void> _stopRecording() async {
     _recordingTimer?.cancel();
     _waveController.stop();
 
-    try {
-      if (_speech.isListening) await _speech.stop();
-    } catch (_) {}
-
-    try {
-      if (_recorder.isRecording) {
-        final path = await _recorder.stopRecorder();
-        if (path != null) _audioPath = path;
-      }
-    } catch (_) {}
+    final sttTranscript = await _sttService.stop();
+    if (sttTranscript.isNotEmpty && _liveCaption.isEmpty) {
+      _liveCaption = sttTranscript;
+    }
 
     if (mounted) setState(() => _isRecording = false);
     _processExtraction();
   }
 
   Future<void> _processExtraction() async {
-    // ALWAYS prefer uploading audio for best accuracy
+    final spokenText = _liveCaption.trim();
+    if (spokenText.isNotEmpty && !spokenText.startsWith('[Audio recording')) {
+      debugPrint('[Step3] Using transcript: "$spokenText"');
+      await _extractDetails(spokenText);
+      return;
+    }
+
     if (_audioPath != null) {
       final file = File(_audioPath!);
       final exists = await file.exists();
@@ -212,14 +145,6 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
         await _extractFromAudioFile();
         return;
       }
-      debugPrint('[Step3] Audio file too small ($size bytes), falling back to live caption');
-    }
-
-    final spokenText = _liveCaption.trim();
-    if (spokenText.isNotEmpty && !spokenText.startsWith('[Audio recording')) {
-      debugPrint('[Step3] Using live caption: "$spokenText"');
-      await _extractDetails(spokenText);
-      return;
     }
 
     if (mounted) {
@@ -284,8 +209,8 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
           req.files.add(http.MultipartFile.fromBytes(
             'file',
             bytes,
-            filename: 'step3_voice.m4a',
-            contentType: MediaType('audio', 'mp4'),
+            filename: 'step3_voice.wav',
+            contentType: MediaType('audio', 'wav'),
           ));
           final streamed = await req.send().timeout(const Duration(seconds: 30));
           debugPrint('[Step3 Audio] HTTP status: ${streamed.statusCode}');
@@ -359,13 +284,8 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
 
   void _showLanguageSheet() {
     final languages = [
-      {'name': 'Hindi (हिन्दी)', 'locale': 'hi_IN'},
-      {'name': 'English (India)', 'locale': 'en_IN'},
-      {'name': 'Marathi (मराठी)', 'locale': 'mr_IN'},
-      {'name': 'Gujarati (ગુજરાતી)', 'locale': 'gu_IN'},
-      {'name': 'Bengali (বাংলা)', 'locale': 'bn_IN'},
-      {'name': 'Tamil (தமிழ்)', 'locale': 'ta_IN'},
-      {'name': 'Telugu (తెలుగు)', 'locale': 'te_IN'},
+      {'name': 'Hindi', 'locale': 'hi_IN'},
+      {'name': 'English', 'locale': 'en_IN'},
     ];
 
     showModalBottomSheet(
@@ -390,6 +310,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
                     setState(() {
                       _selectedLanguage = lang['name']!.split(' ').first;
                       _selectedLocaleId = lang['locale']!;
+        widget.draft.voiceLanguage = lang['locale']!;
                     });
                     Navigator.pop(ctx);
                   },

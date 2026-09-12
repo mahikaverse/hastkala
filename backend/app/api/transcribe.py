@@ -1,6 +1,7 @@
 import logging
+from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.ai.speech_to_text import ALLOWED_AUDIO_TYPES, MAX_AUDIO_SIZE, transcribe_audio
 
@@ -10,8 +11,8 @@ router = APIRouter(prefix="/api/ai", tags=["AI"])
 
 
 @router.post("/transcribe")
-async def transcribe(file: UploadFile = File(...)):
-    logger.info(f"Transcribe request: {file.filename}, type={file.content_type}")
+async def transcribe(file: UploadFile = File(...), language: Optional[str] = Form(None)):
+    logger.info(f"Transcribe request: {file.filename}, type={file.content_type}, language={language}")
 
     if file.content_type not in ALLOWED_AUDIO_TYPES:
         raise HTTPException(
@@ -28,7 +29,7 @@ async def transcribe(file: UploadFile = File(...)):
     if len(contents) == 0:
         raise HTTPException(status_code=400, detail="Empty audio file.")
 
-    result = transcribe_audio(contents, filename=file.filename or "audio.wav")
+    result = transcribe_audio(contents, filename=file.filename or "audio.wav", language=language)
 
     if not result["success"]:
         raise HTTPException(status_code=500, detail=f"Transcription failed: {result.get('error', 'Unknown error')}")

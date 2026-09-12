@@ -13,6 +13,7 @@ from app.api.pricing import router as pricing_router
 from app.api.voice_to_catalog import router as voice_to_catalog_router
 from app.api.auth import router as auth_router
 from app.api.products import router as products_router
+from app.api.stream_stt import router as stream_stt_router
 from app.core.config import settings
 from app.core.supabase import get_supabase
 
@@ -44,6 +45,7 @@ app.include_router(voice_to_catalog_router)
 app.include_router(pricing_router)
 app.include_router(auth_router)
 app.include_router(products_router)
+app.include_router(stream_stt_router)
 
 
 @app.on_event("startup")
