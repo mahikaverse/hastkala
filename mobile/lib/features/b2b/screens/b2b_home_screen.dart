@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/helpers/craft_image_helper.dart';
 import '../../../core/helpers/artisan_image_helper.dart';
@@ -815,10 +814,10 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                         assetPath,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Icon(
-                          Icons.crafting,
-                          color: color,
-                          size: 28,
-                        ),
+Icons.palette_outlined,
+                            color: color,
+                            size: 28,
+                          ),
                       )
                     : label == 'More'
                         ? Icon(
@@ -827,7 +826,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                             size: 28,
                           )
                         : Icon(
-                            Icons.crafting,
+                            Icons.palette_outlined,
                             color: color,
                             size: 28,
                           ),
@@ -1129,7 +1128,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
-                            product.artisanLocation ?? product.craftType ?? '',
+                            product.craftType ?? product.category,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
