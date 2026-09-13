@@ -5,7 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/hastkala_bottom_nav.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -143,7 +143,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildBottomNav(BuildContext context) {
-    return AppBottomNav(
+    return HastKalaBottomNavigation(
       currentIndex: 4,
       onTap: (i) {
         final routes = [
@@ -157,7 +157,7 @@ class ProfileScreen extends StatelessWidget {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      items: AppBottomNavItems.buyer,
+      items: HastKalaNavItems.buyer,
     );
   }
 }

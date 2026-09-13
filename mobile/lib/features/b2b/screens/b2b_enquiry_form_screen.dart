@@ -11,6 +11,7 @@ class B2BEnquiryFormScreen extends StatefulWidget {
   final String? artisanId;
   final String? artisanName;
   final String? requirementId;
+  final B2BRequirement? requirement;
 
   const B2BEnquiryFormScreen({
     super.key,
@@ -18,6 +19,7 @@ class B2BEnquiryFormScreen extends StatefulWidget {
     this.artisanId,
     this.artisanName,
     this.requirementId,
+    this.requirement,
   });
 
   @override
@@ -38,7 +40,18 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.product != null) {
+    final req = widget.requirement;
+    if (req != null) {
+      if (req.quantity > 0) _quantityController.text = '${req.quantity}';
+      if (req.budgetMax != null) _budgetController.text = '${req.budgetMax!.toInt()}';
+      if (req.deliveryLocation != null && req.deliveryLocation!.isNotEmpty) {
+        _locationController.text = req.deliveryLocation!;
+      }
+      if (req.deadline != null) _deadline = req.deadline;
+      if (req.customization != null && req.customization!.isNotEmpty) {
+        _customizationController.text = req.customization!;
+      }
+    } else if (widget.product != null) {
       _quantityController.text = '${widget.product!.stockQuantity}';
     }
   }
@@ -419,7 +432,7 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

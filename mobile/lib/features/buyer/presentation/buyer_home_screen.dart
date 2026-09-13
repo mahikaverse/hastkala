@@ -6,7 +6,7 @@ import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/product_model.dart';
 import '../../../core/widgets/adaptive_product_image.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/hastkala_bottom_nav.dart';
 import '../../products/presentation/product_details_screen.dart';
 
 class BuyerHomeScreen extends StatefulWidget {
@@ -579,7 +579,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Widget _buildBottomNav() {
-    return AppBottomNav(
+    return HastKalaBottomNavigation(
       currentIndex: 0,
       onTap: (i) {
         final routes = [
@@ -593,7 +593,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      items: AppBottomNavItems.buyer,
+      items: HastKalaNavItems.buyer,
     );
   }
 }

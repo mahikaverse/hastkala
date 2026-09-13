@@ -4,10 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
-import '../../../app/theme/app_dimensions.dart';
-import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/product_model.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/hastkala_bottom_nav.dart';
 
 class ArtisanHomeScreen extends StatefulWidget {
   const ArtisanHomeScreen({super.key});
@@ -764,13 +762,13 @@ class _ArtisanHomeScreenState extends State<ArtisanHomeScreen> {
   // ─── 8. BOTTOM NAV ────────────────────────────────────────────────────────
 
   Widget _buildBottomNav() {
-    return AppBottomNav(
+    return HastKalaBottomNavigation(
       currentIndex: 0,
       onTap: (i) {
         final routes = [null, AppRoutes.manageProducts, AppRoutes.artisanAddProduct, AppRoutes.artisanOrders, AppRoutes.artisanProfile];
         if (routes[i] != null) Navigator.pushNamed(context, routes[i]!);
       },
-      items: AppBottomNavItems.artisan,
+      items: HastKalaNavItems.artisanLegacy,
     );
   }
 }

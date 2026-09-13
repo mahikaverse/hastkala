@@ -47,6 +47,9 @@ dependencies:
   shared_preferences: ^2.5.5
   supabase_flutter: ^2.17.2
   audioplayers: ^6.8.1
+  url_launcher: ^6.3.1
+  excel: ^4.0.6
+  share_plus: ^10.1.4
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -98,6 +101,10 @@ flutter:
     - assets/craft/craft_chikankari_fabric.jpg
     - assets/craft/craft_madhubani_painting.jpg
     - assets/artisans/
+    - assets/amazon-logo.png
+    - assets/flipkart-logo.png
+    - assets/blinkit-logo.png
+    - assets/b2b-hero-img.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

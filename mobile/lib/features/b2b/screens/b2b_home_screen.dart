@@ -24,8 +24,6 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
   bool _isLoading = true;
   List<MarketplaceProduct> _featuredProducts = [];
   List<ArtisanProfile> _topArtisans = [];
-  Map<String, int> _stats = {};
-  List<String> _categories = [];
 
   @override
   void initState() {
@@ -36,18 +34,13 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
       final results = await Future.wait([
         _service.exploreProducts(),
         _service.getArtisans(),
-        userId.isNotEmpty ? _service.getBuyerStats(userId) : Future.value(<String, int>{}),
-        _service.getCategories(),
       ]);
       setState(() {
         _featuredProducts = results[0] as List<MarketplaceProduct>;
         _topArtisans = results[1] as List<ArtisanProfile>;
-        _stats = results[2] as Map<String, int>;
-        _categories = results[3] as List<String>;
         _isLoading = false;
       });
     } catch (e) {
@@ -68,7 +61,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // Header with logo
+            // ── Header: Logo + Bell + Avatar ──
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -80,14 +73,12 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                         children: [
                           Image.asset(
                             'assets/horizontal-logo.png',
-                            height: 36,
+                            height: 32,
                             fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => Text(
-                              'HastKala B2B',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              'HastKala',
                               style: TextStyle(
-                                fontSize: 24,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.brown,
                               ),
@@ -95,27 +86,72 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Connect with artisan manufacturers',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            'B2B Marketplace\nfor Indian Crafts',
+                            maxLines: 2,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 11,
+                              height: 1.2,
                               color: AppColors.brown.withValues(alpha: 0.6),
                             ),
                           ),
                         ],
                       ),
                     ),
+                    // Bell icon with red dot
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.brown.withValues(alpha: 0.1),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.notifications_outlined,
+                            color: AppColors.brown.withValues(alpha: 0.7),
+                            size: 22,
+                          ),
+                        ),
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    // Profile avatar
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      width: 42,
+                      height: 42,
                       decoration: BoxDecoration(
-                        color: AppColors.cream,
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.brown,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.brown.withValues(alpha: 0.2),
+                          width: 2,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.notifications_outlined,
-                        color: AppColors.brown.withValues(alpha: 0.7),
-                        size: 22,
+                      child: const Center(
+                        child: Text(
+                          'B',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -123,7 +159,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
               ),
             ),
 
-            // Search bar
+            // ── Search bar ──
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -134,6 +170,13 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                     border: Border.all(
                       color: AppColors.brown.withValues(alpha: 0.1),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: TextField(
                     controller: _searchController,
@@ -148,14 +191,14 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                       }
                     },
                     decoration: InputDecoration(
-                      hintText: 'Search products, artisans, crafts...',
+                      hintText: 'Search products, artisans, craft clusters...',
                       hintStyle: TextStyle(
                         color: AppColors.brown.withValues(alpha: 0.4),
                         fontSize: 14,
                       ),
                       prefixIcon: Icon(
                         Icons.search,
-                        color: AppColors.terracotta.withValues(alpha: 0.6),
+                        color: AppColors.brown.withValues(alpha: 0.5),
                       ),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -175,53 +218,265 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
               ),
             ),
 
-            // Quick Stats
+            // ── Hero Banner ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                child: Container(
+                  height: 210,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Hero image
+                        Image.asset(
+                          'assets/b2b-hero-img.jpeg',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFFE8D8BE), Color(0xFFF8F1E3)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Gradient overlay from left
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.black.withValues(alpha: 0.65),
+                                Colors.black.withValues(alpha: 0.3),
+                                Colors.transparent,
+                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              stops: const [0.0, 0.5, 1.0],
+                            ),
+                          ),
+                        ),
+                        // Text content
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'From',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              const Text(
+                                'Indian Artisans',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const Text(
+                                'to Your Business',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Source authentic handcrafted products\ndirectly from artisan manufacturers\nacross India.',
+                                maxLines: 3,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  fontSize: 11.5,
+                                  height: 1.35,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  _heroFeatureTag(Icons.handshake_outlined, 'Direct\nConnect'),
+                                  const SizedBox(width: 12),
+                                  _heroFeatureTag(Icons.verified_outlined, 'Verified\nArtisans'),
+                                  const SizedBox(width: 12),
+                                  _heroFeatureTag(Icons.local_shipping_outlined, 'Reliable\nSupply'),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // "Crafting Brighter Futures" decorative text
+                        Positioned(
+                          right: 14,
+                          bottom: 16,
+                          child: Text(
+                            'Crafting\nBrighter\nFutures',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: AppColors.mustardGold.withValues(alpha: 0.7),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              height: 1.2,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                        // Pagination dots
+                        Positioned(
+                          bottom: 12,
+                          left: 20,
+                          child: Row(
+                            children: [
+                              _dot(true),
+                              const SizedBox(width: 6),
+                              _dot(false),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Stats Row ──
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.brown.withValues(alpha: 0.08),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatItem(Icons.groups_outlined, '5,000+', 'Artisans', AppColors.terracotta),
+                      _buildStatItem(Icons.category_outlined, '20+', 'Craft Categories', AppColors.oliveGreen),
+                      _buildStatItem(Icons.location_on_outlined, '200+', 'Craft Clusters', AppColors.mustardGold),
+                      _buildStatItem(Icons.verified_outlined, 'Trusted by', 'Businesses', AppColors.brown),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Shop by Craft Category ──
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 8, 0),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(child: _buildStatCard('Req', _stats['requirements'] ?? 3, AppColors.terracotta)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildStatCard('Enq', _stats['enquiries'] ?? 7, AppColors.oliveGreen)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildStatCard('Orders', _stats['orders'] ?? 5, AppColors.mustardGold)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildStatCard('Saved', _stats['saved'] ?? 12, AppColors.brown)),
+                    const Text(
+                      'Shop by Craft Category',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.brown,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const B2BExploreScreen()),
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'View All',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.terracotta,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(Icons.chevron_right, size: 18, color: AppColors.terracotta),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
 
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 100,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  children: [
+                    _buildCategoryItem('Terracotta', 'assets/craft/craft_terracotta_pot.jpg', AppColors.terracotta),
+                    _buildCategoryItem('Bamboo\n& Cane', 'assets/craft/craft_bamboo_basket.jpg', AppColors.mustardGold),
+                    _buildCategoryItem('Handloom\n& Textiles', 'assets/craft/craft_handwoven_fabric.jpg', AppColors.oliveGreen),
+                    _buildCategoryItem('Handmade\nJewellery', 'assets/craft/craft_lac_bangles.jpg', AppColors.terracotta),
+                    _buildCategoryItem('Woodcraft', 'assets/craft/craft_wooden_carved_box.jpg', AppColors.brown),
+                    _buildCategoryItem('Home Decor', 'assets/craft/craft_brass_metal.jpg', AppColors.mustardGold),
+                    _buildCategoryItem('More', '', AppColors.brown),
+                  ],
+                ),
+              ),
+            ),
 
-            // Quick Post Requirement
+            // ── Post a Requirement Banner ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 child: GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const B2BRequirementFormScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const B2BRequirementFormScreen()),
                     );
                   },
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.terracotta,
-                          AppColors.terracotta.withValues(alpha: 0.85),
-                        ],
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6B3A1F), Color(0xFF8B5E3C)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.terracotta.withValues(alpha: 0.3),
+                          color: AppColors.brown.withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -232,11 +487,11 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
-                            Icons.auto_awesome,
+                            Icons.description_outlined,
                             color: Colors.white,
                             size: 24,
                           ),
@@ -252,22 +507,22 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                                     'Post a Requirement',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 16,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.25),
+                                      color: AppColors.terracotta,
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: const Text(
                                       'AI MATCH',
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 9,
+                                        fontSize: 8,
                                         fontWeight: FontWeight.w800,
                                         letterSpacing: 0.5,
                                       ),
@@ -275,21 +530,40 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 3),
                               Text(
-                                'Groq AI matches your requirement with top artisans',
+                                'Share your product needs and get matched\nwith verified artisan manufacturers.',
+                                maxLines: 2,
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 11.5,
+                                  height: 1.3,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          color: Colors.white.withValues(alpha: 0.7),
-                          size: 16,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Post Now',
+                                style: TextStyle(
+                                  color: AppColors.brown,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.chevron_right, size: 16, color: AppColors.brown),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -298,17 +572,17 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
               ),
             ),
 
-            // Featured Products
+            // ── Featured Artisan Products ──
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Featured Products',
+                    const Text(
+                      'Featured Artisan Products',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: AppColors.brown,
                       ),
@@ -317,18 +591,23 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const B2BExploreScreen(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const B2BExploreScreen()),
                         );
                       },
-                      child: Text(
-                        'View All',
-                        style: TextStyle(
-                          color: AppColors.terracotta,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'View All',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.terracotta,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(Icons.chevron_right, size: 18, color: AppColors.terracotta),
+                        ],
                       ),
                     ),
                   ],
@@ -348,76 +627,90 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
             else
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 220,
+                  height: 240,
                   child: _featuredProducts.isNotEmpty
                       ? ListView.separated(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: _featuredProducts.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 14),
+                          itemCount: _featuredProducts.length.clamp(0, 6),
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
                           itemBuilder: (context, index) {
-                            final product = _featuredProducts[index];
-                            return _buildProductCard(product);
+                            return _buildProductCard(_featuredProducts[index]);
                           },
                         )
                       : ListView(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           children: [
-                            _buildDemoProductCard('Handcrafted Artwork', 100, 'Handicraft'),
-                            const SizedBox(width: 14),
-                            _buildDemoProductCard('Handcrafted Craft', 50, 'Handicraft'),
-                            const SizedBox(width: 14),
-                            _buildDemoProductCard('Handpainted Vase', 450, 'Ceramics'),
-                            const SizedBox(width: 14),
-                            _buildDemoProductBlock('Terracotta Pot', 350, 'Pottery'),
+                            _buildDemoProductCard('Folk Painted Terracotta Pots', 750, 50, 'Molela, Rajasthan'),
+                            _buildDemoProductCard('Handmade Terracotta Dinner...', 450, 100, 'Khurja, Uttar Pradesh'),
+                            _buildDemoProductCard('Bamboo Hanging Lamp', 950, 50, 'Tripura'),
+                            _buildDemoProductCard('Handloom Silk Saree', 620, 20, 'Bhagalpur, Bihar'),
                           ],
                         ),
                 ),
               ),
 
-            // Top Artisans
+            // ── Featured Artisan Manufacturers ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                child: Text(
-                  'Top Artisans',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.brown,
-                  ),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Featured Artisan Manufacturers',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.brown,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'View All',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.terracotta,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(Icons.chevron_right, size: 18, color: AppColors.terracotta),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
 
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 190,
+                height: 160,
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator(color: AppColors.terracotta))
                     : _topArtisans.isNotEmpty
                         ? ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: _topArtisans.length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 14),
+                            itemCount: _topArtisans.length.clamp(0, 4),
+                            separatorBuilder: (_, __) => const SizedBox(width: 12),
                             itemBuilder: (context, index) {
-                              final artisan = _topArtisans[index];
-                              return _buildArtisanCard(artisan);
+                              return _buildManufacturerCard(_topArtisans[index]);
                             },
                           )
                         : ListView(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                             children: [
-                              _buildDemoArtisanCard('Ramesh Kumar', 'Blue Pottery', 'Jaipur, Rajasthan', 'R'),
-                              const SizedBox(width: 14),
-                              _buildDemoArtisanCard('Sita Nair', 'Woodcarving', 'Thrissur, Kerala', 'S'),
-                              const SizedBox(width: 14),
-                              _buildDemoArtisanCard('Arjun Boro', 'Bamboo & Cane', 'Guwahati, Assam', 'A'),
-                              const SizedBox(width: 14),
-                              _buildDemoArtisanCard('Meera Sharma', 'Block Printing', 'Jaipur, Rajasthan', 'M'),
+                              _buildDemoManufacturerCard('Shakti Self Help Group', 'Women Artisans Collective', true, 'assets/artisans/artisan_potter_1.jpg'),
+                              _buildDemoManufacturerCard('Kashmir Wood Crafts', 'Srinagar, J&K', true, 'assets/artisans/artisan_weaver_1.jpg'),
+                              _buildDemoManufacturerCard('Kutch Weavers Association', 'Bhuj, Gujarat', true, 'assets/artisans/artisan_block_printer_1.jpg'),
                             ],
                           ),
               ),
@@ -430,153 +723,127 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
     );
   }
 
-  Widget _buildDefaultCategory(String label) {
+  // ── Helper Widgets ──
+
+  Widget _heroFeatureTag(IconData icon, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: Colors.white.withValues(alpha: 0.85), size: 14),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.85),
+            fontSize: 10,
+            height: 1.2,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _dot(bool active) {
+    return Container(
+      width: active ? 8 : 6,
+      height: active ? 8 : 6,
+      decoration: BoxDecoration(
+        color: active ? AppColors.terracotta : Colors.white.withValues(alpha: 0.5),
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w500,
+            color: AppColors.brown.withValues(alpha: 0.6),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryItem(String label, String assetPath, Color color) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => B2BExploreScreen(initialCategory: label),
+            builder: (_) => B2BExploreScreen(initialCategory: label.replaceAll('\n', ' ')),
           ),
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.brown.withValues(alpha: 0.15),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: AppColors.brown,
-            fontWeight: FontWeight.w500,
-            fontSize: 13,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String label, int value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$value',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w500,
-              color: color.withValues(alpha: 0.7),
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDemoProductCard(String name, int price, String craft) {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        width: 160,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppColors.brown.withValues(alpha: 0.08),
-          ),
-        ),
+        width: 80,
+        margin: const EdgeInsets.only(right: 12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              height: 120,
+              width: 64,
+              height: 64,
               decoration: BoxDecoration(
-                color: AppColors.cream,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14),
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: color.withValues(alpha: 0.15),
                 ),
               ),
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14),
-                ),
-                child: Image.asset(
-                  'assets/default-bg.png',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                ),
+                borderRadius: BorderRadius.circular(16),
+                child: assetPath.isNotEmpty
+                    ? Image.asset(
+                        assetPath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(
+                          Icons.crafting,
+                          color: color,
+                          size: 28,
+                        ),
+                      )
+                    : label == 'More'
+                        ? Icon(
+                            Icons.grid_view_rounded,
+                            color: color,
+                            size: 28,
+                          )
+                        : Icon(
+                            Icons.crafting,
+                            color: color,
+                            size: 28,
+                          ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.brown,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        '₹$price',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.terracotta,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '/piece',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppColors.brown.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    craft,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppColors.oliveGreen.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 6),
+            Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.brown.withValues(alpha: 0.8),
+                height: 1.2,
               ),
             ),
           ],
@@ -585,87 +852,132 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
     );
   }
 
-  Widget _buildDemoProductBlock(String name, int price, String craft) {
+  Widget _buildDemoProductCard(String name, int price, int minOrder, String location) {
     return GestureDetector(
       onTap: () {},
       child: Container(
-        width: 160,
+        width: 165,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: AppColors.brown.withValues(alpha: 0.08),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.cream,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14),
-                ),
-                child: Image.asset(
-                  'assets/default-bg.png',
-                  fit: BoxFit.cover,
+            Stack(
+              children: [
+                Container(
+                  height: 110,
                   width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.cream,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                    child: Image.asset(
+                      'assets/default-bg.png',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.favorite_border,
+                      size: 16,
+                      color: AppColors.brown.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.brown,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        '₹$price',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.terracotta,
-                        ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.brown,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '/piece',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppColors.brown.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    craft,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppColors.oliveGreen.withValues(alpha: 0.7),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          '₹$price',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.terracotta,
+                          ),
+                        ),
+                        Text(
+                          ' / piece',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.brown.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Min. Order: $minOrder pcs',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.brown.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 11,
+                          color: AppColors.brown.withValues(alpha: 0.45),
+                        ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.brown.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -674,7 +986,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
     );
   }
 
-  Widget _buildProductCard(MarketplaceProduct product, {double width = 160}) {
+  Widget _buildProductCard(MarketplaceProduct product) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -685,106 +997,151 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
         );
       },
       child: Container(
-        width: width,
+        width: 165,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: AppColors.brown.withValues(alpha: 0.08),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.cream,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14),
-                ),
-                child: (product.imageUrls.isNotEmpty)
-                    ? Image.network(
-                        product.imageUrls.first,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        errorBuilder: (_, __, ___) => Image.asset(
-                          CraftImageHelper.getImageForProduct(
-                            productId: product.id,
-                            craftType: product.craftType,
-                            category: product.category,
-                            name: product.name,
+            Stack(
+              children: [
+                Container(
+                  height: 110,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.cream,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                    child: (product.imageUrls.isNotEmpty)
+                        ? Image.network(
+                            product.imageUrls.first,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (_, __, ___) => Image.asset(
+                              CraftImageHelper.getImageForProduct(
+                                productId: product.id,
+                                craftType: product.craftType,
+                                category: product.category,
+                                name: product.name,
+                              ),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            ),
+                          )
+                        : Image.asset(
+                            CraftImageHelper.getImageForProduct(
+                              productId: product.id,
+                              craftType: product.craftType,
+                              category: product.category,
+                              name: product.name,
+                            ),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
                           ),
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                        ),
-                      )
-                    : Image.asset(
-                        CraftImageHelper.getImageForProduct(
-                          productId: product.id,
-                          craftType: product.craftType,
-                          category: product.category,
-                          name: product.name,
-                        ),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                      ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.brown,
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.favorite_border,
+                      size: 16,
+                      color: AppColors.brown.withValues(alpha: 0.5),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        '₹${product.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.terracotta,
-                        ),
+                ),
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.brown,
                       ),
-                      const SizedBox(width: 4),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          '₹${product.price.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.terracotta,
+                          ),
+                        ),
+                        Text(
+                          ' / piece',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.brown.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (product.stockQuantity > 0) ...[
+                      const SizedBox(height: 2),
                       Text(
-                        '/piece',
+                        'Min. Order: ${product.stockQuantity} pcs',
                         style: TextStyle(
                           fontSize: 10,
                           color: AppColors.brown.withValues(alpha: 0.5),
                         ),
                       ),
                     ],
-                  ),
-                  if ((product.craftType ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      product.craftType ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.oliveGreen.withValues(alpha: 0.7),
-                      ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 11,
+                          color: AppColors.brown.withValues(alpha: 0.45),
+                        ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            product.artisanLocation ?? product.craftType ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.brown.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ],
+                ),
               ),
             ),
           ],
@@ -793,7 +1150,14 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
     );
   }
 
-  Widget _buildArtisanCard(ArtisanProfile artisan, {double width = 130}) {
+  Widget _buildManufacturerCard(ArtisanProfile artisan) {
+    final fallbackAsset = ArtisanImageHelper.getAssetForArtisan(
+      name: artisan.name,
+      craftType: artisan.craftSpecialization,
+      artisanId: artisan.id,
+    );
+    final useNetwork = !ArtisanImageHelper.isForeignerOrInvalidPhoto(artisan.avatarUrl);
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -804,202 +1168,221 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
         );
       },
       child: Container(
-        width: width,
+        width: 160,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppColors.brown.withValues(alpha: 0.08),
-          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.brown.withValues(alpha: 0.08)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
-            ArtisanImageHelper.buildAvatar(
-              name: artisan.name,
-              avatarUrl: artisan.avatarUrl,
-              craftType: artisan.craftSpecialization,
-              artisanId: artisan.id,
-              radius: 28,
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                artisan.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.brown,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 2),
-            if (artisan.craftSpecialization.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  artisan.craftSpecialization,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.oliveGreen.withValues(alpha: 0.7),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            if (artisan.location.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 10,
-                      color: AppColors.brown.withValues(alpha: 0.4),
-                    ),
-                    const SizedBox(width: 2),
-                    Flexible(
-                      child: Text(
-                        artisan.location,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppColors.brown.withValues(alpha: 0.5),
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: SizedBox(
+                width: double.infinity,
+                height: 90,
+                child: useNetwork
+                    ? Image.network(
+                        artisan.avatarUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          fallbackAsset,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: AppColors.terracotta.withValues(alpha: 0.08),
+                            child: Center(
+                              child: Text(
+                                artisan.name[0].toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.terracotta.withValues(alpha: 0.3),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Image.asset(
+                        fallbackAsset,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: AppColors.terracotta.withValues(alpha: 0.08),
+                          child: Center(
+                            child: Text(
+                              artisan.name[0].toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.terracotta.withValues(alpha: 0.3),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      artisan.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.brown,
+                      ),
                     ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _cleanLocation(artisan.location, artisan.state),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: AppColors.brown.withValues(alpha: 0.55),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (artisan.isVerified)
+                      Row(
+                        children: [
+                          const Icon(Icons.verified, size: 13, color: Colors.blue),
+                          const SizedBox(width: 3),
+                          Text(
+                            'Verified',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDemoArtisanCard(String name, String craft, String location, String initial) {
-    final demoProfile = ArtisanProfile(
-      id: 'demo_${name.toLowerCase().replaceAll(' ', '_')}',
-      userId: '',
-      name: name,
-      craftSpecialization: craft,
-      location: location,
-      state: location.contains(',') ? location.split(',').last.trim() : location,
-      yearsOfExperience: 18,
-      averageRating: 4.8,
-      totalReviews: 45,
-      isVerified: true,
-      bio: '$name is a master artisan specializing in traditional $craft from $location.',
-      craftStory: ArtisanImageHelper.getArtisanStory(
-        ArtisanProfile(
-          id: '',
-          userId: '',
-          name: name,
-          craftSpecialization: craft,
-          location: location,
-          createdAt: DateTime.now(),
-        ),
-      ),
-      createdAt: DateTime.now(),
-    );
-
+  Widget _buildDemoManufacturerCard(String name, String subtitle, bool verified, String assetPath) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => B2BArtisanProfileScreen(artisan: demoProfile),
-          ),
-        );
-      },
+      onTap: () {},
       child: Container(
-        width: 130,
+        width: 160,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppColors.brown.withValues(alpha: 0.08),
-          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.brown.withValues(alpha: 0.08)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
-            ArtisanImageHelper.buildAvatar(
-              name: name,
-              craftType: craft,
-              radius: 28,
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.brown,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                craft,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.oliveGreen.withValues(alpha: 0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    size: 10,
-                    color: AppColors.brown.withValues(alpha: 0.4),
-                  ),
-                  const SizedBox(width: 2),
-                  Flexible(
-                    child: Text(
-                      location,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.brown.withValues(alpha: 0.5),
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: SizedBox(
+                width: double.infinity,
+                height: 90,
+                child: Image.asset(
+                  assetPath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: AppColors.terracotta.withValues(alpha: 0.08),
+                    child: Center(
+                      child: Text(
+                        name[0].toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.terracotta.withValues(alpha: 0.3),
+                        ),
                       ),
                     ),
                   ),
-                ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.brown,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: AppColors.brown.withValues(alpha: 0.55),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (verified)
+                      Row(
+                        children: [
+                          const Icon(Icons.verified, size: 13, color: Colors.blue),
+                          const SizedBox(width: 3),
+                          Text(
+                            'Verified',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _cleanLocation(String location, String state) {
+    if (location.isEmpty && state.isEmpty) return '';
+    if (state.isEmpty) return location;
+    if (location.isEmpty) return state;
+    if (location.endsWith(', $state') || location == state) return location;
+    return '$location, $state';
   }
 }

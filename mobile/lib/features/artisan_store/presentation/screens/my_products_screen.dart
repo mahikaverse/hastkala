@@ -208,6 +208,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                             arguments: {'productId': product.id},
                           );
                           if (result == true) setState(() {});
+                        } else if (v == 'share') {
+                          Navigator.pushNamed(context, '/share-everywhere', arguments: product.id);
                         } else if (v == 'delete') {
                           final confirmed = await showDialog<bool>(
                             context: context,
@@ -237,6 +239,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                       },
                       itemBuilder: (_) => [
                         const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                        const PopupMenuItem(value: 'share', child: Text('📣 Share Everywhere')),
                         const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppColors.error))),
                       ],
                     ),

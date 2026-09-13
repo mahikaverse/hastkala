@@ -1,11 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/models/artisan_profile.dart';
+import '../../../core/services/artisan_profile_service.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/hastkala_bottom_nav.dart';
 
 class ArtisanProfileScreen extends StatefulWidget {
   const ArtisanProfileScreen({super.key});
@@ -15,12 +20,34 @@ class ArtisanProfileScreen extends StatefulWidget {
 }
 
 class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
+  final ArtisanProfileService _profileService = ArtisanProfileService();
+  ArtisanProfile? _profile;
+  bool _isUploadingPhoto = false;
+
   String _selectedLanguage = 'English';
   bool _notificationsOn = true;
   bool _isEditingStory = false;
   final TextEditingController _storyController = TextEditingController(
     text: 'I have been working with terracotta for over 12 years, creating traditional decorative pieces using locally sourced natural clay.',
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final p = await _profileService.getProfile();
+    if (mounted) {
+      setState(() {
+        _profile = p;
+        if (p != null && p.craftStory.isNotEmpty) {
+          _storyController.text = p.craftStory;
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -38,7 +65,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
             _buildHeader(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 32),
+                padding: const EdgeInsets.only(bottom: 120),
                 child: Column(
                   children: [
                     _buildIdentityHero(),
@@ -91,74 +118,310 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
   // ─── 3. ARTISAN IDENTITY HERO ──────────────────────────────────────────────
 
   Widget _buildIdentityHero() {
+    final profile = _profile;
+    final name = profile?.name.isNotEmpty == true ? profile!.name : 'Artisan';
+    final craft = profile?.craftSpecialization.isNotEmpty == true
+        ? profile!.craftSpecialization
+        : 'Traditional Crafts';
+    final location = profile?.location.isNotEmpty == true
+        ? (profile!.state.isNotEmpty
+            ? '${profile.location}, ${profile.state}'
+            : profile.location)
+        : '';
+    final years = profile?.yearsOfExperience ?? 0;
+    final avatarUrl = profile?.avatarUrl ?? '';
+    final hasPhoto = avatarUrl.isNotEmpty;
+    final isVerified = profile?.isVerified ?? false;
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final avatarRadius = screenWidth < 360 ? 50.0 : 58.0;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(AppDimensions.xxl, AppDimensions.lg, AppDimensions.xxl, AppDimensions.xxl),
+      padding: const EdgeInsets.fromLTRB(
+        AppDimensions.xxl, AppDimensions.lg, AppDimensions.xxl, AppDimensions.xxl,
+      ),
       child: Column(
         children: [
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.bottomRight,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.terracotta, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.terracotta.withValues(alpha: 0.18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: avatarRadius,
+                  backgroundColor: const Color(0xFFFDF8F0),
+                  backgroundImage: hasPhoto
+                      ? (avatarUrl.startsWith('http')
+                          ? NetworkImage(avatarUrl)
+                          : FileImage(File(avatarUrl)) as ImageProvider)
+                      : null,
+                  child: _isUploadingPhoto
+                      ? const SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            color: AppColors.terracotta,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : (!hasPhoto
+                          ? Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : 'A',
+                              style: TextStyle(
+                                fontSize: avatarRadius * 0.8,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.terracotta,
+                              ),
+                            )
+                          : null),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _isUploadingPhoto ? null : _pickAndUploadPhoto,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.terracotta,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      size: 15,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.headlineLarge.copyWith(
+                    color: AppColors.brown,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ),
+              if (isVerified) ...[
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.verified_rounded,
+                  size: 20,
+                  color: AppColors.oliveGreen,
+                ),
+              ],
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
           Container(
-            width: 96,
-            height: 96,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.warmBeige, width: 4),
+              color: AppColors.terracotta.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: ClipOval(
-              child: Image.network(
-                'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face',
-                fit: BoxFit.cover,
-                cacheWidth: 200,
-                cacheHeight: 200,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: AppColors.warmBeige,
-                    child: Icon(Icons.person, size: 48, color: AppColors.brown),
-                  );
-                },
+            child: Text(
+              craft,
+              style: AppTextStyles.labelMedium.copyWith(
+                color: AppColors.terracotta,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          const SizedBox(height: AppDimensions.md),
-          Text('Sita Devi', style: AppTextStyles.headlineLarge.copyWith(color: AppColors.brown)),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.verified, size: 16, color: AppColors.oliveGreen),
-              const SizedBox(width: 4),
-              Text('Verified Artisan', style: AppTextStyles.labelMedium.copyWith(color: AppColors.oliveGreen)),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.sm),
-          Text('Terracotta & Handcrafted Pottery', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
-              const SizedBox(width: 3),
-              Text('Jaipur, Rajasthan', style: AppTextStyles.bodySmall),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.md),
-          Text(
-            'Crafting traditional terracotta pieces inspired by Rajasthan\'s heritage.',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, height: 1.5),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppDimensions.lg),
-          OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.terracotta),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusFull)),
-              padding: const EdgeInsets.symmetric(horizontal: AppDimensions.xl, vertical: AppDimensions.sm),
+
+          if (location.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.location_on_rounded,
+                  size: 15,
+                  color: AppColors.brown.withValues(alpha: 0.6),
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    location,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.brown.withValues(alpha: 0.7),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            child: Text('Edit Profile', style: AppTextStyles.buttonMedium.copyWith(color: AppColors.terracotta)),
-          ),
+          ],
+
+          if (years > 0) ...[
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 13,
+                  color: AppColors.mustardGold.withValues(alpha: 0.8),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$years+ years of master craftsmanship',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.brown.withValues(alpha: 0.55),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _pickAndUploadPhoto() async {
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Change Profile Photo',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.brown,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.terracotta.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_rounded,
+                    color: AppColors.terracotta,
+                  ),
+                ),
+                title: const Text(
+                  'Take Photo with Camera',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.terracotta.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.photo_library_rounded,
+                    color: AppColors.terracotta,
+                  ),
+                ),
+                title: const Text(
+                  'Choose from Gallery',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null || !mounted) return;
+
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 800,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _isUploadingPhoto = true);
+    final uploadedUrl = await _profileService.uploadAvatar(File(picked.path));
+
+    if (mounted) {
+      setState(() {
+        _isUploadingPhoto = false;
+        if (uploadedUrl != null && _profile != null) {
+          _profile = _profile!.copyWith(avatarUrl: uploadedUrl);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile photo updated!'),
+          backgroundColor: AppColors.oliveGreen,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   // ─── 4. BUSINESS STATS ─────────────────────────────────────────────────────
@@ -681,7 +944,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
   // ─── BOTTOM NAV ────────────────────────────────────────────────────────────
 
   Widget _buildBottomNav(BuildContext context) {
-    return AppBottomNav(
+    return HastKalaBottomNavigation(
       currentIndex: 4,
       onTap: (i) {
         final routes = [
@@ -695,7 +958,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      items: AppBottomNavItems.artisan,
+      items: HastKalaNavItems.artisanLegacy,
     );
   }
 
@@ -717,7 +980,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
             onPressed: () async {
               Navigator.pop(ctx);
               await AuthService().signOut();
-              if (context.mounted) {
+              if (mounted) {
                 Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
               }
             },

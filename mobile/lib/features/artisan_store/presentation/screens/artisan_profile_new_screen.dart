@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/helpers/artisan_image_helper.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/services/artisan_profile_service.dart';
 import '../../../../core/services/auth_service.dart';
@@ -31,10 +31,8 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
   bool _isUploadingPhoto = false;
   bool _isPolishingStory = false;
 
-  // Story editing
   final TextEditingController _storyCtrl = TextEditingController();
 
-  // Voice recording & Speech-to-text
   final FlutterSoundRecorder _soundRecorder = FlutterSoundRecorder();
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _recorderReady = false;
@@ -45,7 +43,6 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
   Timer? _recordingTimer;
   String? _recordedAudioPath;
 
-  // Pulse animation for recording mic
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -59,7 +56,6 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.25).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-
     _initAudio();
     _loadProfile();
   }
@@ -71,7 +67,6 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
     } catch (e) {
       debugPrint('Recorder open error: $e');
     }
-
     try {
       _speechReady = await _speech.initialize(
         onError: (e) => debugPrint('STT error: ${e.errorMsg}'),
@@ -102,9 +97,7 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
     _recordingTimer?.cancel();
     _pulseController.dispose();
     _storyCtrl.dispose();
-    if (_recorderReady) {
-      _soundRecorder.closeRecorder();
-    }
+    if (_recorderReady) _soundRecorder.closeRecorder();
     try {
       _speech.stop();
       _speech.cancel();
@@ -173,7 +166,6 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
     );
 
     if (source == null) return;
-
     final picked = await picker.pickImage(source: source, imageQuality: 85, maxWidth: 800);
     if (picked == null) return;
 
@@ -187,7 +179,6 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
           _profile = _profile!.copyWith(avatarUrl: uploadedUrl);
         }
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Profile photo updated in database!'),
@@ -204,37 +195,27 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
     try {
       final dir = await getTemporaryDirectory();
       _recordedAudioPath = '${dir.path}/artisan_story_${DateTime.now().millisecondsSinceEpoch}.wav';
-
       setState(() {
         _isRecording = true;
         _recordingSeconds = 0;
       });
-
       _pulseController.repeat(reverse: true);
       _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() => _recordingSeconds++);
       });
-
-      // 1. Start audio file recording
       await _soundRecorder.startRecorder(
         toFile: _recordedAudioPath,
         codec: Codec.pcm16WAV,
         numChannels: 1,
         sampleRate: 16000,
       );
-
-      // 2. Start speech-to-text for instant visual caption
       if (_speechReady) {
         try {
           await _speech.listen(
             onResult: (result) {
               if (mounted && result.recognizedWords.isNotEmpty) {
-                // Show live speech directly
                 final current = _storyCtrl.text.trim();
-                final words = result.recognizedWords;
-                if (current.isEmpty) {
-                  _storyCtrl.text = words;
-                }
+                if (current.isEmpty) _storyCtrl.text = result.recognizedWords;
               }
             },
             listenOptions: stt.SpeechListenOptions(
@@ -254,28 +235,20 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
     _recordingTimer?.cancel();
     _pulseController.stop();
     _pulseController.reset();
-
     setState(() {
       _isRecording = false;
       _isTranscribing = true;
     });
-
     try {
-      if (_speech.isListening) {
-        await _speech.stop();
-      }
+      if (_speech.isListening) await _speech.stop();
     } catch (_) {}
-
     String? audioPath;
     try {
       audioPath = await _soundRecorder.stopRecorder();
     } catch (e) {
       debugPrint('Stop recorder error: $e');
     }
-
     final pathToUse = audioPath ?? _recordedAudioPath;
-
-    // Transcribe via Groq Whisper AI
     if (pathToUse != null) {
       final text = await _profileService.transcribeAudio(pathToUse, language: 'hi');
       if (mounted && text != null && text.trim().isNotEmpty) {
@@ -285,10 +258,7 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
         });
       }
     }
-
-    if (mounted) {
-      setState(() => _isTranscribing = false);
-    }
+    if (mounted) setState(() => _isTranscribing = false);
   }
 
   // ─── AI STORY POLISH ────────────────────────────────────────────────────────
@@ -305,20 +275,16 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
       );
       return;
     }
-
     setState(() => _isPolishingStory = true);
     final enhanced = await _profileService.enhanceStoryWithAI(
       rawStory: raw,
       artisanName: _profile?.name ?? 'Artisan',
       craft: _profile?.craftSpecialization ?? 'Handmade Art',
     );
-
     if (mounted) {
       setState(() => _isPolishingStory = false);
       if (enhanced != null && enhanced.isNotEmpty) {
-        setState(() {
-          _storyCtrl.text = enhanced;
-        });
+        setState(() => _storyCtrl.text = enhanced);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Story polished with AI! Review and save to database.'),
@@ -335,17 +301,12 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
   Future<void> _saveStory() async {
     final story = _storyCtrl.text.trim();
     setState(() => _isSavingStory = true);
-
     final success = await _profileService.saveStory(story);
-
     if (mounted) {
       setState(() {
         _isSavingStory = false;
-        if (_profile != null) {
-          _profile = _profile!.copyWith(craftStory: story);
-        }
+        if (_profile != null) _profile = _profile!.copyWith(craftStory: story);
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(success ? 'Story saved directly to database!' : 'Failed to save story.'),
@@ -355,6 +316,8 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
       );
     }
   }
+
+  // ─── BUILD ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -370,29 +333,31 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.brown,
-        foregroundColor: AppColors.cream,
+        backgroundColor: AppColors.background,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.brown),
+          onPressed: () => Navigator.maybePop(context),
+        ),
         title: Text(
-          'Artisan Profile',
-          style: AppTextStyles.titleMedium.copyWith(
-            color: AppColors.cream,
-            fontWeight: FontWeight.bold,
+          'My Profile',
+          style: TextStyle(
+            color: AppColors.brown,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
           ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            tooltip: 'Edit Profile Details',
-            icon: const Icon(Icons.edit_rounded, size: 20),
+            tooltip: 'Edit Profile',
+            icon: Icon(Icons.edit_rounded, color: AppColors.terracotta, size: 21),
             onPressed: () async {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const EditProfileScreen()),
               );
-              if (result == true || mounted) {
-                _loadProfile();
-              }
+              if (result == true || mounted) _loadProfile();
             },
           ),
         ],
@@ -401,24 +366,20 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
         color: AppColors.terracotta,
         onRefresh: _loadProfile,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 100),
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 120),
           children: [
-            // 1. Top Photo & Hero Identity (NO Followers, NO Products counters)
-            _buildArtisanHero(profile),
-
+            _buildHeroSection(profile),
+            const SizedBox(height: 24),
+            _buildIdentity(profile),
             const SizedBox(height: 20),
-
-            // 2. "My Story" with Mic & Live Groq Transcription
+            _buildStats(profile),
+            const SizedBox(height: 24),
             _buildStorySection(profile),
-
             const SizedBox(height: 20),
-
-            // 3. Craft Info & Bio
-            _buildCraftInfoCard(profile),
-
+            _buildAboutSection(profile),
             const SizedBox(height: 20),
-
-            // 4. Action Buttons (Edit Profile & Sign Out)
+            _buildSpecialization(profile),
+            const SizedBox(height: 20),
             _buildActionButtons(),
           ],
         ),
@@ -426,114 +387,203 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
     );
   }
 
-  // ─── 1. ARTISAN HERO (PHOTO + IDENTITY ONLY) ───────────────────────────────
+  // ─── HERO SECTION ──────────────────────────────────────────────────────────
 
-  Widget _buildArtisanHero(ArtisanProfile? profile) {
+  Widget _buildHeroSection(ArtisanProfile? profile) {
+    final avatarUrl = profile?.avatarUrl ?? '';
+    final hasPhoto = avatarUrl.isNotEmpty;
     final name = profile?.name.isNotEmpty == true ? profile!.name : 'Artisan';
-    final craft = profile?.craftSpecialization.isNotEmpty == true ? profile!.craftSpecialization : 'Traditional Crafts';
+
+    final fallbackAsset = ArtisanImageHelper.getAssetForArtisan(
+      name: profile?.name,
+      craftType: profile?.craftSpecialization,
+      artisanId: profile?.id,
+    );
+    final useNetwork = hasPhoto && avatarUrl.startsWith('http');
+
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.bottomCenter,
+      children: [
+        // Large hero image
+        Container(
+          width: double.infinity,
+          height: 220,
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.brown.withValues(alpha: 0.1),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: useNetwork
+                ? Image.network(
+                    avatarUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildFallbackHero(fallbackAsset, name),
+                  )
+                : Image.asset(
+                    fallbackAsset,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildPlaceholderHero(name),
+                  ),
+          ),
+        ),
+
+        // Gradient overlay at bottom
+        Positioned(
+          bottom: 0,
+          left: 20,
+          right: 20,
+          height: 80,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.4),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Profile photo overlapping hero
+        Positioned(
+          bottom: -44,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.bottomRight,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.background,
+                  border: Border.all(color: AppColors.terracotta, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.terracotta.withValues(alpha: 0.18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 52,
+                  backgroundColor: const Color(0xFFFDF8F0),
+                  backgroundImage: hasPhoto
+                      ? (avatarUrl.startsWith('http')
+                          ? NetworkImage(avatarUrl)
+                          : FileImage(File(avatarUrl)) as ImageProvider)
+                      : null,
+                  child: _isUploadingPhoto
+                      ? const SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            color: AppColors.terracotta,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : (!hasPhoto
+                          ? Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : 'A',
+                              style: const TextStyle(
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.terracotta,
+                              ),
+                            )
+                          : null),
+                ),
+              ),
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: GestureDetector(
+                  onTap: _isUploadingPhoto ? null : _pickAndUploadPhoto,
+                  child: Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: AppColors.terracotta,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.background, width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFallbackHero(String asset, String name) {
+    return Image.asset(
+      asset,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _buildPlaceholderHero(name),
+    );
+  }
+
+  Widget _buildPlaceholderHero(String name) {
+    return Container(
+      color: AppColors.terracotta.withValues(alpha: 0.08),
+      child: Center(
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : 'A',
+          style: TextStyle(
+            fontSize: 64,
+            fontWeight: FontWeight.bold,
+            color: AppColors.terracotta.withValues(alpha: 0.2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── IDENTITY ──────────────────────────────────────────────────────────────
+
+  Widget _buildIdentity(ArtisanProfile? profile) {
+    final name = profile?.name.isNotEmpty == true ? profile!.name : 'Artisan';
+    final craft = profile?.craftSpecialization.isNotEmpty == true
+        ? profile!.craftSpecialization
+        : 'Traditional Crafts';
     final location = profile?.location.isNotEmpty == true
         ? (profile!.state.isNotEmpty ? '${profile.location}, ${profile.state}' : profile.location)
         : '';
-    final avatarUrl = profile?.avatarUrl ?? '';
-    final hasPhoto = avatarUrl.isNotEmpty;
+    final isVerified = profile?.isVerified ?? false;
+    final years = profile?.yearsOfExperience ?? 0;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.brown.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: AppColors.terracotta.withValues(alpha: 0.12)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          // Profile photo with Camera Badge Icon
-          Center(
-            child: Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [AppColors.terracotta, AppColors.mustardGold],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.terracotta.withValues(alpha: 0.25),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: CircleAvatar(
-                    radius: 52,
-                    backgroundColor: const Color(0xFFFDF8F0),
-                    backgroundImage: hasPhoto
-                        ? (avatarUrl.startsWith('http')
-                            ? NetworkImage(avatarUrl)
-                            : FileImage(File(avatarUrl)) as ImageProvider)
-                        : null,
-                    child: _isUploadingPhoto
-                        ? const SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: CircularProgressIndicator(color: AppColors.terracotta, strokeWidth: 2.5),
-                          )
-                        : (!hasPhoto
-                            ? Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : 'A',
-                                style: const TextStyle(
-                                  fontSize: 42,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.terracotta,
-                                ),
-                              )
-                            : null),
-                  ),
-                ),
-
-                // Tap icon to add / change profile photo
-                Positioned(
-                  bottom: 2,
-                  right: 2,
-                  child: GestureDetector(
-                    onTap: _isUploadingPhoto ? null : _pickAndUploadPhoto,
-                    child: Container(
-                      padding: const EdgeInsets.all(9),
-                      decoration: BoxDecoration(
-                        color: AppColors.terracotta,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.camera_alt_rounded, size: 17, color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Artisan Name with Verified Badge
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -542,26 +592,25 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
                   name,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: AppColors.brown,
-                    letterSpacing: -0.2,
+                    letterSpacing: -0.3,
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
-              const Icon(Icons.verified_rounded, size: 20, color: AppColors.oliveGreen),
+              if (isVerified) ...[
+                const SizedBox(width: 6),
+                const Icon(Icons.verified_rounded, size: 22, color: AppColors.oliveGreen),
+              ],
             ],
           ),
-
-          const SizedBox(height: 6),
-
-          // Craft Specialization Badge
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.terracotta.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
               craft,
@@ -572,269 +621,66 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
               ),
             ),
           ),
-
           if (location.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.location_on_rounded, size: 15, color: AppColors.brown.withValues(alpha: 0.6)),
+                Icon(Icons.location_on_rounded, size: 15, color: AppColors.brown.withValues(alpha: 0.55)),
                 const SizedBox(width: 4),
-                Text(
-                  location,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.brown.withValues(alpha: 0.7),
+                Flexible(
+                  child: Text(
+                    location,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.brown.withValues(alpha: 0.65),
+                    ),
                   ),
                 ),
               ],
             ),
           ],
-
-          if ((profile?.yearsOfExperience ?? 0) > 0) ...[
-            const SizedBox(height: 6),
-            Text(
-              '${profile!.yearsOfExperience}+ years of master craftsmanship',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.brown.withValues(alpha: 0.55),
-                fontStyle: FontStyle.italic,
-              ),
+          if (years > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.mustardGold.withValues(alpha: 0.8)),
+                const SizedBox(width: 5),
+                Text(
+                  '$years+ years of master craftsmanship',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.brown.withValues(alpha: 0.55),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  // ─── 2. "MY STORY" WITH MIC OPTION & GROQ AI ───────────────────────────────
-
-  Widget _buildStorySection(ArtisanProfile? profile) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.brown.withValues(alpha: 0.05),
-            blurRadius: 14,
-            offset: const Offset(0, 3),
-          ),
-        ],
-        border: Border.all(color: AppColors.terracotta.withValues(alpha: 0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: AppColors.terracotta.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.auto_stories_rounded, color: AppColors.terracotta, size: 18),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'My Craft Story',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.brown,
-                  ),
-                ),
-              ),
-              if (_storyCtrl.text.trim().isNotEmpty)
-                TextButton.icon(
-                  onPressed: _isPolishingStory ? null : _enhanceStoryWithAI,
-                  icon: _isPolishingStory
-                      ? const SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.mustardGold),
-                        )
-                      : const Icon(Icons.auto_awesome, size: 14, color: AppColors.mustardGold),
-                  label: Text(
-                    _isPolishingStory ? 'Polishing...' : 'AI Polish',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.mustardGold,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-            ],
-          ),
-
-          const SizedBox(height: 6),
-          Text(
-            'Tell buyers how you learned your craft, the tradition in your family, and what makes your work special.',
-            style: TextStyle(fontSize: 12.5, color: AppColors.brown.withValues(alpha: 0.65), height: 1.4),
-          ),
-
           const SizedBox(height: 16),
-
-          // ─── MIC / VOICE RECORDING CARD ───
-          GestureDetector(
-            onTap: _isTranscribing
-                ? null
-                : (_isRecording ? _stopRecording : _startRecording),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: _isRecording
-                      ? [Colors.red.shade50, Colors.red.shade100.withValues(alpha: 0.6)]
-                      : [
-                          AppColors.terracotta.withValues(alpha: 0.07),
-                          AppColors.mustardGold.withValues(alpha: 0.12),
-                        ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _isRecording
-                      ? Colors.red.shade400
-                      : AppColors.terracotta.withValues(alpha: 0.25),
-                  width: _isRecording ? 1.5 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  ScaleTransition(
-                    scale: _isRecording ? _pulseAnimation : const AlwaysStoppedAnimation(1.0),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _isRecording ? Colors.red : AppColors.terracotta,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: (_isRecording ? Colors.red : AppColors.terracotta).withValues(alpha: 0.35),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _isTranscribing
-                              ? 'Transcribing your voice with Groq AI...'
-                              : _isRecording
-                                  ? 'Recording (${_recordingSeconds}s) • Tap to Stop'
-                                  : 'Speak Your Story (बोलकर बताएं)',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: _isRecording ? Colors.red.shade700 : AppColors.brown,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _isTranscribing
-                              ? 'Converting speech to text...'
-                              : _isRecording
-                                  ? 'Listening to your voice in Hindi, English...'
-                                  : 'Tap mic & speak in any language to auto-fill story',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.brown.withValues(alpha: 0.65),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_isTranscribing) ...[
-                    const SizedBox(width: 8),
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(color: AppColors.terracotta, strokeWidth: 2),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Story Text Area (Editable directly)
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFFDFBF7),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.brown.withValues(alpha: 0.15)),
-            ),
-            child: TextField(
-              controller: _storyCtrl,
-              maxLines: 7,
-              minLines: 4,
-              style: const TextStyle(
-                fontSize: 14.5,
-                color: AppColors.charcoal,
-                height: 1.6,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Your craft story will appear here after speaking, or you can type directly...\n\n(e.g. "I learned pottery from my grandfather in Khurja. For 20 years I have molded natural clay on traditional foot-wheels...")',
-                hintStyle: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.brown.withValues(alpha: 0.35),
-                  height: 1.5,
-                ),
-                contentPadding: const EdgeInsets.all(14),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
-          // Save Story Button
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isSavingStory ? null : _saveStory,
-              icon: _isSavingStory
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Icon(Icons.check_circle_outline_rounded, size: 18),
-              label: Text(
-                _isSavingStory ? 'Saving...' : 'Save Story~',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.terracotta,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                );
+                if (result == true || mounted) _loadProfile();
+              },
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              label: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.terracotta,
+                side: const BorderSide(color: AppColors.terracotta, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 11),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
               ),
             ),
           ),
@@ -843,134 +689,427 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
     );
   }
 
-  // ─── 3. CRAFT INFO & BIO ───────────────────────────────────────────────────
+  // ─── STATS ─────────────────────────────────────────────────────────────────
 
-  Widget _buildCraftInfoCard(ArtisanProfile? profile) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.brown.withValues(alpha: 0.05),
-            blurRadius: 14,
-            offset: const Offset(0, 3),
+  Widget _buildStats(ArtisanProfile? profile) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.brown.withValues(alpha: 0.06)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            _buildStatItem('${profile?.productsCount ?? 0}', 'Products', AppColors.terracotta),
+            _buildDivider(),
+            _buildStatItem(
+              profile != null && profile.totalReviews > 0 ? '${profile.totalReviews}' : '-',
+              'Reviews',
+              AppColors.mustardGold,
+            ),
+            _buildDivider(),
+            _buildStatItem(
+              profile != null && profile.averageRating > 0 ? profile.averageRating.toStringAsFixed(1) : '-',
+              'Rating',
+              AppColors.oliveGreen,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String value, String label, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: AppColors.brown.withValues(alpha: 0.6)),
           ),
         ],
-        border: Border.all(color: AppColors.terracotta.withValues(alpha: 0.12)),
       ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(width: 1, height: 32, color: AppColors.brown.withValues(alpha: 0.08));
+  }
+
+  // ─── MY CRAFT STORY ────────────────────────────────────────────────────────
+
+  Widget _buildStorySection(ArtisanProfile? profile) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.brown.withValues(alpha: 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 3),
+            ),
+          ],
+          border: Border.all(color: AppColors.terracotta.withValues(alpha: 0.12)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppColors.terracotta.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.auto_stories_rounded, color: AppColors.terracotta, size: 18),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'My Craft Story',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.brown),
+                  ),
+                ),
+                if (_storyCtrl.text.trim().isNotEmpty)
+                  TextButton.icon(
+                    onPressed: _isPolishingStory ? null : _enhanceStoryWithAI,
+                    icon: _isPolishingStory
+                        ? const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.mustardGold),
+                          )
+                        : const Icon(Icons.auto_awesome, size: 14, color: AppColors.mustardGold),
+                    label: Text(
+                      _isPolishingStory ? 'Polishing...' : 'AI Polish ✨',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mustardGold),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Tell buyers about your journey, inspiration, and what makes your craft special.',
+              style: TextStyle(fontSize: 12.5, color: AppColors.brown.withValues(alpha: 0.65), height: 1.4),
+            ),
+            const SizedBox(height: 16),
+
+            // Mic / Voice Recording
+            GestureDetector(
+              onTap: _isTranscribing ? null : (_isRecording ? _stopRecording : _startRecording),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _isRecording
+                        ? [Colors.red.shade50, Colors.red.shade100.withValues(alpha: 0.6)]
+                        : [AppColors.terracotta.withValues(alpha: 0.07), AppColors.mustardGold.withValues(alpha: 0.12)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _isRecording ? Colors.red.shade400 : AppColors.terracotta.withValues(alpha: 0.25),
+                    width: _isRecording ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    ScaleTransition(
+                      scale: _isRecording ? _pulseAnimation : const AlwaysStoppedAnimation(1.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _isRecording ? Colors.red : AppColors.terracotta,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (_isRecording ? Colors.red : AppColors.terracotta).withValues(alpha: 0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _isTranscribing
+                                ? 'Transcribing your voice with Groq AI...'
+                                : _isRecording
+                                    ? 'Recording (${_recordingSeconds}s) • Tap to Stop'
+                                    : 'Speak Your Story (बोलकर बताएं)',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: _isRecording ? Colors.red.shade700 : AppColors.brown,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _isTranscribing
+                                ? 'Converting speech to text...'
+                                : _isRecording
+                                    ? 'Listening to your voice in Hindi, English...'
+                                    : 'Tap mic & speak in any language to auto-fill story',
+                            style: TextStyle(fontSize: 11.5, color: AppColors.brown.withValues(alpha: 0.65)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_isTranscribing) ...[
+                      const SizedBox(width: 8),
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(color: AppColors.terracotta, strokeWidth: 2),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Story Text Area
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDFBF7),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.brown.withValues(alpha: 0.15)),
+              ),
+              child: TextField(
+                controller: _storyCtrl,
+                maxLines: 7,
+                minLines: 4,
+                style: const TextStyle(fontSize: 14.5, color: AppColors.charcoal, height: 1.6),
+                decoration: InputDecoration(
+                  hintText:
+                      'Your craft story will appear here after speaking, or you can type directly...\n\n(e.g. "I learned pottery from my grandfather in Khurja...")',
+                  hintStyle: TextStyle(fontSize: 13, color: AppColors.brown.withValues(alpha: 0.35), height: 1.5),
+                  contentPadding: const EdgeInsets.all(14),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
+            // Save Story Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isSavingStory ? null : _saveStory,
+                icon: _isSavingStory
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_circle_outline_rounded, size: 18),
+                label: Text(
+                  _isSavingStory ? 'Saving...' : 'Save Story~',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.terracotta,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── ABOUT ME ──────────────────────────────────────────────────────────────
+
+  Widget _buildAboutSection(ArtisanProfile? profile) {
+    final bio = profile?.bio ?? '';
+    final craft = profile?.craftSpecialization ?? '';
+    final location = profile?.location.isNotEmpty == true
+        ? (profile!.state.isNotEmpty ? '${profile.location}, ${profile.state}' : profile.location)
+        : '';
+    final years = profile?.yearsOfExperience ?? 0;
+
+    final aboutText = bio.isNotEmpty
+        ? bio
+        : [
+            if (craft.isNotEmpty) 'Specializing in $craft',
+            if (location.isNotEmpty) 'Based in $location',
+            if (years > 0) '$years+ years of craftsmanship',
+          ].join('. ');
+
+    if (aboutText.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.brown.withValues(alpha: 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 3),
+            ),
+          ],
+          border: Border.all(color: AppColors.terracotta.withValues(alpha: 0.12)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppColors.terracotta.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.info_outline_rounded, color: AppColors.terracotta, size: 18),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'About Me',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.brown),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              aboutText,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.6,
+                color: AppColors.brown.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── SPECIALIZATION ────────────────────────────────────────────────────────
+
+  Widget _buildSpecialization(ArtisanProfile? profile) {
+    final craft = profile?.craftSpecialization ?? '';
+    if (craft.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Text(
+            'Specialization',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.brown),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
             children: [
               Container(
-                padding: const EdgeInsets.all(7),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
-                  color: AppColors.terracotta.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
+                  color: AppColors.oliveGreen.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.brush_rounded, color: AppColors.terracotta, size: 18),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'About My Craft',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.brown,
+                child: Text(
+                  craft,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.oliveGreen),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildInfoRow(Icons.palette_outlined, 'Craft Type', profile?.craftSpecialization.isNotEmpty == true ? profile!.craftSpecialization : 'Traditional Artisan Handcraft'),
-          const Divider(height: 20, thickness: 0.7, color: Color(0xFFEEEEEE)),
-          _buildInfoRow(Icons.location_on_outlined, 'Origin / Region', profile?.location.isNotEmpty == true ? (profile!.state.isNotEmpty ? '${profile.location}, ${profile.state}' : profile.location) : 'India'),
-          const Divider(height: 20, thickness: 0.7, color: Color(0xFFEEEEEE)),
-          _buildInfoRow(Icons.timer_outlined, 'Experience', '${profile?.yearsOfExperience ?? 0} Years'),
-          if (profile?.bio.isNotEmpty == true) ...[
-            const Divider(height: 20, thickness: 0.7, color: Color(0xFFEEEEEE)),
-            _buildInfoRow(Icons.info_outline_rounded, 'Bio', profile!.bio),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: AppColors.terracotta),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 110,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.brown.withValues(alpha: 0.7),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w500,
-              color: AppColors.charcoal,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ─── 4. ACTION BUTTONS ─────────────────────────────────────────────────────
+  // ─── ACTION BUTTONS ────────────────────────────────────────────────────────
 
   Widget _buildActionButtons() {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-              );
-              if (result == true || mounted) {
-                _loadProfile();
-              }
-            },
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            label: const Text('Edit Full Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.terracotta,
-              side: const BorderSide(color: AppColors.terracotta, width: 1.5),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                );
+                if (result == true || mounted) _loadProfile();
+              },
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: const Text('Edit Full Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.terracotta,
+                side: const BorderSide(color: AppColors.terracotta, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: TextButton.icon(
-            onPressed: _signOut,
-            icon: const Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
-            label: const Text('Sign Out of Account', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              onPressed: _signOut,
+              icon: const Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
+              label: const Text('Sign Out of Account', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
+              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -989,22 +1128,15 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white, elevation: 0),
             child: const Text('Sign Out'),
           ),
         ],
       ),
     );
-
     if (confirmed == true) {
       await AuthService().signOut();
-      if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (r) => false);
-      }
+      if (mounted) Navigator.of(context).pushNamedAndRemoveUntil('/login', (r) => false);
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
 import '../models/b2b_models.dart';
 import '../services/b2b_service.dart';
@@ -24,16 +25,32 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
   late bool _isLoading;
   B2BMatchResult? _matchResult;
   String _selectedFilter = 'All';
+  Set<String> _enquiredArtisanIds = {};
 
   @override
   void initState() {
     super.initState();
+    _loadSentEnquiries();
     if (widget.initialResult != null) {
       _matchResult = widget.initialResult;
       _isLoading = false;
     } else {
       _isLoading = true;
       _fetchMatches();
+    }
+  }
+
+  Future<void> _loadSentEnquiries() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty || widget.requirement.id.isEmpty) return;
+    final enquiries = await _service.getEnquiries(
+      buyerId: userId,
+      requirementId: widget.requirement.id,
+    );
+    if (mounted) {
+      setState(() {
+        _enquiredArtisanIds = enquiries.map((e) => e.artisanId).toSet();
+      });
     }
   }
 
@@ -73,10 +90,16 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
     return matches;
   }
 
+  String _cleanLocation(String location, String state) {
+    if (location.isEmpty && state.isEmpty) return '';
+    if (state.isEmpty) return location;
+    if (location.isEmpty) return state;
+    if (location.endsWith(', $state') || location == state) return location;
+    return '$location, $state';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final req = widget.requirement;
-
     return PopScope(
       canPop: true,
       child: Scaffold(
@@ -92,81 +115,113 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
               }
             },
           ),
-        title: Row(
-          children: [
-            const Text(
-              'AI Artisan Matches',
-              style: TextStyle(
-                color: AppColors.brown,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.terracotta, AppColors.mustardGold],
+          title: Row(
+            children: [
+              const Text(
+                'AI Artisan Matches',
+                style: TextStyle(
+                  color: AppColors.brown,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
-                borderRadius: BorderRadius.circular(10),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.auto_awesome, color: Colors.white, size: 11),
-                  SizedBox(width: 3),
-                  Text(
-                    'GROQ AI',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.terracotta, AppColors.mustardGold],
                   ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.terracotta),
-            onPressed: _fetchMatches,
-            tooltip: 'Re-analyze with AI',
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? _buildLoadingState()
-          : RefreshIndicator(
-              onRefresh: _fetchMatches,
-              color: AppColors.terracotta,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildRequirementCard(req),
-                    const SizedBox(height: 14),
-                    if (_matchResult != null && _matchResult!.aiAnalysis.isNotEmpty)
-                      _buildAIAnalysisCard(_matchResult!),
-                    const SizedBox(height: 20),
-                    _buildSectionHeader(),
-                    const SizedBox(height: 10),
-                    _buildFilterChips(),
-                    const SizedBox(height: 14),
-                    if (_filteredMatches.isEmpty)
-                      _buildEmptyMatches()
-                    else
-                      ..._filteredMatches.map((m) => _buildArtisanCard(m)),
-                    const SizedBox(height: 30),
+                    Icon(Icons.auto_awesome, color: Colors.white, size: 11),
+                    SizedBox(width: 3),
+                    Text(
+                      'GROQ AI',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ],
                 ),
               ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: AppColors.terracotta),
+              onPressed: _fetchMatches,
+              tooltip: 'Re-analyze with AI',
             ),
+          ],
+        ),
+        body: _isLoading
+            ? _buildLoadingState()
+            : RefreshIndicator(
+                onRefresh: _fetchMatches,
+                color: AppColors.terracotta,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 4, 18, 0),
+                        child: Text(
+                          'AI-powered matches based on your requirement',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.brown.withValues(alpha: 0.55),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        child: _buildRequirementCard(widget.requirement),
+                      ),
+                      const SizedBox(height: 14),
+                      if (_matchResult != null &&
+                          _matchResult!.aiAnalysis.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          child: _buildAIAnalysisCard(_matchResult!),
+                        ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        child: _buildSectionHeader(),
+                      ),
+                      const SizedBox(height: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        child: _buildFilterChips(),
+                      ),
+                      const SizedBox(height: 14),
+                      if (_filteredMatches.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          child: _buildEmptyMatches(),
+                        )
+                      else
+                        ..._filteredMatches.map(
+                          (m) => Padding(
+                            padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+                            child: _buildArtisanCard(m),
+                          ),
+                        ),
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -220,7 +275,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.brown.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
@@ -242,7 +297,11 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                   color: AppColors.terracotta.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.assignment_outlined, color: AppColors.terracotta, size: 20),
+                child: const Icon(
+                  Icons.assignment_outlined,
+                  color: AppColors.terracotta,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -307,7 +366,8 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                           ? '₹${req.budgetMin!.toInt()}+'
                           : 'Up to ₹${req.budgetMax!.toInt()}',
                 ),
-              if (req.deliveryLocation != null && req.deliveryLocation!.isNotEmpty)
+              if (req.deliveryLocation != null &&
+                  req.deliveryLocation!.isNotEmpty)
                 _reqChip(Icons.location_on_outlined, req.deliveryLocation!),
             ],
           ),
@@ -354,7 +414,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.oliveGreen.withValues(alpha: 0.25)),
       ),
       child: Column(
@@ -368,7 +428,11 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                   color: AppColors.oliveGreen.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.psychology, color: AppColors.oliveGreen, size: 18),
+                child: const Icon(
+                  Icons.psychology,
+                  color: AppColors.oliveGreen,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 8),
               const Expanded(
@@ -389,7 +453,9 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  result.modelUsed != null ? 'Model: ${result.modelUsed}' : 'Groq AI',
+                  result.modelUsed != null
+                      ? 'Model: ${result.modelUsed}'
+                      : 'Groq AI',
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -402,17 +468,24 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
           const SizedBox(height: 10),
           Text(
             result.aiAnalysis,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 13,
               color: AppColors.brown,
               height: 1.4,
             ),
           ),
-          if (result.estimatedProductionTime != null && result.estimatedProductionTime!.isNotEmpty) ...[
+          if (result.estimatedProductionTime != null &&
+              result.estimatedProductionTime!.isNotEmpty) ...[
             const SizedBox(height: 10),
             Row(
               children: [
-                const Icon(Icons.timer_outlined, size: 14, color: AppColors.oliveGreen),
+                const Icon(
+                  Icons.timer_outlined,
+                  size: 14,
+                  color: AppColors.oliveGreen,
+                ),
                 const SizedBox(width: 5),
                 Text(
                   'Est. Production Time: ${result.estimatedProductionTime}',
@@ -492,12 +565,16 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
               labelStyle: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.brown.withValues(alpha: 0.7),
+                color: isSelected
+                    ? Colors.white
+                    : AppColors.brown.withValues(alpha: 0.7),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
                 side: BorderSide(
-                  color: isSelected ? AppColors.terracotta : AppColors.brown.withValues(alpha: 0.15),
+                  color: isSelected
+                      ? AppColors.terracotta
+                      : AppColors.brown.withValues(alpha: 0.15),
                 ),
               ),
               onSelected: (_) => setState(() => _selectedFilter = f),
@@ -514,13 +591,17 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.brown.withValues(alpha: 0.08)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.search_off, size: 48, color: AppColors.brown.withValues(alpha: 0.3)),
+          Icon(
+            Icons.search_off,
+            size: 48,
+            color: AppColors.brown.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 12),
           const Text(
             'No matching artisans found for filter',
@@ -551,12 +632,13 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
             ? AppColors.terracotta
             : AppColors.mustardGold;
 
+    final cleanLoc = _cleanLocation(m.location, m.state);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: m.matchScore >= 90
               ? AppColors.oliveGreen.withValues(alpha: 0.3)
@@ -574,76 +656,110 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: Avatar, details, Match Score pill
+          // ── Row 1: Large photo + Identity + Match score ──
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: AppColors.terracotta.withValues(alpha: 0.12),
-                backgroundImage: m.avatarUrl.isNotEmpty ? NetworkImage(m.avatarUrl) : null,
-                child: m.avatarUrl.isEmpty
-                    ? Text(
-                        m.artisanName.isNotEmpty ? m.artisanName[0].toUpperCase() : 'A',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.terracotta,
-                        ),
-                      )
-                    : null,
+              // Large profile image
+              Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.terracotta.withValues(alpha: 0.25),
+                    width: 2.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.terracotta.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 53,
+                  backgroundColor: AppColors.terracotta.withValues(alpha: 0.1),
+                  backgroundImage: m.avatarUrl.isNotEmpty
+                      ? NetworkImage(m.avatarUrl)
+                      : null,
+                  child: m.avatarUrl.isEmpty
+                      ? Text(
+                          m.artisanName.isNotEmpty
+                              ? m.artisanName[0].toUpperCase()
+                              : 'A',
+                          style: const TextStyle(
+                            fontSize: 38,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.terracotta,
+                          ),
+                        )
+                      : null,
+                ),
               ),
-              const SizedBox(width: 12),
+
+              const SizedBox(width: 14),
+
+              // Identity info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         Flexible(
                           child: Text(
                             m.artisanName,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 17,
                               fontWeight: FontWeight.bold,
                               color: AppColors.brown,
+                              height: 1.2,
                             ),
                           ),
                         ),
                         if (m.isVerified) ...[
-                          const SizedBox(width: 4),
-                          const Icon(Icons.verified, size: 15, color: Colors.blue),
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.verified,
+                            size: 17,
+                            color: Colors.blue,
+                          ),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 5),
                     Text(
                       m.craftSpecialization,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w600,
                         color: AppColors.terracotta,
                       ),
                     ),
-                    if (m.location.isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                    if (cleanLoc.isNotEmpty) ...[
+                      const SizedBox(height: 5),
                       Row(
                         children: [
                           Icon(
                             Icons.location_on_outlined,
-                            size: 13,
+                            size: 14,
                             color: AppColors.brown.withValues(alpha: 0.5),
                           ),
-                          const SizedBox(width: 2),
-                          Expanded(
+                          const SizedBox(width: 3),
+                          Flexible(
                             child: Text(
-                              m.state.isNotEmpty ? '${m.location}, ${m.state}' : m.location,
+                              cleanLoc,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 11.5,
+                                fontSize: 12.5,
                                 color: AppColors.brown.withValues(alpha: 0.6),
                               ),
                             ),
@@ -654,38 +770,43 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                   ],
                 ),
               ),
+
               const SizedBox(width: 8),
+
               // Match score badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: scoreColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: scoreColor.withValues(alpha: 0.3)),
                 ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.bolt, color: scoreColor, size: 14),
+                        Icon(Icons.bolt, color: scoreColor, size: 16),
                         Text(
                           '${m.matchScore}%',
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 18,
                             fontWeight: FontWeight.w800,
                             color: scoreColor,
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 2),
                     Text(
-                      'MATCH',
+                      'AI MATCH',
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
                         color: scoreColor,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.6,
                       ),
                     ),
                   ],
@@ -694,122 +815,146 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // Rating & Experience tags
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
+          // ── Row 2: Exactly 3 metric pills ──
+          Row(
             children: [
               if (m.averageRating > 0)
-                _metaPill(
-                  Icons.star,
+                _metricPill(
+                  Icons.star_rounded,
                   '${m.averageRating.toStringAsFixed(1)} (${m.totalReviews})',
                   AppColors.mustardGold,
                 ),
+              if (m.averageRating > 0) const SizedBox(width: 8),
               if (m.yearsOfExperience > 0)
-                _metaPill(
-                  Icons.history_edu,
+                _metricPill(
+                  Icons.history_edu_outlined,
                   '${m.yearsOfExperience} yrs exp',
                   AppColors.brown,
                 ),
-              _metaPill(
-                Icons.check_circle_outline,
+              if (m.yearsOfExperience > 0) const SizedBox(width: 8),
+              _metricPill(
+                Icons.check_circle_outline_rounded,
                 '${m.feasibility} Feasibility',
                 AppColors.oliveGreen,
-              ),
-              ...m.highlightTags.map(
-                (t) => _metaPill(Icons.local_offer_outlined, t, AppColors.terracotta),
               ),
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          // Why this artisan matches (AI quote box)
+          // ── Row 3: Why this matches ──
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: const Color(0xFFFBF4EB),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.terracotta.withValues(alpha: 0.15)),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.terracotta.withValues(alpha: 0.12),
+              ),
             ),
-            child: Row(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.auto_awesome, size: 15, color: AppColors.terracotta),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      children: [
-                        const TextSpan(
-                          text: 'Why Matched: ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.terracotta,
-                          ),
-                        ),
-                        TextSpan(
-                          text: m.matchReason,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.brown,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 14,
+                      color: AppColors.terracotta,
                     ),
+                    SizedBox(width: 6),
+                    Text(
+                      'Why this matches?',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.terracotta,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  m.matchReason,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.brown.withValues(alpha: 0.8),
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // Action Buttons
+          // ── Row 4: Action buttons ──
           Row(
             children: [
               Expanded(
-                flex: 2,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => B2BEnquiryFormScreen(
-                          artisanId: m.artisanId,
-                          artisanName: m.artisanName,
-                          requirementId: widget.requirement.id.isNotEmpty
-                              ? widget.requirement.id
-                              : null,
+                child: _enquiredArtisanIds.contains(m.artisanId)
+                    ? ElevatedButton.icon(
+                        onPressed: null,
+                        icon: const Icon(Icons.check_circle_outline, size: 15),
+                        label: const Text(
+                          'Enquiry Sent',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.oliveGreen.withValues(alpha: 0.15),
+                          foregroundColor: AppColors.oliveGreen,
+                          disabledBackgroundColor: AppColors.oliveGreen.withValues(alpha: 0.15),
+                          disabledForegroundColor: AppColors.oliveGreen,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => B2BEnquiryFormScreen(
+                                artisanId: m.artisanId,
+                                artisanName: m.artisanName,
+                                requirementId: widget.requirement.id.isNotEmpty
+                                    ? widget.requirement.id
+                                    : null,
+                                requirement: widget.requirement,
+                              ),
+                            ),
+                          );
+                          if (result == true && mounted) {
+                            _loadSentEnquiries();
+                          }
+                        },
+                        icon: const Icon(Icons.send_outlined, size: 15),
+                        label: const Text(
+                          'Send Enquiry',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.terracotta,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.send_outlined, size: 15),
-                  label: const Text(
-                    'Send Enquiry',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.terracotta,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                flex: 1,
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -820,17 +965,20 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                       ),
                     );
                   },
+                  icon: const Icon(Icons.person_outline_rounded, size: 15),
+                  label: const Text(
+                    'View Profile',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.brown,
-                    side: BorderSide(color: AppColors.brown.withValues(alpha: 0.25)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(
+                      color: AppColors.brown.withValues(alpha: 0.25),
                     ),
-                  ),
-                  child: const Text(
-                    'Profile',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -841,22 +989,22 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
     );
   }
 
-  Widget _metaPill(IconData icon, String label, Color color) {
+  Widget _metricPill(IconData icon, String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: color),
-          const SizedBox(width: 3),
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 10.5,
+              fontSize: 11.5,
               fontWeight: FontWeight.w600,
               color: color,
             ),

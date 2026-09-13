@@ -9,12 +9,15 @@ import '../features/artisan_store/presentation/screens/artisan_dashboard_screen.
 import '../features/artisan_store/presentation/screens/artisan_store_screen.dart';
 import '../features/artisan_store/presentation/screens/my_products_screen.dart';
 import '../features/artisan_store/presentation/screens/schemes_events_screen.dart';
-import '../features/artisan_store/presentation/screens/analytics_placeholder_screen.dart';
 import '../features/artisan_store/presentation/screens/artisan_profile_new_screen.dart';
 import '../features/artisan_store/presentation/screens/edit_profile_screen.dart';
 import '../features/artisan_store/presentation/screens/voice_add_product_screen.dart';
 import '../features/artisan_store/presentation/screens/seller_product_detail_screen.dart';
+import '../features/artisan_store/presentation/screens/share_everywhere_screen.dart';
 import '../features/artisan_store/presentation/screens/seller_edit_product_screen.dart';
+import '../features/artisan_store/presentation/screens/marketplace_hub_screen.dart';
+import '../features/artisan_store/presentation/screens/marketplace_listing_screen.dart';
+import '../features/artisan_store/presentation/screens/product_selection_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/signup_screen.dart';
 import '../features/buyer/presentation/buyer_home_screen.dart';
@@ -96,11 +99,14 @@ abstract final class AppRoutes {
   // New seller experience routes
   static const String myProducts = '/my-products';
   static const String schemesEvents = '/schemes-events';
-  static const String analyticsPlaceholder = '/analytics-placeholder';
   static const String artisanProfileNew = '/artisan-profile-new';
   static const String editProfile = '/edit-profile';
   static const String sellerProductDetail = '/seller-product-detail';
   static const String editProduct = '/edit-product';
+  static const String shareEverywhere = '/share-everywhere';
+  static const String marketplaceHub = '/marketplace-hub';
+  static const String marketplaceProductSelection = '/marketplace-product-selection';
+  static const String marketplaceListing = '/marketplace-listing';
   static const String tellAboutProduct = '/tell-about-product';
   static const String reviewDetails = '/review-details';
   static const String catalogPreview = '/catalog-preview';
@@ -213,8 +219,6 @@ class AppRouter {
           settings: settings,
           builder: (context) => SchemesEventsScreen(initialTab: initialTab),
         );
-      case AppRoutes.analyticsPlaceholder:
-        return _buildRoute(const AnalyticsPlaceholderScreen(), settings: settings);
       case AppRoutes.artisanProfileNew:
         return _buildRoute(const ArtisanProfileNewScreen(), settings: settings);
       case AppRoutes.editProfile:
@@ -233,6 +237,32 @@ class AppRouter {
         return MaterialPageRoute(
           settings: settings,
           builder: (context) => SellerEditProductScreen(productId: productId, newImagePath: newImagePath),
+        );
+      case AppRoutes.shareEverywhere:
+        final productId = settings.arguments as String;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => ShareEverywhereScreen(productId: productId),
+        );
+      case AppRoutes.marketplaceHub:
+        return _buildRoute(const MarketplaceHubScreen(), settings: settings);
+      case AppRoutes.marketplaceProductSelection:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final marketplaceId = args?['marketplaceId'] as String? ?? 'other';
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => ProductSelectionScreen(marketplaceId: marketplaceId),
+        );
+      case AppRoutes.marketplaceListing:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final marketplaceId = args?['marketplaceId'] as String? ?? 'other';
+        final selectedProductIds = (args?['selectedProductIds'] as List<dynamic>?)?.cast<String>() ?? [];
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => MarketplaceListingScreen(
+            marketplaceId: marketplaceId,
+            selectedProductIds: selectedProductIds,
+          ),
         );
       case AppRoutes.voiceStep1Details:
       case AppRoutes.tellAboutProduct:

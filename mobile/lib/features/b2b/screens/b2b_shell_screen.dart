@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/localization/language_provider.dart';
+import '../../../core/widgets/hastkala_bottom_nav.dart';
 import 'b2b_home_screen.dart';
 import 'b2b_explore_screen.dart';
 import 'b2b_requirements_screen.dart';
@@ -49,6 +50,7 @@ class _B2BShellScreenState extends State<B2BShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return PopScope(
       canPop: _currentIndex == 0,
       onPopInvokedWithResult: (didPop, _) {
@@ -62,10 +64,15 @@ class _B2BShellScreenState extends State<B2BShellScreen> {
           physics: const NeverScrollableScrollPhysics(),
           children: _screens,
         ),
-        bottomNavigationBar: AppBottomNav(
+        bottomNavigationBar: HastKalaBottomNavigation(
           currentIndex: _currentIndex,
           onTap: _onTabTapped,
-          items: AppBottomNavItems.b2b,
+          items: HastKalaNavItems.b2b,
+          centerButton: HastKalaCenterButton(
+            icon: Icons.add_rounded,
+            label: lang.t('postRequirement'),
+            onTap: () => _onTabTapped(2),
+          ),
         ),
       ),
     );

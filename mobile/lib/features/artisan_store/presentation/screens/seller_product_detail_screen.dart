@@ -343,34 +343,56 @@ class _SellerProductDetailScreenState extends State<SellerProductDetailScreen> {
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2))],
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _deleteProduct,
-                icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
-                label: const Text('Delete', style: TextStyle(color: AppColors.error)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.error),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/share-everywhere', arguments: widget.productId);
+                },
+                icon: const Text('📣', style: TextStyle(fontSize: 18)),
+                label: const Text('Share Everywhere', style: TextStyle(fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.mustardGold,
+                  foregroundColor: AppColors.charcoal,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMD)),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: ElevatedButton.icon(
-                onPressed: _navigateToEdit,
-                icon: const Icon(Icons.edit_rounded, size: 18),
-                label: const Text('Edit Product'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.terracotta,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMD)),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _deleteProduct,
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                    label: const Text('Delete', style: TextStyle(color: AppColors.error)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.error),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMD)),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: _navigateToEdit,
+                    icon: const Icon(Icons.edit_rounded, size: 18),
+                    label: const Text('Edit Product'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.terracotta,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMD)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

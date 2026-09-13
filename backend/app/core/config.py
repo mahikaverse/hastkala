@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     OLLAMA_TIMEOUT: int = 120
 
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.1-8b-instant"
+    GROQ_MODEL: str = "qwen/qwen3.8-27b"
 
     DEEPGRAM_API_KEY: str = ""
 

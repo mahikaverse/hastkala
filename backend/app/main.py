@@ -15,6 +15,8 @@ from app.api.auth import router as auth_router
 from app.api.products import router as products_router
 from app.api.stream_stt import router as stream_stt_router
 from app.api.b2b import router as b2b_router
+from app.api.marketing import router as marketing_router
+from app.api.marketplace_prep import router as marketplace_prep_router
 from app.core.config import settings
 from app.core.supabase import get_supabase
 
@@ -48,6 +50,8 @@ app.include_router(auth_router)
 app.include_router(products_router)
 app.include_router(stream_stt_router)
 app.include_router(b2b_router)
+app.include_router(marketing_router)
+app.include_router(marketplace_prep_router)
 
 
 @app.on_event("startup")

@@ -224,7 +224,7 @@ def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
         # Fix invalid model names — groq/compound-mini does not exist
         model_to_use = settings.GROQ_MODEL
         if not model_to_use or model_to_use.startswith("groq/"):
-            model_to_use = "llama-3.1-8b-instant"
+            model_to_use = "qwen/qwen3.8-27b"
         logger.info(f"Calling Groq fallback (model={model_to_use})...")
         groq_client = groq.Groq(api_key=settings.GROQ_API_KEY, timeout=timeout)
         resp = groq_client.chat.completions.create(

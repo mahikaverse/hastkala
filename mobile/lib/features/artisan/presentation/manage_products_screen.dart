@@ -6,7 +6,7 @@ import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/models/product_model.dart';
 import '../../../core/widgets/adaptive_product_image.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/hastkala_bottom_nav.dart';
 
 class ManageProductsScreen extends StatefulWidget {
   const ManageProductsScreen({super.key});
@@ -722,7 +722,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
   // ─── BOTTOM NAV ────────────────────────────────────────────────────────────
 
   Widget _buildBottomNav(BuildContext context) {
-    return AppBottomNav(
+    return HastKalaBottomNavigation(
       currentIndex: 1,
       onTap: (i) {
         final routes = [
@@ -736,7 +736,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      items: AppBottomNavItems.artisan,
+      items: HastKalaNavItems.artisanLegacy,
     );
   }
 }

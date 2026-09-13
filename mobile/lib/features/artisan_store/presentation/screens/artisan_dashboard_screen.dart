@@ -9,9 +9,10 @@ import '../../../../core/localization/language_provider.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/services/data_service.dart';
 import '../../../../core/widgets/adaptive_product_image.dart';
+import '../../../../core/widgets/hastkala_bottom_nav.dart';
 import 'my_products_screen.dart';
 import 'schemes_events_screen.dart';
-import 'analytics_placeholder_screen.dart';
+import 'marketplace_hub_screen.dart';
 import 'artisan_profile_new_screen.dart';
 
 class ArtisanDashboardScreen extends StatefulWidget {
@@ -106,8 +107,8 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
           ? _buildHomeTab()
           : _currentNavIndex == 1
               ? const SchemesEventsScreen()
-              : _currentNavIndex == 3
-                  ? const AnalyticsPlaceholderScreen()
+              : _currentNavIndex == 2
+                  ? const MarketplaceHubScreen()
                   : const ArtisanProfileNewScreen(),
       bottomNavigationBar: _buildBottomNav(),
     );
@@ -130,6 +131,7 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
         _buildStatsRow(stats),
         _buildOpportunities(),
         _buildMyProductsSection(products),
+        _buildMarketplaceHubCard(),
         _buildGovernmentSchemes(),
         _buildUpcomingExhibitions(),
       ],
@@ -777,6 +779,77 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
     );
   }
 
+  // ─── MARKETPLACE HUB CARD ────────────────────────────────────────────────
+
+  Widget _buildMarketplaceHubCard() {
+    final lang = LanguageProvider.of(context);
+    final store = _store;
+    final publishedCount = store != null ? _data.getPublishedProductsByStore(store.id).length : 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: GestureDetector(
+        onTap: () => Navigator.pushNamed(context, AppRoutes.marketplaceHub),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.mustardGold.withValues(alpha: 0.9), AppColors.terracotta.withValues(alpha: 0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.mustardGold.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lang.t('marketplaceHub'),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$publishedCount ${lang.t('productsReadyExport')}',
+                      style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.85)),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ─── GOVERNMENT SCHEMES CAROUSEL ─────────────────────────────────────────
 
   Widget _buildGovernmentSchemes() {
@@ -1061,120 +1134,16 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
 
   Widget _buildBottomNav() {
     final lang = LanguageProvider.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 4, top: 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, lang.t('home')),
-              _buildNavItem(1, Icons.festival_outlined, Icons.festival_rounded, lang.t('schemes')),
-              _buildCenterButton(),
-              _buildNavItem(3, Icons.analytics_outlined, Icons.analytics_rounded, lang.t('analytics')),
-              _buildNavItem(4, Icons.person_outlined, Icons.person_rounded, lang.t('profile')),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
-    final isSelected = _currentNavIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentNavIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 64,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(6),
-              decoration: isSelected
-                  ? BoxDecoration(
-                      color: AppColors.terracotta.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    )
-                  : null,
-              child: Icon(
-                isSelected ? activeIcon : icon,
-                size: 22,
-                color: isSelected ? AppColors.terracotta : AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? AppColors.terracotta : AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCenterButton() {
-    final lang = LanguageProvider.of(context);
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, AppRoutes.artisanAddProduct),
-      child: SizedBox(
-        width: 68,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.terracotta, AppColors.brown],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.terracotta.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.camera_alt_rounded, size: 24, color: Colors.white),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              lang.t('add'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: AppColors.terracotta,
-              ),
-            ),
-          ],
-        ),
+    return HastKalaBottomNavigation(
+      currentIndex: _currentNavIndex,
+      onTap: (index) {
+        setState(() => _currentNavIndex = index);
+      },
+      items: HastKalaNavItems.artisan,
+      centerButton: HastKalaCenterButton(
+        icon: Icons.camera_alt_rounded,
+        label: lang.t('add'),
+        onTap: () => Navigator.pushNamed(context, AppRoutes.artisanAddProduct),
       ),
     );
   }
