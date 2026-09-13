@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/helpers/craft_image_helper.dart';
+import '../../../core/helpers/artisan_image_helper.dart';
 import '../../../core/models/artisan_profile.dart';
 import '../../../core/models/marketplace_product.dart';
 import '../services/b2b_service.dart';
@@ -40,11 +41,29 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
 
   Future<void> _loadProducts() async {
     final products = await _service.exploreProducts();
-    final artisanProducts = products.where((p) => p.artisanId == widget.artisan.id).toList();
-    setState(() {
-      _products = artisanProducts;
-      _isLoadingProducts = false;
-    });
+    var artisanProducts = products.where((p) => p.artisanId == widget.artisan.id).toList();
+
+    // If direct artisanId matches not found, match by craft specialization / category
+    if (artisanProducts.isEmpty) {
+      final specLower = widget.artisan.craftSpecialization.toLowerCase();
+      artisanProducts = products.where((p) {
+        final pCraft = (p.craftType ?? '').toLowerCase();
+        final pCat = p.category.toLowerCase();
+        return specLower.isNotEmpty && (pCraft.contains(specLower) || specLower.contains(pCraft) || pCat.contains(specLower) || specLower.contains(pCat));
+      }).toList();
+    }
+
+    // Fallback: If still empty, display relevant handcrafted creations from the catalog
+    if (artisanProducts.isEmpty && products.isNotEmpty) {
+      artisanProducts = products.take(4).toList();
+    }
+
+    if (mounted) {
+      setState(() {
+        _products = artisanProducts;
+        _isLoadingProducts = false;
+      });
+    }
   }
 
   @override
@@ -93,26 +112,34 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
               ),
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: AppColors.terracotta.withValues(alpha: 0.1),
-                    child: Text(
-                      artisan.name.isNotEmpty ? artisan.name[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.terracotta,
-                      ),
-                    ),
+                  ArtisanImageHelper.buildAvatar(
+                    name: artisan.name,
+                    avatarUrl: artisan.avatarUrl,
+                    craftType: artisan.craftSpecialization,
+                    artisanId: artisan.id,
+                    radius: 44,
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    artisan.name,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.brown,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        artisan.name,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.brown,
+                        ),
+                      ),
+                      if (artisan.isVerified) ...[
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.verified,
+                          color: AppColors.oliveGreen,
+                          size: 20,
+                        ),
+                      ],
+                    ],
                   ),
                   if (artisan.craftSpecialization.isNotEmpty) ...[
                     const SizedBox(height: 4),
@@ -121,6 +148,7 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.oliveGreen,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -163,10 +191,87 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
               ),
             ),
 
-            // Bio
+            // Artisan's Story & Heritage Card
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.terracotta.withValues(alpha: 0.2),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.terracotta.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.terracotta.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.auto_stories_rounded,
+                            color: AppColors.terracotta,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Artisan\'s Journey & Heritage',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.brown,
+                                ),
+                              ),
+                              Text(
+                                'कारीगर की कहानी व परंपरा',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.terracotta,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      ArtisanImageHelper.getArtisanStory(artisan),
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.6,
+                        color: AppColors.brown.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Bio / About
             if (artisan.bio.isNotEmpty) ...[
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

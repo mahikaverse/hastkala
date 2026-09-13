@@ -116,29 +116,50 @@ class ArtisanProfile {
     };
   }
 
+  Map<String, dynamic> toDbMap() {
+    return {
+      if (id.isNotEmpty && !id.startsWith('ap_')) 'id': id,
+      if (userId.isNotEmpty) 'user_id': userId,
+      'name': name,
+      'avatar_url': avatarUrl,
+      'bio': bio,
+      'craft_specialization': craftSpecialization,
+      'location': location,
+      'state': state,
+      'years_of_experience': yearsOfExperience,
+      'craft_story': craftStory,
+      if (contactEmail != null) 'contact_email': contactEmail,
+      if (contactPhone != null) 'contact_phone': contactPhone,
+      if (website != null) 'website': website,
+      if (instagram != null) 'instagram': instagram,
+      if (facebook != null) 'facebook': facebook,
+      'is_verified': isVerified,
+    };
+  }
+
   factory ArtisanProfile.fromMap(Map<String, dynamic> map) {
     return ArtisanProfile(
-      id: map['id'] ?? '',
-      userId: map['userId'] ?? '',
-      name: map['name'] ?? '',
-      avatarUrl: map['avatarUrl'] ?? '',
-      bio: map['bio'] ?? '',
-      craftSpecialization: map['craftSpecialization'] ?? '',
-      location: map['location'] ?? '',
-      state: map['state'] ?? '',
-      yearsOfExperience: map['yearsOfExperience'] ?? 0,
-      craftStory: map['craftStory'] ?? '',
-      contactEmail: map['contactEmail'],
-      contactPhone: map['contactPhone'],
+      id: (map['id'] ?? '').toString(),
+      userId: (map['userId'] ?? map['user_id'] ?? '').toString(),
+      name: (map['name'] ?? '').toString(),
+      avatarUrl: (map['avatarUrl'] ?? map['avatar_url'] ?? '').toString(),
+      bio: (map['bio'] ?? '').toString(),
+      craftSpecialization: (map['craftSpecialization'] ?? map['craft_specialization'] ?? '').toString(),
+      location: (map['location'] ?? '').toString(),
+      state: (map['state'] ?? '').toString(),
+      yearsOfExperience: int.tryParse((map['yearsOfExperience'] ?? map['years_of_experience'] ?? 0).toString()) ?? 0,
+      craftStory: (map['craftStory'] ?? map['craft_story'] ?? '').toString(),
+      contactEmail: map['contactEmail'] ?? map['contact_email'],
+      contactPhone: map['contactPhone'] ?? map['contact_phone'],
       website: map['website'],
       instagram: map['instagram'],
       facebook: map['facebook'],
-      isVerified: map['isVerified'] ?? false,
-      createdAt: DateTime.tryParse(map['createdAt'] ?? '') ?? DateTime.now(),
-      followersCount: map['followersCount'] ?? 0,
-      productsCount: map['productsCount'] ?? 0,
-      averageRating: (map['averageRating'] ?? 0.0).toDouble(),
-      totalReviews: map['totalReviews'] ?? 0,
+      isVerified: map['isVerified'] ?? map['is_verified'] ?? false,
+      createdAt: DateTime.tryParse((map['createdAt'] ?? map['created_at'] ?? '').toString()) ?? DateTime.now(),
+      followersCount: int.tryParse((map['followersCount'] ?? map['followers_count'] ?? 0).toString()) ?? 0,
+      productsCount: int.tryParse((map['productsCount'] ?? map['products_count'] ?? 0).toString()) ?? 0,
+      averageRating: double.tryParse((map['averageRating'] ?? map['average_rating'] ?? 0.0).toString()) ?? 0.0,
+      totalReviews: int.tryParse((map['totalReviews'] ?? map['total_reviews'] ?? 0).toString()) ?? 0,
     );
   }
 }

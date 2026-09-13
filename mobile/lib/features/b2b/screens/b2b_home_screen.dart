@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/helpers/craft_image_helper.dart';
+import '../../../core/helpers/artisan_image_helper.dart';
 import '../../../core/models/marketplace_product.dart';
 import '../../../core/models/artisan_profile.dart';
 import '../services/b2b_service.dart';
@@ -192,103 +193,6 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
               ),
             ),
 
-            // Categories
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Categories',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.brown,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const B2BExploreScreen(),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'View All',
-                        style: TextStyle(
-                          color: AppColors.terracotta,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Category chips
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 50,
-                child: _categories.isNotEmpty
-                    ? ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        itemCount: _categories.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
-                        itemBuilder: (context, index) {
-                          final cat = _categories[index];
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => B2BExploreScreen(initialCategory: cat),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: AppColors.brown.withValues(alpha: 0.15),
-                                ),
-                              ),
-                              child: Text(
-                                cat,
-                                style: TextStyle(
-                                  color: AppColors.brown,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                    : ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        children: [
-                          _buildDefaultCategory('Home Decor'),
-                          const SizedBox(width: 10),
-                          _buildDefaultCategory('Kitchen & Dining'),
-                          const SizedBox(width: 10),
-                          _buildDefaultCategory('Pottery & Ceramics'),
-                          const SizedBox(width: 10),
-                          _buildDefaultCategory('Textiles'),
-                          const SizedBox(width: 10),
-                          _buildDefaultCategory('Jewelry'),
-                        ],
-                      ),
-              ),
-            ),
 
             // Quick Post Requirement
             SliverToBoxAdapter(
@@ -912,17 +816,12 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
-            CircleAvatar(
+            ArtisanImageHelper.buildAvatar(
+              name: artisan.name,
+              avatarUrl: artisan.avatarUrl,
+              craftType: artisan.craftSpecialization,
+              artisanId: artisan.id,
               radius: 28,
-              backgroundColor: AppColors.terracotta.withValues(alpha: 0.1),
-              child: Text(
-                artisan.name.isNotEmpty ? artisan.name[0].toUpperCase() : '?',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.terracotta,
-                ),
-              ),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -990,8 +889,40 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
   }
 
   Widget _buildDemoArtisanCard(String name, String craft, String location, String initial) {
+    final demoProfile = ArtisanProfile(
+      id: 'demo_${name.toLowerCase().replaceAll(' ', '_')}',
+      userId: '',
+      name: name,
+      craftSpecialization: craft,
+      location: location,
+      state: location.contains(',') ? location.split(',').last.trim() : location,
+      yearsOfExperience: 18,
+      averageRating: 4.8,
+      totalReviews: 45,
+      isVerified: true,
+      bio: '$name is a master artisan specializing in traditional $craft from $location.',
+      craftStory: ArtisanImageHelper.getArtisanStory(
+        ArtisanProfile(
+          id: '',
+          userId: '',
+          name: name,
+          craftSpecialization: craft,
+          location: location,
+          createdAt: DateTime.now(),
+        ),
+      ),
+      createdAt: DateTime.now(),
+    );
+
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => B2BArtisanProfileScreen(artisan: demoProfile),
+          ),
+        );
+      },
       child: Container(
         width: 130,
         decoration: BoxDecoration(
@@ -1005,17 +936,10 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
-            CircleAvatar(
+            ArtisanImageHelper.buildAvatar(
+              name: name,
+              craftType: craft,
               radius: 28,
-              backgroundColor: AppColors.terracotta.withValues(alpha: 0.1),
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.terracotta,
-                ),
-              ),
             ),
             const SizedBox(height: 8),
             Padding(

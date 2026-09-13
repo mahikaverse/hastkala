@@ -85,7 +85,7 @@ abstract final class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.terracotta,
           foregroundColor: AppColors.textOnPrimary,
-          minimumSize: const Size(double.infinity, AppDimensions.buttonHeightMD),
+          minimumSize: const Size(64, AppDimensions.buttonHeightMD),
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimensions.paddingXL,
             vertical: AppDimensions.paddingMD,
@@ -121,7 +121,7 @@ abstract final class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.terracotta,
-          minimumSize: const Size(double.infinity, AppDimensions.buttonHeightMD),
+          minimumSize: const Size(64, AppDimensions.buttonHeightMD),
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimensions.paddingXL,
             vertical: AppDimensions.paddingMD,

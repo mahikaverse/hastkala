@@ -367,6 +367,8 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                       icon: const Icon(Icons.bolt, size: 14),
                       label: const Text('Match AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         backgroundColor: AppColors.terracotta,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

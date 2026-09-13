@@ -97,6 +97,7 @@ flutter:
     - assets/craft/craft_papier_mache.jpg
     - assets/craft/craft_chikankari_fabric.jpg
     - assets/craft/craft_madhubani_painting.jpg
+    - assets/artisans/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

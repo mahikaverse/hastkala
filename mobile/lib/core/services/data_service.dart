@@ -684,7 +684,8 @@ class DataService {
     final profiles = [
       ArtisanProfile(
         id: 'ap_1', userId: 'u_1', name: 'Ramesh Kumar',
-        bio: 'Traditional wood carver with 25+ years of experience',
+        avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Potter%2C_near_Jaipur%2C_Rajasthan%2C_India.jpg',
+        bio: 'Traditional wood carver and master artisan with 25+ years of experience',
         craftSpecialization: 'Wood Carving', location: 'Jaipur', state: 'Rajasthan',
         yearsOfExperience: 25, isVerified: true, createdAt: DateTime(2023, 1, 15),
         followersCount: 342, productsCount: 48, averageRating: 4.8, totalReviews: 156,
@@ -692,6 +693,7 @@ class DataService {
       ),
       ArtisanProfile(
         id: 'ap_2', userId: 'u_2', name: 'Meera Devi',
+        avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/66/A_working_woman_at_Ajmere.jpg',
         bio: 'Master weaver preserving Rajasthani textile traditions',
         craftSpecialization: 'Handloom Weaving', location: 'Bhilwara', state: 'Rajasthan',
         yearsOfExperience: 18, isVerified: true, createdAt: DateTime(2023, 3, 20),
@@ -700,6 +702,7 @@ class DataService {
       ),
       ArtisanProfile(
         id: 'ap_3', userId: 'u_3', name: 'Suresh Patel',
+        avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Old_potter%2C_Jaipur_1.jpg',
         bio: 'Creating exquisite blue pottery using ancient techniques',
         craftSpecialization: 'Blue Pottery', location: 'Jaipur', state: 'Rajasthan',
         yearsOfExperience: 15, isVerified: true, createdAt: DateTime(2023, 5, 10),
@@ -708,6 +711,7 @@ class DataService {
       ),
       ArtisanProfile(
         id: 'ap_4', userId: 'u_4', name: 'Lakshmi Nair',
+        avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/dd/Handloom_Weaver_in_an_exhibition_1.jpg',
         bio: 'Kerala handloom artisan specializing in Kasavu sarees',
         craftSpecialization: 'Kasavu Weaving', location: 'Kozhikode', state: 'Kerala',
         yearsOfExperience: 20, isVerified: true, createdAt: DateTime(2023, 7, 5),
@@ -716,6 +720,7 @@ class DataService {
       ),
       ArtisanProfile(
         id: 'ap_5', userId: 'u_5', name: 'Arjun Singh',
+        avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/3/3a/Assamese_woman_using_traditional_handloom.jpg',
         bio: 'Brass and copper artisan from Moradabad',
         craftSpecialization: 'Brass Work', location: 'Moradabad', state: 'Uttar Pradesh',
         yearsOfExperience: 12, isVerified: false, createdAt: DateTime(2024, 1, 8),
@@ -724,6 +729,7 @@ class DataService {
       ),
       ArtisanProfile(
         id: 'ap_6', userId: 'u_6', name: 'Priya Sharma',
+        avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/1f/A_potter_at_work_in_Tantadi_village.jpg',
         bio: 'Madhubani artist bringing folk art to everyday products',
         craftSpecialization: 'Madhubani Painting', location: 'Madhubani', state: 'Bihar',
         yearsOfExperience: 10, isVerified: true, createdAt: DateTime(2024, 2, 14),

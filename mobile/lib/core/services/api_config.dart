@@ -6,6 +6,7 @@ class ApiConfig {
   static String? _customBaseUrl;
   static String _envIp = '192.168.1.5';
   static String _envPort = '8000';
+  static String _envGroqApiKey = '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';
   static bool _initialized = false;
 
   static Future<void> init() async {
@@ -23,6 +24,8 @@ class ApiConfig {
             _envIp = val;
           } else if (key == 'BACKEND_PORT' && val.isNotEmpty) {
             _envPort = val;
+          } else if (key == 'GROQ_API_KEY' && val.isNotEmpty) {
+            _envGroqApiKey = val;
           }
         }
       }
@@ -39,6 +42,10 @@ class ApiConfig {
     if (definePort.isNotEmpty) {
       _envPort = definePort;
     }
+    const defineGroq = String.fromEnvironment('GROQ_API_KEY');
+    if (defineGroq.isNotEmpty) {
+      _envGroqApiKey = defineGroq;
+    }
 
     _initialized = true;
     debugPrint('ApiConfig initialized: http://$_envIp:$_envPort');
@@ -50,6 +57,7 @@ class ApiConfig {
 
   static String get backendIp => _envIp;
   static String get backendPort => _envPort;
+  static String get groqApiKey => _envGroqApiKey;
 
   static String get baseUrl {
     if (_customBaseUrl != null && _customBaseUrl!.isNotEmpty) {
