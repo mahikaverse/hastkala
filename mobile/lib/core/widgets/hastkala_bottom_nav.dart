@@ -33,12 +33,18 @@ class HastKalaBottomNavigation extends StatelessWidget {
     required this.onTap,
     required this.items,
     this.centerButton,
+    this.selectedNavIndex,
   });
 
   final int currentIndex;
   final ValueChanged<int> onTap;
   final List<HastKalaBottomNavItem> items;
   final HastKalaCenterButton? centerButton;
+
+  /// When set, this index is used for highlighting nav items instead of [currentIndex].
+  /// Useful when a center button occupies a screen slot that doesn't correspond to any nav item.
+  /// Pass -1 or null to deselect all nav items (e.g. when center button screen is active).
+  final int? selectedNavIndex;
 
   bool get hasCenterButton => centerButton != null;
 
@@ -105,7 +111,8 @@ class HastKalaBottomNavigation extends StatelessWidget {
   }
 
   Widget _buildNavItem(int index) {
-    final isSelected = currentIndex == index;
+    final effectiveIndex = selectedNavIndex ?? currentIndex;
+    final isSelected = effectiveIndex == index;
     final item = items[index];
 
     return GestureDetector(

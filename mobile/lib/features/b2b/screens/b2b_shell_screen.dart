@@ -21,6 +21,39 @@ class _B2BShellScreenState extends State<B2BShellScreen> {
 
   late final List<Widget> _screens;
 
+  // Screen indices
+  static const int _screenHome = 0;
+  static const int _screenExplore = 1;
+  static const int _screenRequirements = 2;
+  static const int _screenEnquiries = 3;
+  static const int _screenProfile = 4;
+
+  // Nav item indices → screen index mapping
+  // Nav items: Home(0), Explore(1), Enquiries(2), Profile(3)
+  static const List<int> _navToScreen = [
+    _screenHome,
+    _screenExplore,
+    _screenEnquiries,
+    _screenProfile,
+  ];
+
+  /// Returns the nav item index to highlight for a given screen index.
+  /// Returns -1 when no nav item should be highlighted (e.g. center button screen).
+  int _screenToNav(int screenIndex) {
+    switch (screenIndex) {
+      case _screenHome:
+        return 0;
+      case _screenExplore:
+        return 1;
+      case _screenEnquiries:
+        return 2;
+      case _screenProfile:
+        return 3;
+      default:
+        return -1;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -28,7 +61,7 @@ class _B2BShellScreenState extends State<B2BShellScreen> {
     _screens = [
       const B2BHomeScreen(),
       const B2BExploreScreen(),
-      B2BRequirementsScreen(onBackToHome: () => _onTabTapped(0)),
+      B2BRequirementsScreen(onBackToHome: () => _switchScreen(_screenHome)),
       const B2BEnquiriesScreen(),
       const B2BProfileScreen(),
     ];
@@ -40,22 +73,29 @@ class _B2BShellScreenState extends State<B2BShellScreen> {
     super.dispose();
   }
 
-  void _onTabTapped(int index) {
-    if (index == _currentIndex) return;
+  /// Switch to a screen by screen index.
+  void _switchScreen(int screenIndex) {
+    if (screenIndex == _currentIndex) return;
     setState(() {
-      _currentIndex = index;
+      _currentIndex = screenIndex;
     });
-    _pageController.jumpToPage(index);
+    _pageController.jumpToPage(screenIndex);
+  }
+
+  /// Called when a nav item is tapped. [navIndex] is the nav item index (0-3).
+  void _onNavTapped(int navIndex) {
+    final screenIndex = _navToScreen[navIndex];
+    _switchScreen(screenIndex);
   }
 
   @override
   Widget build(BuildContext context) {
     final lang = LanguageProvider.of(context);
     return PopScope(
-      canPop: _currentIndex == 0,
+      canPop: _currentIndex == _screenHome,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _currentIndex != 0) {
-          _onTabTapped(0);
+        if (!didPop && _currentIndex != _screenHome) {
+          _switchScreen(_screenHome);
         }
       },
       child: Scaffold(
@@ -66,12 +106,13 @@ class _B2BShellScreenState extends State<B2BShellScreen> {
         ),
         bottomNavigationBar: HastKalaBottomNavigation(
           currentIndex: _currentIndex,
-          onTap: _onTabTapped,
+          selectedNavIndex: _screenToNav(_currentIndex),
+          onTap: _onNavTapped,
           items: HastKalaNavItems.b2b,
           centerButton: HastKalaCenterButton(
             icon: Icons.add_rounded,
             label: lang.t('postRequirement'),
-            onTap: () => _onTabTapped(2),
+            onTap: () => _switchScreen(_screenRequirements),
           ),
         ),
       ),

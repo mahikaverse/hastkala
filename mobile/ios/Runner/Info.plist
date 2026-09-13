@@ -59,6 +59,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>HastKala needs camera access to capture craft photos for AI enhancement and listings.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>HastKala needs microphone access to record voice notes and use AI voice assistant features.</string>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

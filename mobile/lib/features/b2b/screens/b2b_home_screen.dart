@@ -217,141 +217,23 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
               ),
             ),
 
-            // ── Hero Banner ──
+            // ── Hero Banner (image only) ──
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-                child: Container(
-                  height: 210,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.asset(
+                    'assets/b2b-hero-img.jpeg',
+                    width: double.infinity,
+                    fit: BoxFit.fitWidth,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 180,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFE8D8BE), Color(0xFFF8F1E3)],
+                        ),
                       ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Hero image
-                        Image.asset(
-                          'assets/b2b-hero-img.jpeg',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Color(0xFFE8D8BE), Color(0xFFF8F1E3)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Gradient overlay from left
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.black.withValues(alpha: 0.65),
-                                Colors.black.withValues(alpha: 0.3),
-                                Colors.transparent,
-                              ],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              stops: const [0.0, 0.5, 1.0],
-                            ),
-                          ),
-                        ),
-                        // Text content
-                        Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'From',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                              const Text(
-                                'Indian Artisans',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.1,
-                                ),
-                              ),
-                              const Text(
-                                'to Your Business',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.1,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Source authentic handcrafted products\ndirectly from artisan manufacturers\nacross India.',
-                                maxLines: 3,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  fontSize: 11.5,
-                                  height: 1.35,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  _heroFeatureTag(Icons.handshake_outlined, 'Direct\nConnect'),
-                                  const SizedBox(width: 12),
-                                  _heroFeatureTag(Icons.verified_outlined, 'Verified\nArtisans'),
-                                  const SizedBox(width: 12),
-                                  _heroFeatureTag(Icons.local_shipping_outlined, 'Reliable\nSupply'),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        // "Crafting Brighter Futures" decorative text
-                        Positioned(
-                          right: 14,
-                          bottom: 16,
-                          child: Text(
-                            'Crafting\nBrighter\nFutures',
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              color: AppColors.mustardGold.withValues(alpha: 0.7),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              height: 1.2,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                        // Pagination dots
-                        Positioned(
-                          bottom: 12,
-                          left: 20,
-                          child: Row(
-                            children: [
-                              _dot(true),
-                              const SizedBox(width: 6),
-                              _dot(false),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ),
@@ -436,7 +318,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
 
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 100,
+                height: 110,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -492,25 +374,27 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                           child: const Icon(
                             Icons.description_outlined,
                             color: Colors.white,
-                            size: 24,
+                            size: 22,
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Row(
+                              Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 8,
                                 children: [
                                   const Text(
                                     'Post a Requirement',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 15,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
@@ -531,19 +415,21 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                'Share your product needs and get matched\nwith verified artisan manufacturers.',
+                                'Share your product needs and get matched with verified artisan manufacturers.',
                                 maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.8),
-                                  fontSize: 11.5,
+                                  fontSize: 11,
                                   height: 1.3,
                                 ),
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(10),
@@ -555,12 +441,12 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                                 'Post Now',
                                 style: TextStyle(
                                   color: AppColors.brown,
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(width: 4),
-                              Icon(Icons.chevron_right, size: 16, color: AppColors.brown),
+                              const SizedBox(width: 2),
+                              Icon(Icons.chevron_right, size: 14, color: AppColors.brown),
                             ],
                           ),
                         ),
@@ -690,7 +576,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
 
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 160,
+                height: 175,
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator(color: AppColors.terracotta))
                     : _topArtisans.isNotEmpty
@@ -723,37 +609,6 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
   }
 
   // ── Helper Widgets ──
-
-  Widget _heroFeatureTag(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Colors.white.withValues(alpha: 0.85), size: 14),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.85),
-            fontSize: 10,
-            height: 1.2,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _dot(bool active) {
-    return Container(
-      width: active ? 8 : 6,
-      height: active ? 8 : 6,
-      decoration: BoxDecoration(
-        color: active ? AppColors.terracotta : Colors.white.withValues(alpha: 0.5),
-        shape: BoxShape.circle,
-      ),
-    );
-  }
 
   Widget _buildStatItem(IconData icon, String value, String label, Color color) {
     return Column(

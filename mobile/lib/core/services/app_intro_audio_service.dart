@@ -31,6 +31,17 @@ class AppIntroAudioService {
         debugPrint('[INTRO AUDIO] Position: $pos');
       });
 
+      await player.setAudioContext(AudioContext(
+        android: AudioContextAndroid(
+          audioFocus: AndroidAudioFocus.gain,
+          usageType: AndroidUsageType.media,
+        ),
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playback,
+          options: {AVAudioSessionOptions.duckOthers},
+        ),
+      ));
+
       await player.setReleaseMode(ReleaseMode.loop);
       debugPrint('[INTRO AUDIO] ReleaseMode set to loop');
 

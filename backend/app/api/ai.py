@@ -14,8 +14,9 @@ logging.basicConfig(level=logging.INFO)
 
 router = APIRouter(prefix="/api/ai", tags=["AI"])
 
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
-MAX_SIZE = 10 * 1024 * 1024  # 10MB
+ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/jpg", "application/octet-stream"}
+MAX_SIZE = 15 * 1024 * 1024  # 15MB — phone cameras can produce large files
+MAX_PROCESS_DIM = 1500        # Max dimension for rembg processing
 
 _rem_bg_session = None
 
@@ -24,12 +25,14 @@ def get_remove_session():
     global _rem_bg_session
     if _rem_bg_session is None:
         from rembg import new_session
+        logger.info("[BG REMOVE] Initializing rembg u2net session...")
         _rem_bg_session = new_session("u2net")
-        logger.info("rembg model loaded successfully")
+        logger.info("[BG REMOVE] rembg model loaded successfully")
     return _rem_bg_session
 
 
 def fix_orientation(img: Image.Image) -> Image.Image:
+    """Fix EXIF rotation so camera photos are not displayed sideways."""
     try:
         exif = img._getexif()
         if exif is None:
@@ -53,31 +56,60 @@ def fix_orientation(img: Image.Image) -> Image.Image:
     return img
 
 
-def resize_if_large(img: Image.Image, max_dim: int = 1500) -> Image.Image:
+def resize_if_large(img: Image.Image, max_dim: int = MAX_PROCESS_DIM) -> Image.Image:
+    """Resize image proportionally if it exceeds max_dim. Preserves aspect ratio."""
     w, h = img.size
     if max(w, h) <= max_dim:
         return img
     ratio = max_dim / max(w, h)
     new_w = int(w * ratio)
     new_h = int(h * ratio)
-    logger.info(f"Resized from {w}x{h} to {new_w}x{new_h}")
+    logger.info(f"[BG REMOVE] Resized from {w}x{h} to {new_w}x{new_h} for processing")
     return img.resize((new_w, new_h), Image.LANCZOS)
 
 
-def remove_background(img_bytes: bytes) -> Image.Image:
+def pil_to_bytes(img: Image.Image, fmt: str = "PNG") -> bytes:
+    """Encode a PIL image to bytes."""
+    buf = io.BytesIO()
+    img.save(buf, format=fmt)
+    return buf.getvalue()
+
+
+def remove_background_from_pil(img: Image.Image) -> Image.Image:
+    """
+    Run rembg background removal on a PIL Image.
+    Returns RGBA PIL Image with background removed.
+    Input image is converted to RGB first to normalise format.
+    """
     t0 = time.time()
+    logger.info("[BG REMOVE] Processing started")
     session = get_remove_session()
-    output = remove(img_bytes, session=session)
-    result = Image.open(io.BytesIO(output)).convert("RGBA")
-    logger.info(f"Background removed in {time.time() - t0:.2f}s")
+
+    # Normalise to RGB before passing to rembg
+    if img.mode not in ("RGB", "RGBA"):
+        img = img.convert("RGB")
+
+    # Encode to PNG bytes for rembg (more reliable than JPEG for transparency)
+    img_bytes = pil_to_bytes(img, fmt="PNG")
+    logger.info(f"[BG REMOVE] Image bytes to rembg: {len(img_bytes)}")
+
+    output_bytes = remove(img_bytes, session=session)
+    logger.info(f"[BG REMOVE] Output bytes from rembg: {len(output_bytes)}")
+
+    if not output_bytes:
+        raise ValueError("[BG REMOVE ERROR] rembg returned empty output")
+
+    result = Image.open(io.BytesIO(output_bytes)).convert("RGBA")
+    logger.info(f"[BG REMOVE] Output mode: {result.mode}, size: {result.size}")
+    logger.info(f"[BG REMOVE] Processing completed in {time.time() - t0:.2f}s")
     return result
 
 
-def place_on_background(fg: Image.Image) -> Image.Image:
-    bg_color = (255, 255, 255)
-    background = Image.new("RGBA", fg.size, bg_color + (255,))
-    background.paste(fg, mask=fg.split()[3])
-    return background.convert("RGB")
+def place_on_white(fg: Image.Image) -> Image.Image:
+    """Composite RGBA image onto a white background, returning RGB."""
+    bg = Image.new("RGBA", fg.size, (255, 255, 255, 255))
+    bg.paste(fg, mask=fg.split()[3])
+    return bg.convert("RGB")
 
 
 def correct_lighting(img: Image.Image) -> Image.Image:
@@ -124,71 +156,174 @@ def smart_crop(img: Image.Image, padding_pct: float = 0.08) -> Image.Image:
 
 @router.post("/enhance-image")
 async def enhance_image(file: UploadFile = File(...)):
+    """
+    POST /api/ai/enhance-image
+    Accepts a multipart image upload (field name: 'file').
+    Returns JSON with:
+      - success: bool
+      - original_image: data URI of original (JPEG)
+      - enhanced_image: data URI of enhanced (JPEG, white bg)
+      - transparent_image: data URI of background-removed PNG (RGBA)
+      - processing_steps: list of completed steps
+    """
     total_start = time.time()
-    logger.info(f"=== Enhancement request started ===")
-    logger.info(f"File: {file.filename}, Type: {file.content_type}")
+    logger.info("[BG REMOVE] Request received")
+    logger.info(f"[BG REMOVE] File: {file.filename!r}, Content-Type: {file.content_type!r}")
 
-    if file.content_type not in ALLOWED_TYPES:
-        logger.error(f"Invalid file type: {file.content_type}")
-        raise HTTPException(status_code=400, detail="Only JPEG, PNG, WebP images are allowed.")
+    # Accept 'application/octet-stream' as well as standard image MIME types.
+    # Some Android camera integrations send the wrong content-type.
+    content_type = (file.content_type or "").lower()
+    if content_type and content_type not in ALLOWED_TYPES:
+        # Try to detect by filename extension before rejecting
+        filename = (file.filename or "").lower()
+        if not any(filename.endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".webp")):
+            logger.error(f"[BG REMOVE ERROR] Invalid file type: {content_type!r}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported image type: {content_type}. Use JPEG, PNG or WebP."
+            )
 
     contents = await file.read()
-    logger.info(f"File size: {len(contents) / 1024:.1f} KB")
+    logger.info(f"[BG REMOVE] Image bytes received: {len(contents)}")
+
+    if len(contents) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     if len(contents) > MAX_SIZE:
-        logger.error("File too large")
-        raise HTTPException(status_code=400, detail="Image too large. Max 10MB.")
+        raise HTTPException(status_code=400, detail="Image too large. Max 15MB.")
+
+    # --- Open & validate image ---
+    try:
+        img = Image.open(io.BytesIO(contents))
+        logger.info(f"[BG REMOVE] Image format: {img.format}, size: {img.size[0]}x{img.size[1]}, mode: {img.mode}")
+    except Exception as e:
+        logger.error(f"[BG REMOVE ERROR] Cannot open image: {e}")
+        raise HTTPException(status_code=400, detail="Invalid or corrupt image file.")
+
+    # --- Fix EXIF orientation & resize large camera photos ---
+    img = fix_orientation(img)
+    img = resize_if_large(img)
+
+    # Store original bytes for the response (encode from PIL after orientation fix)
+    original_buf = io.BytesIO()
+    img.convert("RGB").save(original_buf, format="JPEG", quality=88)
+    original_b64 = base64.b64encode(original_buf.getvalue()).decode("utf-8")
+
+    steps = []
+    bg_removed_rgba: Image.Image | None = None
+
+    # --- Background removal ---
+    try:
+        bg_removed_rgba = remove_background_from_pil(img)
+        steps.append("Background cleaned")
+        # Validate output
+        if bg_removed_rgba.mode != "RGBA":
+            bg_removed_rgba = bg_removed_rgba.convert("RGBA")
+        alpha = bg_removed_rgba.split()[3]
+        extrema = alpha.getextrema()
+        logger.info(f"[BG REMOVE] Alpha channel range: {extrema}")
+        if extrema[0] == extrema[1] == 0:
+            logger.warning("[BG REMOVE] Warning: alpha channel is all-zero (fully transparent)")
+    except Exception as e:
+        logger.error(f"[BG REMOVE ERROR] Background removal failed: {e}", exc_info=True)
+        # Continue without background removal rather than crashing the whole request
+        bg_removed_rgba = None
+
+    # --- Composite onto white for the "enhanced" JPEG ---
+    if bg_removed_rgba is not None:
+        img_enhanced = place_on_white(bg_removed_rgba)
+    else:
+        img_enhanced = img.convert("RGB")
+
+    # --- Lighting correction ---
+    try:
+        img_enhanced = correct_lighting(img_enhanced)
+        steps.append("Lighting improved")
+        logger.info("[BG REMOVE] Lighting improved")
+    except Exception as e:
+        logger.error(f"[BG REMOVE ERROR] Lighting correction failed: {e}")
+
+    # --- Smart crop ---
+    try:
+        img_enhanced = smart_crop(img_enhanced)
+        steps.append("E-commerce crop")
+        logger.info("[BG REMOVE] E-commerce crop done")
+    except Exception as e:
+        logger.error(f"[BG REMOVE ERROR] Crop failed: {e}")
+
+    # --- Encode enhanced JPEG (white background) ---
+    enhanced_buf = io.BytesIO()
+    img_enhanced.save(enhanced_buf, format="JPEG", quality=90)
+    enhanced_b64 = base64.b64encode(enhanced_buf.getvalue()).decode("utf-8")
+    logger.info(f"[BG REMOVE] Enhanced JPEG bytes: {len(enhanced_buf.getvalue())}")
+
+    # --- Encode transparent PNG (RGBA, actual background removed) ---
+    transparent_b64 = None
+    if bg_removed_rgba is not None:
+        transparent_buf = io.BytesIO()
+        bg_removed_rgba.save(transparent_buf, format="PNG")
+        transparent_b64 = base64.b64encode(transparent_buf.getvalue()).decode("utf-8")
+        logger.info(f"[BG REMOVE] Transparent PNG bytes: {len(transparent_buf.getvalue())}")
+
+    total_time = time.time() - total_start
+    logger.info(f"[BG REMOVE] Response sent. Total time: {total_time:.2f}s")
+
+    return {
+        "success": True,
+        "original_image": f"data:image/jpeg;base64,{original_b64}",
+        "enhanced_image": f"data:image/jpeg;base64,{enhanced_b64}",
+        "transparent_image": (
+            f"data:image/png;base64,{transparent_b64}" if transparent_b64 else None
+        ),
+        "bg_removed": bg_removed_rgba is not None,
+        "processing_steps": steps,
+    }
+
+
+@router.post("/remove-background")
+async def remove_background_endpoint(file: UploadFile = File(...)):
+    """
+    POST /api/ai/remove-background
+    Lightweight endpoint: accepts image, returns transparent PNG bytes directly.
+    Content-Type of response: image/png
+    """
+    from fastapi.responses import Response
+
+    logger.info("[BG REMOVE] /remove-background request received")
+    logger.info(f"[BG REMOVE] File: {file.filename!r}, Type: {file.content_type!r}")
+
+    contents = await file.read()
+    logger.info(f"[BG REMOVE] Image bytes: {len(contents)}")
+
+    if len(contents) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     try:
         img = Image.open(io.BytesIO(contents))
-        logger.info(f"Image opened: {img.size[0]}x{img.size[1]}")
+        logger.info(f"[BG REMOVE] Image format: {img.format}, size: {img.size}, mode: {img.mode}")
     except Exception as e:
-        logger.error(f"Failed to open image: {e}")
+        logger.error(f"[BG REMOVE ERROR] Cannot open image: {e}")
         raise HTTPException(status_code=400, detail="Invalid image file.")
 
     img = fix_orientation(img)
     img = resize_if_large(img)
 
-    original_b64 = base64.b64encode(contents).decode("utf-8")
-    original_mime = file.content_type
-
-    steps = []
-
     try:
-        t0 = time.time()
-        fg = remove_background(contents)
-        img = place_on_background(fg)
-        steps.append("Background cleaned")
-        logger.info(f"Background cleaned in {time.time() - t0:.2f}s")
+        result_rgba = remove_background_from_pil(img)
     except Exception as e:
-        logger.error(f"Background removal failed: {e}")
+        logger.error(f"[BG REMOVE ERROR] rembg failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Background removal failed: {e}")
 
-    try:
-        t0 = time.time()
-        img = correct_lighting(img)
-        steps.append("Lighting improved")
-        logger.info(f"Lighting improved in {time.time() - t0:.2f}s")
-    except Exception as e:
-        logger.error(f"Lighting correction failed: {e}")
+    # Validate output
+    if result_rgba.mode != "RGBA":
+        result_rgba = result_rgba.convert("RGBA")
 
-    try:
-        t0 = time.time()
-        img = smart_crop(img)
-        steps.append("E-commerce crop")
-        logger.info(f"E-commerce crop done in {time.time() - t0:.2f}s")
-    except Exception as e:
-        logger.error(f"Crop failed: {e}")
+    out_buf = io.BytesIO()
+    result_rgba.save(out_buf, format="PNG")
+    output_bytes = out_buf.getvalue()
+    logger.info(f"[BG REMOVE] Output PNG bytes: {len(output_bytes)}, mode: {result_rgba.mode}")
 
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=90)
-    enhanced_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+    if not output_bytes:
+        raise HTTPException(status_code=500, detail="Background removal produced empty output.")
 
-    total_time = time.time() - total_start
-    logger.info(f"=== Enhancement complete in {total_time:.2f}s ===")
-
-    return {
-        "success": True,
-        "original_image": f"data:{original_mime};base64,{original_b64}",
-        "enhanced_image": f"data:image/jpeg;base64,{enhanced_b64}",
-        "processing_steps": steps,
-    }
+    return Response(content=output_bytes, media_type="image/png")
