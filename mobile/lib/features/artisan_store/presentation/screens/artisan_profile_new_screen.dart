@@ -869,7 +869,7 @@ class _ArtisanProfileNewScreenState extends State<ArtisanProfileNewScreen>
                         children: [
                           Text(
                             _isTranscribing
-                                ? 'Transcribing your voice with Groq AI...'
+                                ? 'Transcribing your voice with HastKala AI...'
                                 : _isRecording
                                     ? 'Recording (${_recordingSeconds}s) • Tap to Stop'
                                     : 'Speak Your Story (बोलकर बताएं)',

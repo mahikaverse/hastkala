@@ -1156,12 +1156,3 @@ class _StatItem {
   final String label;
   const _StatItem(this.icon, this.color, this.value, this.label);
 }
-
-class _ActionItem {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  const _ActionItem(this.icon, this.color, this.title, this.subtitle, this.onTap);
-}

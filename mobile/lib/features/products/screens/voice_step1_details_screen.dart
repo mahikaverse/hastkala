@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -13,6 +12,7 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/api_config.dart';
 import '../../../core/services/deepgram_stream_service.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/voice_mute_button.dart';
 import '../models/product_draft.dart';
 import '../../../../core/localization/language_provider.dart';
 import 'voice_step2_quantity_screen.dart';
@@ -61,32 +61,12 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   bool _showManualInput = false;
   final TextEditingController _manualInputCtrl = TextEditingController();
 
-  // DEV debug panel state
-  String? _debugTranscript;
-  Map<String, dynamic>? _debugExtracted;
-
   // TTS
   final TtsService _ttsService = TtsService();
   bool _isTtsSpeaking = false;
   bool _isTtsPaused = false;
   bool _ttsAutoPlayed = false;
   Timer? _ttsAutoPlayTimer;
-
-  static const _guidingQuestions = [
-    'Product ka naam kya hai? (e.g. bamboo ki tokri)',
-    'Kis material se bana hai? (mitti, lakdi, pital, silk, bamboo)',
-    'Kaunsi kala ya craft hai? (Blue Pottery, Chikankari, etc.)',
-    'Rang (color) aur size / weight kya hai?',
-  ];
-
-  static const _ttsGuidanceHindi = 'Apne product ke baare mein batayein. '
-      'Product ka naam kya hai, ye kis material se bana hai, '
-      'iska rang, size aur wazan kya hai. '
-      'Agar aapko craft ya banane ki technique pata hai to woh bhi batayein.';
-
-  static const _ttsGuidanceEnglish = 'Please tell us about your product. '
-      'Tell us its name, material, color, size and weight. '
-      'If you know the craft or making technique, you can tell us that too.';
 
   @override
   void initState() {
@@ -123,7 +103,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     }
 
     if (!_showExtractedForm && !_ttsAutoPlayed) {
-      _ttsAutoPlayTimer = Timer(const Duration(seconds: 1), _autoPlayGuidance);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _autoPlayGuidance());
     }
   }
 
@@ -281,12 +261,6 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         if (data['success'] == true && data['data'] is Map) {
           final extracted = data['data'] as Map<String, dynamic>;
           debugPrint('[Extract] Extracted data: $extracted');
-          if (mounted) {
-            setState(() {
-              _debugTranscript = text;
-              _debugExtracted = extracted;
-            });
-          }
           _populateControllersFromServer(extracted);
           _saveTowardsDraft(text);
           if (mounted) {
@@ -360,8 +334,8 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             debugPrint('[AudioUpload] extracted=$extracted');
 
             if (!success) {
-              final errorMsg = data['error'] as String? ?? LanguageProvider.of(context).t('transcriptionFailed');
               if (mounted) {
+                final errorMsg = data['error'] as String? ?? LanguageProvider.of(context).t('transcriptionFailed');
                 setState(() {
                   _isExtracting = false;
                   _errorMessage = errorMsg;
@@ -377,12 +351,6 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             }
 
             if (extracted != null) {
-              if (mounted) {
-                setState(() {
-                  _debugTranscript = transcript;
-                  _debugExtracted = extracted;
-                });
-              }
               _populateControllersFromServer(extracted);
               _saveTowardsDraft(transcript);
               final hadData = _hasAnyData(extracted);
@@ -586,6 +554,13 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
           ],
         ),
         centerTitle: true,
+        actions: [
+          VoiceMuteButton(
+            color: AppColors.cream,
+            onReplay: _speakGuidance,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
@@ -1199,11 +1174,9 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
 
         const SizedBox(height: AppDimensions.lg),
 
-        // DEV DEBUG PANEL — only in debug mode
-        if (kDebugMode && (_debugTranscript != null || _debugExtracted != null))
-          _buildDebugPanel(),
-
         _buildFormField(lang.t('productTitle'), _productNameCtrl, Icons.shopping_bag_outlined, lang.t('hintProductTitle')),
+        const SizedBox(height: AppDimensions.md),
+        _buildFormField(lang.t('description'), _descriptionCtrl, Icons.description_outlined, lang.t('hintDescription'), maxLines: 2),
         const SizedBox(height: AppDimensions.md),
         _buildFormField(lang.t('category'), _categoryCtrl, Icons.category_outlined, lang.t('hintCategory')),
         const SizedBox(height: AppDimensions.md),
@@ -1220,8 +1193,6 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             Expanded(child: _buildFormField(lang.t('weight'), _weightCtrl, Icons.scale_outlined, lang.t('hintWeight'))),
           ],
         ),
-        const SizedBox(height: AppDimensions.md),
-        _buildFormField(lang.t('description'), _descriptionCtrl, Icons.description_outlined, lang.t('hintDescription')),
         const SizedBox(height: AppDimensions.xxl),
 
         SizedBox(
@@ -1344,47 +1315,13 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     );
   }
 
-  /// DEV-ONLY debug panel — visible only in debug builds
-  Widget _buildDebugPanel() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: AppDimensions.lg),
-      padding: const EdgeInsets.all(AppDimensions.md),
-      decoration: BoxDecoration(
-        color: Colors.black87,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '🛠 DEV DEBUG — Remove before production',
-            style: TextStyle(color: Colors.yellow, fontSize: 11, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          if (_debugTranscript != null) ...[
-            const Text('Transcript:', style: TextStyle(color: Colors.grey, fontSize: 10)),
-            Text(
-              _debugTranscript!,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-            ),
-            const SizedBox(height: 6),
-          ],
-          if (_debugExtracted != null) ...[
-            const Text('Extracted:', style: TextStyle(color: Colors.grey, fontSize: 10)),
-            ...(_debugExtracted!.entries
-                .where((e) => e.value != null && e.value.toString().isNotEmpty && e.value.toString() != 'null')
-                .map((e) => Text(
-                      '  ${e.key}: ${e.value}',
-                      style: const TextStyle(color: Colors.greenAccent, fontSize: 12),
-                    ))),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFormField(String label, TextEditingController controller, IconData icon, String hint) {
+  Widget _buildFormField(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+    String hint, {
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1398,6 +1335,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         const SizedBox(height: 6),
         TextField(
           controller: controller,
+          maxLines: maxLines,
           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
           decoration: InputDecoration(
             hintText: hint,

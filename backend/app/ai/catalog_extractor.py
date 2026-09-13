@@ -185,11 +185,11 @@ def _safe_parse_json(raw: str) -> Optional[dict]:
     return None
 
 
-def _call_ollama(prompt: str, timeout: float = 25.0) -> Optional[dict]:
-    """Primary LLM: Ollama (local qwen2.5:3b)."""
+def _call_ollama(prompt: str, timeout: float = 5.0) -> Optional[dict]:
+    """Fallback LLM: Ollama (local qwen2.5:3b)."""
     try:
         logger.info(f"Calling Ollama at {settings.OLLAMA_BASE_URL} (model={settings.OLLAMA_MODEL})...")
-        with httpx.Client(base_url=settings.OLLAMA_BASE_URL, timeout=httpx.Timeout(timeout, connect=3.0)) as client:
+        with httpx.Client(base_url=settings.OLLAMA_BASE_URL, timeout=httpx.Timeout(timeout, connect=1.5)) as client:
             resp = client.post(
                 "/api/generate",
                 json={
@@ -209,14 +209,14 @@ def _call_ollama(prompt: str, timeout: float = 25.0) -> Optional[dict]:
                     logger.info("Ollama extraction succeeded!")
                     return parsed
     except Exception as e:
-        logger.warning(f"Ollama extraction failed/timed-out: {e}. Falling back to Groq...")
+        logger.warning(f"Ollama extraction failed/timed-out: {e}")
     return None
 
 
 def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
-    """Fallback LLM: Groq API (groq/compound-mini or settings.GROQ_MODEL)."""
+    """Primary LLM: Groq API (ultra-fast cloud LPU)."""
     if not settings.GROQ_API_KEY:
-        logger.warning("Groq API key not configured, skipping Groq fallback.")
+        logger.warning("Groq API key not configured, skipping Groq.")
         return None
     try:
         import groq
@@ -225,7 +225,7 @@ def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
         model_to_use = settings.GROQ_MODEL
         if not model_to_use or model_to_use.startswith("groq/"):
             model_to_use = "qwen/qwen3.8-27b"
-        logger.info(f"Calling Groq fallback (model={model_to_use})...")
+        logger.info(f"Calling Groq (model={model_to_use})...")
         groq_client = groq.Groq(api_key=settings.GROQ_API_KEY, timeout=timeout)
         resp = groq_client.chat.completions.create(
             model=model_to_use,
@@ -236,20 +236,21 @@ def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
         raw_text = resp.choices[0].message.content or ""
         parsed = _safe_parse_json(raw_text)
         if parsed and isinstance(parsed, dict):
-            logger.info("Groq fallback extraction succeeded!")
+            logger.info("Groq extraction succeeded!")
             return parsed
     except Exception as e:
-        logger.warning(f"Groq fallback extraction failed: {e}")
+        logger.warning(f"Groq extraction failed: {e}")
     return None
 
 
 def extract_with_llm(prompt: str) -> Optional[dict]:
-    """Strictly use Ollama as primary, Groq as fallback."""
-    result = _call_ollama(prompt)
-    if result:
-        return result
+    """Fast extraction: Try Groq first for instant (<1s) response, fallback to Ollama."""
+    if settings.GROQ_API_KEY:
+        result = _call_groq(prompt)
+        if result:
+            return result
 
-    result = _call_groq(prompt)
+    result = _call_ollama(prompt)
     if result:
         return result
 

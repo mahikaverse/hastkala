@@ -8,6 +8,9 @@ class TtsService {
   factory TtsService() => _instance;
   TtsService._internal();
 
+  /// Global mute notifier: default is false (sound ON / unmuted).
+  static final ValueNotifier<bool> isMutedNotifier = ValueNotifier<bool>(false);
+
   final FlutterTts _tts = FlutterTts();
   TtsState _state = TtsState.idle;
   bool _isInitialized = false;
@@ -19,6 +22,26 @@ class TtsService {
   bool get isSpeaking => _state == TtsState.speaking;
   bool get isPaused => _state == TtsState.paused;
   bool get isIdle => _state == TtsState.idle;
+  bool get isMuted => isMutedNotifier.value;
+
+  void toggleMute() {
+    isMutedNotifier.value = !isMutedNotifier.value;
+    debugPrint('[TTS] Mute toggled: isMuted=${isMutedNotifier.value}');
+    if (isMutedNotifier.value) {
+      stop();
+    }
+  }
+
+  void mute() {
+    if (!isMutedNotifier.value) {
+      isMutedNotifier.value = true;
+      stop();
+    }
+  }
+
+  void unmute() {
+    isMutedNotifier.value = false;
+  }
 
   void Function()? onStateChanged;
 
@@ -73,6 +96,11 @@ class TtsService {
   }
 
   Future<void> speak(String text, {required String language}) async {
+    if (isMuted) {
+      debugPrint('[TTS] Muted, skipping speak');
+      return;
+    }
+
     if (text.trim().isEmpty) {
       debugPrint('[TTS] Empty text, skipping');
       return;

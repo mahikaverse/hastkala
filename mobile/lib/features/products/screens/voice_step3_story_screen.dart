@@ -12,6 +12,7 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/api_config.dart';
 import '../../../core/services/deepgram_stream_service.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/voice_mute_button.dart';
 import '../models/product_draft.dart';
 import '../../../../core/localization/language_provider.dart';
 
@@ -59,23 +60,6 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   bool _ttsAutoPlayed = false;
   Timer? _ttsAutoPlayTimer;
 
-  static const _guidingQuestions = [
-    'Is kala ya product ki kya kahani hai? (Origin story)',
-    'Aap kahan ke rehne wale hain? (City, State)',
-    'Yeh kala aapke parivar mein kitne saalon se chal rahi hai?',
-    'Is product ki kya khaas baat hai jo ise anokha banati hai?',
-  ];
-
-  static const _ttsGuidanceHindi = 'Apne craft ki kahani batayein. '
-      'Aapne ye kala kahan se seekhi, kisne sikhayi, '
-      'aap ise kitne samay se bana rahe hain, '
-      'aur is product ya craft se judi koi personal kahani batana chahte hain to batayein.';
-
-  static const _ttsGuidanceEnglish = 'Tell us the story of your craft. '
-      'Where did you learn this art, who taught you, '
-      'how long have you been making it, '
-      'and if you have any personal story related to this product or craft, please share it.';
-
   @override
   void initState() {
     super.initState();
@@ -105,7 +89,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     }
 
     if (!_showExtractedForm && !_ttsAutoPlayed) {
-      _ttsAutoPlayTimer = Timer(const Duration(seconds: 1), _autoPlayGuidance);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _autoPlayGuidance());
     }
   }
 
@@ -426,6 +410,13 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
           ],
         ),
         centerTitle: true,
+        actions: [
+          VoiceMuteButton(
+            color: AppColors.cream,
+            onReplay: _speakGuidance,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
@@ -585,7 +576,6 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
 
   Widget _buildGuidingQuestionsCard() {
     final lang = LanguageProvider.of(context);
-    final langCode = _selectedLocaleId.split('_').first;
 
     String mainLabel;
     IconData mainIcon;

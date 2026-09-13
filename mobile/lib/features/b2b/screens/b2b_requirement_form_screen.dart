@@ -352,7 +352,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                             ),
                           ),
                           Text(
-                            'Analyze with Groq & find artisans who can make this',
+                            'Analyze with HastKala AI & find artisans who can make this',
                             style: TextStyle(
                               fontSize: 11.5,
                               color: AppColors.brown.withValues(alpha: 0.65),

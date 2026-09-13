@@ -8,6 +8,8 @@ import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../../core/services/data_service.dart';
+import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/voice_mute_button.dart';
 import '../models/product_draft.dart';
 
 class ReadyToPublishScreen extends StatefulWidget {
@@ -21,6 +23,30 @@ class ReadyToPublishScreen extends StatefulWidget {
 
 class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
   bool _isPublishing = false;
+  final TtsService _ttsService = TtsService();
+
+  @override
+  void initState() {
+    super.initState();
+    _ttsService.initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _playGuidance();
+    });
+  }
+
+  void _playGuidance() {
+    if (!mounted) return;
+    final lang = LanguageProvider.of(context);
+    final langCode = lang.langCode;
+    final text = langCode == 'hi' ? lang.t('readyToPublishTtsGuidanceHi') : lang.t('readyToPublishTtsGuidanceEn');
+    _ttsService.speak(text, language: langCode);
+  }
+
+  @override
+  void dispose() {
+    _ttsService.stop();
+    super.dispose();
+  }
 
   Widget _buildImage() {
     final draft = widget.draft;
@@ -51,6 +77,7 @@ class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
 
   Future<void> _handlePublish() async {
     if (_isPublishing) return;
+    _ttsService.stop();
     setState(() => _isPublishing = true);
 
     try {
@@ -93,13 +120,23 @@ class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
         backgroundColor: AppColors.brown,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.cream),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            _ttsService.stop();
+            Navigator.of(context).pop();
+          },
         ),
         title: Text(
           lang.t('readyToPublish'),
           style: AppTextStyles.headlineMedium.copyWith(color: AppColors.cream),
         ),
         centerTitle: true,
+        actions: [
+          VoiceMuteButton(
+            color: AppColors.cream,
+            onReplay: _playGuidance,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

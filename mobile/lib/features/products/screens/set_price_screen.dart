@@ -7,6 +7,8 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/localization/language_provider.dart';
+import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/voice_mute_button.dart';
 import '../models/product_draft.dart';
 
 class SetPriceScreen extends StatefulWidget {
@@ -21,16 +23,30 @@ class SetPriceScreen extends StatefulWidget {
 class _SetPriceScreenState extends State<SetPriceScreen> {
   late final TextEditingController _priceController;
   final FocusNode _focusNode = FocusNode();
+  final TtsService _ttsService = TtsService();
 
   @override
   void initState() {
     super.initState();
     final initialPrice = widget.draft.expectedPrice ?? widget.draft.price ?? 700;
     _priceController = TextEditingController(text: '$initialPrice');
+    _ttsService.initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _playGuidance();
+    });
+  }
+
+  void _playGuidance() {
+    if (!mounted) return;
+    final lang = LanguageProvider.of(context);
+    final langCode = lang.langCode;
+    final text = langCode == 'hi' ? lang.t('setPriceTtsGuidanceHi') : lang.t('setPriceTtsGuidanceEn');
+    _ttsService.speak(text, language: langCode);
   }
 
   @override
   void dispose() {
+    _ttsService.stop();
     _priceController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -46,6 +62,7 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
       return;
     }
 
+    _ttsService.stop();
     widget.draft.expectedPrice = entered;
     widget.draft.price = entered;
 
@@ -149,6 +166,13 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
           style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream),
         ),
         centerTitle: true,
+        actions: [
+          VoiceMuteButton(
+            color: AppColors.cream,
+            onReplay: _playGuidance,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

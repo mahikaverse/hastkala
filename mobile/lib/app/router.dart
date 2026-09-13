@@ -52,11 +52,6 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/role_selection/presentation/role_selection_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/b2b/screens/b2b_shell_screen.dart';
-import '../features/b2b/screens/b2b_product_detail_screen.dart';
-import '../features/b2b/screens/b2b_enquiry_form_screen.dart';
-import '../features/b2b/screens/b2b_requirement_form_screen.dart';
-import '../features/b2b/screens/compare_screen.dart';
-import '../features/b2b/screens/b2b_orders_screen.dart';
 
 abstract final class AppRoutes {
   static const String splash = '/';

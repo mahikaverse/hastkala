@@ -1,6 +1,4 @@
 class CraftImageHelper {
-  static const String _defaultImage = 'assets/default-bg.png';
-
   static const List<String> _allCraftImages = [
     'assets/craft/craft_blue_pottery_vase.jpg',
     'assets/craft/craft_block_printed_textile.jpg',
@@ -40,6 +38,12 @@ class CraftImageHelper {
     'fabric': 'assets/craft/craft_handwoven_fabric.jpg',
     'cotton': 'assets/craft/craft_handwoven_fabric.jpg',
     'silk': 'assets/craft/craft_handwoven_fabric.jpg',
+    'saree': 'assets/craft/craft_handwoven_fabric.jpg',
+    'dupatta': 'assets/craft/craft_block_printed_textile.jpg',
+    'vase': 'assets/craft/craft_blue_pottery_vase.jpg',
+    'bowl': 'assets/craft/craft_terracotta_pot.jpg',
+    'planter': 'assets/craft/craft_terracotta_pot.jpg',
+    'lamp': 'assets/craft/craft_bamboo_basket.jpg',
     'brass': 'assets/craft/craft_brass_metal.jpg',
     'bronze': 'assets/craft/craft_brass_metal.jpg',
     'dhokra': 'assets/craft/craft_brass_metal.jpg',
@@ -87,19 +91,12 @@ class CraftImageHelper {
     String? category,
     String? name,
   }) {
-    final searchText = '${craftType ?? ''} ${category ?? ''}'.toLowerCase().trim();
+    final searchText = '${name ?? ''} ${craftType ?? ''} ${category ?? ''}'.toLowerCase().trim();
 
     if (searchText.isNotEmpty) {
       final bestMatch = _getBestMatch(searchText);
       if (bestMatch.isNotEmpty) {
-        final hashInput = productId.isNotEmpty ? productId : (name ?? '');
-        final index = _hashString(hashInput) % _allCraftImages.length;
-        final preferred = bestMatch;
-
-        if (_allCraftImages[index] != preferred) {
-          return _allCraftImages[index];
-        }
-        return _allCraftImages[(index + 1) % _allCraftImages.length];
+        return bestMatch;
       }
     }
 
@@ -108,14 +105,14 @@ class CraftImageHelper {
       return _allCraftImages[index];
     }
 
-    return _defaultImage;
+    return _allCraftImages[0];
   }
 
   static String getImageForCraft(String? craftType, String? category) {
     final searchText = '${craftType ?? ''} ${category ?? ''}'.toLowerCase().trim();
-    if (searchText.isEmpty) return _defaultImage;
+    if (searchText.isEmpty) return _allCraftImages[0];
 
     final bestMatch = _getBestMatch(searchText);
-    return bestMatch.isNotEmpty ? bestMatch : _defaultImage;
+    return bestMatch.isNotEmpty ? bestMatch : _allCraftImages[0];
   }
 }

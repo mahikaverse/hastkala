@@ -45,8 +45,8 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
       _service.getCategories(),
       _service.getCraftTypes(),
     ]);
-    _categories = results[0] as List<String>;
-    _craftTypes = results[1] as List<String>;
+    _categories = results[0];
+    _craftTypes = results[1];
     await _searchProducts();
   }
 
@@ -456,9 +456,9 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
               flex: 5,
               child: Container(
                 width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.cream,
-                  borderRadius: const BorderRadius.vertical(
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF7EFE2),
+                  borderRadius: BorderRadius.vertical(
                     top: Radius.circular(14),
                   ),
                 ),
@@ -466,31 +466,64 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(14),
                   ),
-                  child: product.imageUrls.isNotEmpty
-                      ? Image.network(
-                          product.imageUrls.first,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Image.asset(
-                            CraftImageHelper.getImageForProduct(
-                              productId: product.id,
-                              craftType: product.craftType,
-                              category: product.category,
-                              name: product.name,
-                            ),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          ),
-                        )
-                      : Image.asset(
-                          CraftImageHelper.getImageForProduct(
-                            productId: product.id,
-                            craftType: product.craftType,
-                            category: product.category,
-                            name: product.name,
-                          ),
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                        ),
+                  child: Builder(
+                    builder: (context) {
+                      final firstImage = product.imageUrls.isNotEmpty ? product.imageUrls.first.trim() : '';
+                      final hasNetworkImage = firstImage.isNotEmpty &&
+                          (firstImage.startsWith('http://') || firstImage.startsWith('https://'));
+                      final fallbackAsset = CraftImageHelper.getImageForProduct(
+                        productId: product.id,
+                        craftType: product.craftType,
+                        category: product.category,
+                        name: product.name,
+                      );
+
+                      return hasNetworkImage
+                          ? Image.network(
+                              firstImage,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: const Color(0xFFF7EFE2),
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.terracotta.withValues(alpha: 0.4),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (_, __, ___) => Image.asset(
+                                fallbackAsset,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: const Color(0xFFF7EFE2),
+                                  child: const Center(
+                                    child: Icon(Icons.palette_outlined, size: 32, color: AppColors.terracotta),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Image.asset(
+                              fallbackAsset,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: const Color(0xFFF7EFE2),
+                                child: const Center(
+                                  child: Icon(Icons.palette_outlined, size: 32, color: AppColors.terracotta),
+                                ),
+                              ),
+                            );
+                    },
+                  ),
                 ),
               ),
             ),

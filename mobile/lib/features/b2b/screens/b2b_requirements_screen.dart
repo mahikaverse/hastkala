@@ -120,7 +120,7 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Post what you need and our Groq AI will instantly match you with verified artisans.',
+                                  'Post what you need and our HastKala AI will instantly match you with verified artisans.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 13,

@@ -1,5 +1,30 @@
 [
   {
+    "id": "prod_1789330581006",
+    "name": "Plastic Bottle",
+    "price": 60.0,
+    "original_price": 60.0,
+    "category": "Other",
+    "craft": "",
+    "material": "Plastic",
+    "color": "",
+    "artisan_name": "Ramesh Kumar",
+    "artisan_id": "ap_1",
+    "store_id": "st_1",
+    "location": "Jaipur, Rajasthan",
+    "description": "This product is a bottle made from plastic. It is manufactured in a factory using a machine.",
+    "craft_story": "I am a thief, I have been doing this for 30 years.",
+    "making_time": "",
+    "tags": [
+      "Plastic",
+      "Handmade"
+    ],
+    "image_url": "https://acutpnwhubbmptbgtnih.supabase.co/storage/v1/object/public/products/prod_1789330581006.jpg",
+    "stock": 10,
+    "is_published": true,
+    "created_at": "2026-09-13T20:16:23Z"
+  },
+  {
     "id": "prod_1789239500019",
     "name": "Product",
     "price": 150.0,

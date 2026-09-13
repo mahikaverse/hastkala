@@ -115,43 +115,48 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
               }
             },
           ),
-          title: Row(
-            children: [
-              const Text(
-                'AI Artisan Matches',
-                style: TextStyle(
-                  color: AppColors.brown,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.terracotta, AppColors.mustardGold],
+          title: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'AI Artisan Matches',
+                  style: TextStyle(
+                    color: AppColors.brown,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                   ),
-                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.auto_awesome, color: Colors.white, size: 11),
-                    SizedBox(width: 3),
-                    Text(
-                      'GROQ AI',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.terracotta, AppColors.mustardGold],
                     ),
-                  ],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome, color: Colors.white, size: 11),
+                      SizedBox(width: 3),
+                      Text(
+                        'HASTKALA AI',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           actions: [
             IconButton(
@@ -244,7 +249,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
           ),
           const SizedBox(height: 22),
           const Text(
-            'Groq AI Analyzing Requirement...',
+            'HastKala AI is analysing requirement...',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -453,9 +458,9 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  result.modelUsed != null
-                      ? 'Model: ${result.modelUsed}'
-                      : 'Groq AI',
+                  result.modelUsed != null && !result.modelUsed!.toLowerCase().contains('groq')
+                      ? result.modelUsed!
+                      : 'HastKala AI Engine',
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -487,12 +492,14 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                   color: AppColors.oliveGreen,
                 ),
                 const SizedBox(width: 5),
-                Text(
-                  'Est. Production Time: ${result.estimatedProductionTime}',
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.oliveGreen,
+                Expanded(
+                  child: Text(
+                    'Est. Production Time: ${result.estimatedProductionTime}',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.oliveGreen,
+                    ),
                   ),
                 ),
               ],
@@ -635,7 +642,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
     final cleanLoc = _cleanLocation(m.location, m.state);
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -656,30 +663,30 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Row 1: Large photo + Identity + Match score ──
+          // ── Row 1: Profile photo + Identity + Match score ──
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Large profile image
+              // Profile image
               Container(
-                width: 110,
-                height: 110,
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: AppColors.terracotta.withValues(alpha: 0.25),
-                    width: 2.5,
+                    width: 2.2,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.terracotta.withValues(alpha: 0.12),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
                 child: CircleAvatar(
-                  radius: 53,
+                  radius: 42,
                   backgroundColor: AppColors.terracotta.withValues(alpha: 0.1),
                   backgroundImage: m.avatarUrl.isNotEmpty
                       ? NetworkImage(m.avatarUrl)
@@ -690,7 +697,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                               ? m.artisanName[0].toUpperCase()
                               : 'A',
                           style: const TextStyle(
-                            fontSize: 38,
+                            fontSize: 32,
                             fontWeight: FontWeight.bold,
                             color: AppColors.terracotta,
                           ),
@@ -699,14 +706,14 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                 ),
               ),
 
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
 
               // Identity info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Row(
                       children: [
                         Flexible(
@@ -715,7 +722,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 17,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: AppColors.brown,
                               height: 1.2,
@@ -723,33 +730,33 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                           ),
                         ),
                         if (m.isVerified) ...[
-                          const SizedBox(width: 5),
+                          const SizedBox(width: 4),
                           const Icon(
                             Icons.verified,
-                            size: 17,
+                            size: 16,
                             color: Colors.blue,
                           ),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
                     Text(
                       m.craftSpecialization,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: AppColors.terracotta,
                       ),
                     ),
                     if (cleanLoc.isNotEmpty) ...[
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
                           Icon(
                             Icons.location_on_outlined,
-                            size: 14,
+                            size: 13,
                             color: AppColors.brown.withValues(alpha: 0.5),
                           ),
                           const SizedBox(width: 3),
@@ -759,7 +766,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 12.5,
+                                fontSize: 12,
                                 color: AppColors.brown.withValues(alpha: 0.6),
                               ),
                             ),
@@ -776,10 +783,10 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
               // Match score badge
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: scoreColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: scoreColor.withValues(alpha: 0.3)),
                 ),
                 child: Column(
@@ -788,11 +795,11 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.bolt, color: scoreColor, size: 16),
+                        Icon(Icons.bolt, color: scoreColor, size: 15),
                         Text(
                           '${m.matchScore}%',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 17,
                             fontWeight: FontWeight.w800,
                             color: scoreColor,
                           ),
@@ -803,10 +810,10 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                     Text(
                       'AI MATCH',
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 8.5,
                         fontWeight: FontWeight.bold,
                         color: scoreColor,
-                        letterSpacing: 0.6,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ],
@@ -815,10 +822,13 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // ── Row 2: Exactly 3 metric pills ──
-          Row(
+          // ── Row 2: Metric pills (Wrap ensures 0 overflow on any mobile screen) ──
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (m.averageRating > 0)
                 _metricPill(
@@ -826,14 +836,12 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                   '${m.averageRating.toStringAsFixed(1)} (${m.totalReviews})',
                   AppColors.mustardGold,
                 ),
-              if (m.averageRating > 0) const SizedBox(width: 8),
               if (m.yearsOfExperience > 0)
                 _metricPill(
                   Icons.history_edu_outlined,
                   '${m.yearsOfExperience} yrs exp',
                   AppColors.brown,
                 ),
-              if (m.yearsOfExperience > 0) const SizedBox(width: 8),
               _metricPill(
                 Icons.check_circle_outline_rounded,
                 '${m.feasibility} Feasibility',
@@ -842,12 +850,12 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
             ],
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
           // ── Row 3: Why this matches ──
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
               color: const Color(0xFFFBF4EB),
               borderRadius: BorderRadius.circular(14),
@@ -862,7 +870,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                   children: [
                     Icon(
                       Icons.auto_awesome,
-                      size: 14,
+                      size: 13,
                       color: AppColors.terracotta,
                     ),
                     SizedBox(width: 6),
@@ -876,22 +884,22 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 Text(
                   m.matchReason,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: 12,
                     color: AppColors.brown.withValues(alpha: 0.8),
-                    height: 1.4,
+                    height: 1.38,
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // ── Row 4: Action buttons ──
           Row(
@@ -900,10 +908,13 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                 child: _enquiredArtisanIds.contains(m.artisanId)
                     ? ElevatedButton.icon(
                         onPressed: null,
-                        icon: const Icon(Icons.check_circle_outline, size: 15),
-                        label: const Text(
-                          'Enquiry Sent',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        icon: const Icon(Icons.check_circle_outline, size: 14),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Enquiry Sent',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.oliveGreen.withValues(alpha: 0.15),
@@ -911,7 +922,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                           disabledBackgroundColor: AppColors.oliveGreen.withValues(alpha: 0.15),
                           disabledForegroundColor: AppColors.oliveGreen,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -926,7 +937,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                                 artisanId: m.artisanId,
                                 artisanName: m.artisanName,
                                 requirementId: widget.requirement.id.isNotEmpty
-                                    ? widget.requirement.id
+                                     ? widget.requirement.id
                                     : null,
                                 requirement: widget.requirement,
                               ),
@@ -936,23 +947,26 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                             _loadSentEnquiries();
                           }
                         },
-                        icon: const Icon(Icons.send_outlined, size: 15),
-                        label: const Text(
-                          'Send Enquiry',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        icon: const Icon(Icons.send_outlined, size: 14),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Send Enquiry',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.terracotta,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                       ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
@@ -965,17 +979,20 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.person_outline_rounded, size: 15),
-                  label: const Text(
-                    'View Profile',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  icon: const Icon(Icons.person_outline_rounded, size: 14),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'View Profile',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.brown,
                     side: BorderSide(
                       color: AppColors.brown.withValues(alpha: 0.25),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -991,7 +1008,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
 
   Widget _metricPill(IconData icon, String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
@@ -999,12 +1016,12 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
+          Icon(icon, size: 12.5, color: color),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11.5,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: color,
             ),

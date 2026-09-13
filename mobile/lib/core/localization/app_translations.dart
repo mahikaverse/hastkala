@@ -76,10 +76,14 @@ class AppTranslations {
       'processingImage': 'Processing Image...',
       'aiEnhancingPhoto': 'AI is enhancing your photo',
       'takePhoto': 'Take a Photo',
+      'cameraTtsGuidanceHi': 'Apne kala ki tasveer lein. Ruler scale se height adjust karein aur photo click karein.',
+      'cameraTtsGuidanceEn': 'Take a photo of your craft. Adjust height using the ruler scale and click capture.',
 
       // ─── AI IMAGE STUDIO ─────────────────────────────────────
       'aiImageStudio': 'AI Image Studio',
       'makeProductReady': 'Make your product ready for the market',
+      'enhancerTtsGuidanceHi': 'Hum aapki photo ko AI se behtar bana rahe hain. Aap original ya enhanced dono mein se ek image chun sakte hain.',
+      'enhancerTtsGuidanceEn': 'We are enhancing your photo with AI. You can choose between the original or enhanced photo.',
       'analyzingPhoto': 'Analyzing your photo...',
       'cleaningBackground': 'Cleaning the background...',
       'improvingLighting': 'Improving the lighting...',
@@ -264,10 +268,14 @@ class AppTranslations {
       'checkPrice': 'Check Price',
       'invalidPrice': 'Please enter a valid price',
       'traditionalCraft': 'Traditional Craft',
+      'setPriceTtsGuidanceHi': 'Apne product ka daam darj karein. Check AI Price par click karke market ke hisaab se sahi keemat jaanein.',
+      'setPriceTtsGuidanceEn': 'Enter your expected product price. Tap Check AI Price to get fair market guidance.',
 
       // ─── AI PRICE ASSISTANT ──────────────────────────────────
       'aiPriceAssistant': 'AI Price Assistant',
       'letsCheckMarket': "Let's check the market",
+      'priceAssistantTtsGuidanceHi': 'HastKala AI ne aapke product ke liye recommended price calculate kiya hai. Isse verify karke apna final price chun sakte hain.',
+      'priceAssistantTtsGuidanceEn': 'HastKala AI has suggested a fair market price for your craft. Review and choose your final price.',
       'researchingListings': 'Researching comparable handcrafted listings in India...',
       'suggestedPrice': 'Suggested price',
       'aiRecommendation': 'AI recommendation',
@@ -284,6 +292,10 @@ class AppTranslations {
       'keepPrice': 'Keep ₹',
       'enterDifferentPrice': 'Enter Different Price',
       'enterYourPrice': 'Enter Your Price',
+      'enterYourPriceTitle': 'Enter Your Price',
+      'enterCustomPrice': 'Enter custom price in ₹',
+      'useCustomPrice': 'Use Custom Price',
+      'customPriceUpdated': 'Custom price updated!',
       'youDecidePrice': 'You decide the final selling price for your craft.',
       'confirmPrice': 'Confirm Price',
       'aiSuggestionDefault': 'AI suggested price based on similar handmade crafts and your expected price.',
@@ -291,6 +303,8 @@ class AppTranslations {
 
       // ─── READY TO PUBLISH ────────────────────────────────────
       'readyToPublish': 'Ready to Publish',
+      'readyToPublishTtsGuidanceHi': 'Aapka product live hone ke liye taiyar hai. Details check karein aur Publish button dabayein.',
+      'readyToPublishTtsGuidanceEn': 'Your product is ready to publish. Review details and tap Publish.',
       'checklist': 'Checklist',
       'productDetails': 'Product details',
       'enhancedPhoto': 'Enhanced photo',
@@ -545,10 +559,14 @@ class AppTranslations {
       'processingImage': 'फ़ोटो प्रोसेस हो रही है...',
       'aiEnhancingPhoto': 'AI आपकी फ़ोटो सुंदर बना रहा है',
       'takePhoto': 'फ़ोटो लो',
+      'cameraTtsGuidanceHi': 'अपने कला की तस्वीर लें। रूलर स्केल से ऊँचाई सेट करें और फोटो खींचें।',
+      'cameraTtsGuidanceEn': 'Take a photo of your craft. Adjust height using the ruler scale and click capture.',
 
       // ─── AI IMAGE STUDIO ─────────────────────────────────────
       'aiImageStudio': 'AI फ़ोटो स्टूडियो',
       'makeProductReady': 'अपने प्रोडक्ट को बाज़ार के लिए तैयार करो',
+      'enhancerTtsGuidanceHi': 'हम आपकी फोटो को AI से बेहतर बना रहे हैं। आप ओरिजिनल या एन्हांस्ड दोनों में से एक फोटो चुन सकते हैं।',
+      'enhancerTtsGuidanceEn': 'We are enhancing your photo with AI. You can choose between the original or enhanced photo.',
       'analyzingPhoto': 'फ़ोटो देख रहे हैं...',
       'cleaningBackground': 'बैकग्राउंड साफ़ हो रहा है...',
       'improvingLighting': 'रोशनी सुधार रहे हैं...',
@@ -733,10 +751,14 @@ class AppTranslations {
       'checkPrice': 'कीमत चेक करो',
       'invalidPrice': 'कृपया सही कीमत डालो',
       'traditionalCraft': 'पारंपरिक कला',
+      'setPriceTtsGuidanceHi': 'अपने प्रोडक्ट का दाम दर्ज करें। Check AI Price पर क्लिक करके बाज़ार के हिसाब से सही कीमत जानें।',
+      'setPriceTtsGuidanceEn': 'Enter your expected product price. Tap Check AI Price to get fair market guidance.',
 
       // ─── AI PRICE ASSISTANT ──────────────────────────────────
       'aiPriceAssistant': 'AI कीमत सहायक',
       'letsCheckMarket': 'चलो बाज़ार देखते हैं',
+      'priceAssistantTtsGuidanceHi': 'HastKala AI ने आपके प्रोडक्ट के लिए सही कीमत सुझाई है। इसे देखकर अपनी अंतिम कीमत चुनें।',
+      'priceAssistantTtsGuidanceEn': 'HastKala AI has suggested a fair market price for your craft. Review and choose your final price.',
       'researchingListings': 'भारत में मिलते-जुलते हैंडमेड प्रोडक्ट्स खोज रहे हैं...',
       'suggestedPrice': 'सुझाई गई कीमत',
       'aiRecommendation': 'AI सिफारिश',
@@ -760,6 +782,8 @@ class AppTranslations {
 
       // ─── READY TO PUBLISH ────────────────────────────────────
       'readyToPublish': 'प्रकाशन के लिए तैयार',
+      'readyToPublishTtsGuidanceHi': 'आपका प्रोडक्ट लाइव होने के लिए तैयार है। डीटेल्स चेक करें और पब्लिश बटन दबाएं।',
+      'readyToPublishTtsGuidanceEn': 'Your product is ready to publish. Review details and tap Publish.',
       'checklist': 'चेकलिस्ट',
       'productDetails': 'प्रोडक्ट डीटेल्स',
       'enhancedPhoto': 'सुंदर फ़ोटो',

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/localization/language_provider.dart';
 
 import '../../../app/router.dart';
 import '../../../core/localization/language_provider.dart';
@@ -27,7 +26,6 @@ class _ArtisanAddProductScreenState extends State<ArtisanAddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -185,12 +183,31 @@ class _ArtisanAddProductScreenState extends State<ArtisanAddProductScreen> {
 
   void _openCamera() async {
     final result = await Navigator.pushNamed(context, AppRoutes.customCamera);
-    if (result != null && result is String) {
-      _navigateToImageStudio(result);
+    if (result != null) {
+      if (result is Map<String, dynamic>) {
+        final String? imagePath = result['imagePath'] as String?;
+        final double? height = result['heightValue'] is num
+            ? (result['heightValue'] as num).toDouble()
+            : null;
+        final String? heightStr = result['height'] as String?;
+        if (imagePath != null) {
+          _navigateToImageStudio(
+            imagePath,
+            detectedHeight: height,
+            heightStr: heightStr,
+          );
+        }
+      } else if (result is String) {
+        _navigateToImageStudio(result);
+      }
     }
   }
 
-  void _navigateToImageStudio(String imagePath) async {
+  void _navigateToImageStudio(
+    String imagePath, {
+    double? detectedHeight,
+    String? heightStr,
+  }) async {
     if (!mounted) return;
 
     final lang = LanguageProvider.of(context);
@@ -212,9 +229,15 @@ class _ArtisanAddProductScreenState extends State<ArtisanAddProductScreen> {
       final bool useEnhanced = result['useEnhanced'] == true;
 
       if (returnedPath != null) {
+        final String? finalSize = heightStr ??
+            (detectedHeight != null
+                ? '${detectedHeight.toStringAsFixed(1)} cm'
+                : null);
+
         final draft = ProductDraft(
           imagePath: returnedPath,
           useEnhanced: useEnhanced,
+          size: finalSize,
         );
 
         setState(() {

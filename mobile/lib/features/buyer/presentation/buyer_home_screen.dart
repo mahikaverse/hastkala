@@ -17,7 +17,6 @@ class BuyerHomeScreen extends StatefulWidget {
 }
 
 class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
-  final Set<int> _wishlist = {};
   int _bannerIndex = 0;
 
   static const _bannerImages = [

@@ -112,18 +112,24 @@ def fetch_all_artisans() -> List[Dict[str, Any]]:
 
 
 def _clean_json_str(text: str) -> str:
-    """Extract JSON object from markdown blocks or raw text."""
+    """Extract JSON object from markdown blocks or raw text and clean common syntax issues."""
     text = text.strip()
+    if "```" in text:
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.MULTILINE)
+        text = re.sub(r"```$", "", text, flags=re.MULTILINE)
+        text = text.strip()
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if match:
-        return match.group(0)
+        text = match.group(0)
+    # Remove trailing commas before } or ]
+    text = re.sub(r",\s*([\]}])", r"\1", text)
     return text
 
 
 def _local_fallback_match(
     req: B2BRequirementMatchRequest, artisans: List[Dict[str, Any]]
 ) -> B2BMatchResponse:
-    """Deterministic, keyword-based artisan matcher used when Groq is unavailable."""
+    """Intelligent multi-factor artisan matcher with differentiated, realistic scores."""
     keywords = [
         (req.title or "").lower(),
         (req.category or "").lower(),
@@ -135,81 +141,126 @@ def _local_fallback_match(
 
     ranked: List[B2BMatchedArtisan] = []
 
-    for a in artisans:
-        score = 45  # base score
-        reasons = []
-        tags = []
+    # Semantic craft keyword groups
+    craft_groups = {
+        "textile": ["silk", "handloom", "textile", "saree", "dupatta", "weave", "cotton", "khadi", "kurta", "scarf", "apparel", "dress", "chanderi", "bandhani", "zari", "block print", "fabric", "linen"],
+        "pottery": ["pottery", "ceramic", "terracotta", "clay", "cup", "kullad", "plate", "vase", "diya", "bowl", "planter", "pot", "bottle", "earthen", "mud", "jug", "glass"],
+        "block_print": ["block", "print", "fabric", "pattern", "bag", "stamps", "bedsheet", "curtain", "dyes"],
+        "bamboo": ["bamboo", "cane", "basket", "lamp", "grass", "eco", "straw", "jute", "mat", "coaster", "tray"],
+        "wood": ["wood", "wooden", "carving", "box", "sculpture", "furniture", "teak", "sheesham", "rosewood", "panel", "frame"],
+        "metal": ["brass", "copper", "bronze", "metal", "dhokra", "pital", "loha", "iron", "bell metal", "utensil", "idol"],
+    }
 
+    scored_items = []
+
+    for a in artisans:
         spec = (a.get("craft_specialization") or "").lower()
         bio = (a.get("bio") or "").lower()
         loc = (a.get("location") or "").lower()
         state = (a.get("state") or "").lower()
         exp = int(a.get("years_of_experience") or 0)
         rating = float(a.get("average_rating") or 0.0)
+        verified = bool(a.get("is_verified") or False)
 
-        # Craft match
-        if any(w in spec for w in ["silk", "handloom", "textile", "saree", "dupatta", "weave", "cotton"]) and any(
-            w in all_text for w in ["silk", "handloom", "textile", "saree", "dupatta", "fabric", "cotton", "cloth", "dress"]
-        ):
-            score += 40
-            reasons.append(f"Specialist in {a.get('craft_specialization')}, well suited for fabric & weaving requirements.")
+        score = 44  # base score
+        reasons = []
+        tags = []
+
+        # 1. Craft / Category Alignment
+        matched_group = None
+        for group, words in craft_groups.items():
+            spec_matches = any(w in spec for w in words)
+            query_matches = any(w in all_text for w in words)
+            if spec_matches and query_matches:
+                matched_group = group
+                break
+
+        if matched_group == "textile":
+            score += 44
+            reasons.append(f"Mastery in {a.get('craft_specialization')}, ideal for fabric weaving and textile production.")
             tags.append("Handloom Expert")
-        elif any(w in spec for w in ["pottery", "ceramic", "terracotta", "clay", "blue pottery"]) and any(
-            w in all_text for w in ["pottery", "ceramic", "terracotta", "clay", "cup", "kullad", "plate", "vase", "diya"]
-        ):
-            score += 40
-            reasons.append(f"Mastery in {a.get('craft_specialization')} with established kiln and firing capabilities.")
+        elif matched_group == "pottery":
+            score += 46
+            reasons.append(f"Specialized in {a.get('craft_specialization')} with high-capacity kilns for custom pottery.")
             tags.append("Pottery Master")
-        elif any(w in spec for w in ["block", "print"]) and any(
-            w in all_text for w in ["block", "print", "fabric", "cotton", "pattern", "bag", "dupatta"]
-        ):
-            score += 38
-            reasons.append(f"Excels in authentic wooden block printing with natural and organic dyes.")
-            tags.append("Block Print Specialist")
-        elif any(w in spec for w in ["bamboo", "cane"]) and any(
-            w in all_text for w in ["bamboo", "cane", "basket", "lamp", "wood", "grass", "eco"]
-        ):
-            score += 40
-            reasons.append("Experienced in sustainable bamboo weaving and eco-friendly handicrafts.")
-            tags.append("Eco Bamboo Craftsman")
-        elif any(w in spec for w in ["wood", "carving"]) and any(
-            w in all_text for w in ["wood", "carving", "box", "sculpture", "furniture", "teak", "sheesham"]
-        ):
-            score += 40
-            reasons.append(f"Specializes in fine woodcraft and custom hand-carved articles.")
+        elif matched_group == "block_print":
+            score += 43
+            reasons.append("Excels in traditional hand-block printing using organic dyes and teakwood blocks.")
+            tags.append("Block Printing")
+        elif matched_group == "bamboo":
+            score += 44
+            reasons.append("Experienced in sustainable bamboo & cane joinery, perfect for eco-friendly craft goods.")
+            tags.append("Eco Bamboo")
+        elif matched_group == "wood":
+            score += 45
+            reasons.append("Expert woodcarver specializing in solid wood carving and precision joinery.")
             tags.append("Master Woodcarver")
-        elif spec and any(term in all_text for term in spec.split()):
-            score += 25
-            reasons.append(f"Skills in {a.get('craft_specialization')} align with this product.")
+        elif matched_group == "metal":
+            score += 44
+            reasons.append("Skilled in lost-wax casting, brass molding, and traditional metalcraft.")
+            tags.append("Metalcraft Artisan")
+        elif any(term in all_text for term in spec.split() if len(term) > 3):
+            score += 26
+            reasons.append(f"Workshop capabilities in {a.get('craft_specialization')} closely relate to this product.")
+            tags.append("Allied Craft")
+        else:
+            score += 12
+            reasons.append(f"Artisan specializing in {a.get('craft_specialization')} with versatile handcrafted batch capability.")
+            tags.append("Custom Batch")
 
-        # Location proximity
+        # 2. Material Match
+        req_mat = (req.material or "").lower()
+        if req_mat:
+            if req_mat in spec or req_mat in bio:
+                score += 10
+                reasons.append(f"Direct expertise working with {req.material}.")
+                tags.append(f"{req.material.title()} Specialist")
+
+        # 3. Location / Proximity
         req_loc = (req.delivery_location or "").lower()
-        if req_loc and (req_loc in loc or req_loc in state or loc in req_loc):
-            score += 10
-            reasons.append(f"Located near {a.get('location')}, offering reduced shipping lead times.")
-            tags.append("Regional Hub")
+        if req_loc and (req_loc in loc or req_loc in state or loc in req_loc or state in req_loc):
+            score += 8
+            reasons.append(f"Located in {a.get('location')}, offering reduced delivery transit times.")
+            tags.append("Nearby Hub")
 
-        # Experience & Rating
-        if exp >= 15:
+        # 4. Experience & Rating differentiation
+        score += min(8, exp // 3)
+        if rating >= 4.8:
             score += 6
-            tags.append(f"{exp}+ Yrs Experience")
-        if rating >= 4.7:
-            score += 5
-            tags.append("Top Rated 4.7★+")
+            tags.append(f"{rating}★ Top Rated")
+        elif rating >= 4.6:
+            score += 3
 
-        if a.get("is_verified"):
+        if verified:
+            score += 4
             tags.append("Verified Artisan")
 
-        # Cap score between 30 and 99
-        final_score = min(99, max(35, score))
+        final_score = min(98, max(40, score))
 
-        if not reasons:
-            reasons.append(f"Artisan with expertise in {a.get('craft_specialization')} available for custom batch production.")
+        scored_items.append({
+            "artisan": a,
+            "raw_score": final_score,
+            "reasons": reasons,
+            "tags": tags,
+            "exp": exp,
+            "rating": rating,
+        })
 
-        if not tags:
-            tags = ["Custom Orders", "Authentic Craft"]
+    # Sort descending
+    scored_items.sort(key=lambda x: (x["raw_score"], x["rating"], x["exp"]), reverse=True)
 
-        feasibility = "Very High" if final_score >= 80 else ("High" if final_score >= 60 else "Moderate")
+    # Ensure no two artisans have the exact same score (guaranteed distinct percentages)
+    used_scores = set()
+    for idx, item in enumerate(scored_items):
+        target_score = item["raw_score"]
+        while target_score in used_scores or (idx > 0 and target_score >= scored_items[idx - 1].get("final_score", 999)):
+            target_score -= 3
+        target_score = max(38, min(98, target_score))
+        used_scores.add(target_score)
+        item["final_score"] = target_score
+
+        feasibility = "Very High" if target_score >= 85 else ("High" if target_score >= 70 else "Moderate")
+        a = item["artisan"]
 
         ranked.append(
             B2BMatchedArtisan(
@@ -219,25 +270,22 @@ def _local_fallback_match(
                 craft_specialization=str(a.get("craft_specialization") or "Traditional Crafts"),
                 location=str(a.get("location") or ""),
                 state=str(a.get("state") or ""),
-                years_of_experience=exp,
-                average_rating=rating,
+                years_of_experience=item["exp"],
+                average_rating=item["rating"],
                 total_reviews=int(a.get("total_reviews") or 0),
                 is_verified=bool(a.get("is_verified") or False),
-                match_score=final_score,
-                match_reason=" ".join(reasons),
+                match_score=item["final_score"],
+                match_reason=" ".join(item["reasons"]),
                 feasibility=feasibility,
-                highlight_tags=tags[:3],
+                highlight_tags=item["tags"][:3],
             )
         )
 
-    # Sort descending by match score
-    ranked.sort(key=lambda x: x.match_score, reverse=True)
-
     summary = f"Requirement for {req.quantity or 'bulk'} units of '{req.title}'"
     analysis = (
-        f"Analyzed requirement '{req.title}' (quantity: {req.quantity or 'flexible'}, "
-        f"deadline: {req.deadline or 'standard'}). Matched with {len(ranked)} active Indian handicraft artisans "
-        f"specializing in matching craft traditions."
+        f"HastKala AI analyzed your requirement for '{req.title}' (quantity: {req.quantity or 'flexible'}, "
+        f"deadline: {req.deadline or 'standard'}). Evaluated and ranked {len(ranked)} registered Indian artisans on craft specialization, "
+        f"production scale, and regional fulfillment."
     )
 
     return B2BMatchResponse(
@@ -248,19 +296,19 @@ def _local_fallback_match(
         estimated_production_time="2 to 4 weeks depending on batch volume",
         matches=ranked,
         total_matches=len(ranked),
-        model_used="local-rule-engine",
+        model_used="HastKala AI Engine",
     )
 
 
 def match_requirement_with_groq(req: B2BRequirementMatchRequest) -> B2BMatchResponse:
-    """Main AI Matcher: Uses Groq LLM to intelligently analyze the buyer's requirement
+    """Main AI Matcher: Uses HastKala AI (via cloud LLM) to intelligently analyze
 
-    (title, quantity, deadline, budget, customization, location) and match with registered artisans.
+    the buyer's requirement and match with registered artisans on a real basis.
     """
     artisans = fetch_all_artisans()
 
     if not settings.GROQ_API_KEY:
-        logger.warning("GROQ_API_KEY not configured. Falling back to rule-based matcher.")
+        logger.warning("GROQ_API_KEY not configured. Falling back to HastKala AI rule engine.")
         return _local_fallback_match(req, artisans)
 
     try:
@@ -290,8 +338,8 @@ def match_requirement_with_groq(req: B2BRequirementMatchRequest) -> B2BMatchResp
         f"Category: {req.category or 'Not specified'}",
         f"Craft Type: {req.craft_type or 'Not specified'}",
         f"Material: {req.material or 'Not specified'}",
-        f"Quantity Needed (kitna chahiye): {req.quantity if req.quantity else 'Not specified'}",
-        f"Target Deadline (kab tak chahiye): {req.deadline or 'Flexible'}",
+        f"Quantity Needed: {req.quantity if req.quantity else 'Not specified'}",
+        f"Target Deadline: {req.deadline or 'Flexible'}",
         f"Budget Range: INR {req.budget_min or 0} - {req.budget_max or 'Open'} per piece",
         f"Delivery Location: {req.delivery_location or 'India'}",
         f"Customization Details: {req.customization or 'Standard handcrafted'}",
@@ -300,16 +348,18 @@ def match_requirement_with_groq(req: B2BRequirementMatchRequest) -> B2BMatchResp
     req_context = "\n".join(req_details)
 
     system_prompt = (
-        "You are an expert Indian Handicraft & B2B Sourcing Matchmaker for HastKala. "
-        "A business buyer has posted a custom handicraft requirement (kya chahiye, kitna chahiye, kab tak chahiye, budget). "
+        "You are HastKala AI, the proprietary intelligent Indian Handicraft & B2B Sourcing Matchmaker. "
+        "A business buyer has posted a custom handicraft requirement. "
         "Your job is to deeply analyze the requirement and evaluate every registered artisan in the database to determine: "
-        "1. Who can best fulfill this requirement ('yeh yeh artisan hai yeh kar sakte haii'). "
+        "1. Who can best fulfill this requirement. "
         "2. Match score (0 to 100) based on craft specialization match, materials, experience, capacity, and location. "
-        "3. Clear, compelling match reason in English (or natural Indian English) explaining specifically why this artisan can make this product and meet deadlines. "
+        "CRITICAL REQUIREMENT: Assign REALISTIC, DIVERSE, and DISTINCT match scores (e.g. 95%, 88%, 79%, 67%, 52%). "
+        "NEVER give the same percentage to multiple artisans. Every artisan must have a distinct, differentiated score reflecting their true degree of fit. "
+        "3. Clear, compelling match reason explaining specifically why this artisan can make this product and meet deadlines. "
         "4. Feasibility ('Very High', 'High', 'Moderate'). "
         "5. 2-3 short highlight tags for the buyer. "
         "6. Provide a 2-3 sentence overall requirement analysis and estimated production lead time. "
-        "Return ONLY a valid JSON object matching the required schema."
+        "Always identify yourself as 'HastKala AI'. Return ONLY valid JSON matching the schema."
     )
 
     user_prompt = f"""
@@ -332,33 +382,71 @@ OUTPUT FORMAT (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
       "match_score": 95,
       "match_reason": "Specific explanation of why this artisan matches (craft match, experience, scale, location)",
       "feasibility": "Very High",
-      "highlight_tags": ["Master Weaver", "Bulk Order Ready", "Varanasi Silk"]
+      "highlight_tags": ["Master Potter", "Bulk Order Ready", "Kiln Facility"]
     }}
   ]
 }}
-Rank the matches array strictly from highest match_score to lowest. Include all relevant artisans who have reasonable capability.
+Rank the matches array strictly from highest match_score to lowest. Ensure EVERY artisan has a DIFFERENT, unique match_score.
 """
 
-    candidate_models = ["groq/compound-mini", "openai/gpt-oss-20b", "openai/gpt-oss-120b"]
+    active_model = settings.GROQ_MODEL
+    if not active_model or active_model.startswith("groq/"):
+        active_model = "qwen/qwen3.8-27b"
+
+    candidate_models = [active_model]
+    for m in ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b", "groq/compound"]:
+        if m not in candidate_models:
+            candidate_models.append(m)
 
     for model_name in candidate_models:
         try:
-            logger.info(f"Querying Groq model '{model_name}' for B2B artisan matching...")
-            chat = client.chat.completions.create(
-                model=model_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                max_tokens=900,
-                temperature=0.2,
-                timeout=15.0,
-            )
+            logger.info(f"Querying cloud LLM '{model_name}' for B2B artisan matching...")
+            try:
+                chat = client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    response_format={"type": "json_object"},
+                    max_tokens=3000,
+                    temperature=0.2,
+                    timeout=25.0,
+                )
+            except Exception as jerr:
+                logger.info(f"Retrying '{model_name}' without response_format constraint: {jerr}")
+                chat = client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    max_tokens=3000,
+                    temperature=0.2,
+                    timeout=25.0,
+                )
+
             raw_content = chat.choices[0].message.content or ""
-            logger.info(f"Groq '{model_name}' responded ({len(raw_content)} chars)")
+            logger.info(f"HastKala AI engine '{model_name}' responded ({len(raw_content)} chars)")
 
             cleaned = _clean_json_str(raw_content)
-            data = json.loads(cleaned)
+            data = None
+            try:
+                data = json.loads(cleaned)
+            except Exception as parse_err:
+                logger.warning(f"Standard JSON parse failed ({parse_err}). Attempting repair...")
+                if "matches" in cleaned and not cleaned.rstrip().endswith("}"):
+                    repaired = cleaned.rstrip().rstrip(",")
+                    if not repaired.endswith("]"):
+                        repaired += "]}"
+                    else:
+                        repaired += "}"
+                    try:
+                        data = json.loads(repaired)
+                    except Exception:
+                        pass
+                if not data:
+                    raise parse_err
 
             if isinstance(data, dict) and "matches" in data:
                 raw_matches = data.get("matches", [])
@@ -367,6 +455,8 @@ Rank the matches array strictly from highest match_score to lowest. Include all 
                 # Build artisan lookup map
                 artisan_map = {str(a.get("id")): a for a in artisans}
                 artisan_name_map = {str(a.get("name")).strip().lower(): a for a in artisans}
+
+                used_scores = set()
 
                 for item in raw_matches:
                     aid = str(item.get("artisan_id", "")).strip()
@@ -378,16 +468,20 @@ Rank the matches array strictly from highest match_score to lowest. Include all 
                         continue
 
                     score = int(item.get("match_score", 50))
-                    # Clamp score
-                    score = min(100, max(1, score))
+                    score = min(99, max(5, score))
+
+                    # Ensure distinct percentages (no duplicates)
+                    while score in used_scores:
+                        score = max(5, score - 2)
+                    used_scores.add(score)
 
                     reason = item.get("match_reason") or f"Specializes in {orig.get('craft_specialization')}."
-                    feasibility = item.get("feasibility") or "High"
+                    feasibility = item.get("feasibility") or ("Very High" if score >= 85 else ("High" if score >= 70 else "Moderate"))
                     tags = item.get("highlight_tags") or []
                     if isinstance(tags, list):
                         tags = [str(t) for t in tags[:3]]
                     else:
-                        tags = ["Handcrafted", "Custom"]
+                        tags = ["Handcrafted", "Custom Orders"]
 
                     matched_artisans.append(
                         B2BMatchedArtisan(
@@ -414,7 +508,7 @@ Rank the matches array strictly from highest match_score to lowest. Include all 
                         success=True,
                         requirement_summary=data.get("requirement_summary") or f"Requirement for '{req.title}'",
                         ai_analysis=data.get("ai_analysis")
-                        or f"AI matched {len(matched_artisans)} artisans suited for this craft and deadline.",
+                        or f"HastKala AI matched {len(matched_artisans)} artisans suited for this craft and deadline.",
                         suggested_craft=data.get("suggested_craft")
                         or req.category
                         or req.craft_type
@@ -422,11 +516,11 @@ Rank the matches array strictly from highest match_score to lowest. Include all 
                         estimated_production_time=data.get("estimated_production_time") or "2-3 weeks",
                         matches=matched_artisans,
                         total_matches=len(matched_artisans),
-                        model_used=model_name,
+                        model_used="HastKala AI Engine",
                     )
         except Exception as e:
-            logger.warning(f"Groq match attempt with {model_name} failed: {e}")
+            logger.warning(f"HastKala AI match attempt with {model_name} failed: {e}")
             continue
 
-    logger.warning("All Groq models failed or timed out. Falling back to local matcher.")
+    logger.warning("All LLM models failed or timed out. Falling back to HastKala AI rule engine.")
     return _local_fallback_match(req, artisans)

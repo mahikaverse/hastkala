@@ -8,7 +8,10 @@ import 'package:http_parser/http_parser.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/services/api_config.dart';
+import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/voice_mute_button.dart';
 
 class AIImageStudioScreen extends StatefulWidget {
   const AIImageStudioScreen({super.key, this.imagePath});
@@ -31,7 +34,8 @@ class _AIImageStudioScreenState extends State<AIImageStudioScreen>
   bool _hasNavigatedBack = false;
   late AnimationController _scanController;
 
-  static String get _baseUrl => ApiConfig.baseUrl;
+  // Voice guidance TTS
+  final TtsService _ttsService = TtsService();
 
   final List<String> _processingSteps = [
     'Analyzing your photo...',
@@ -48,13 +52,26 @@ class _AIImageStudioScreenState extends State<AIImageStudioScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat();
+    _ttsService.initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _playGuidance();
+    });
     if (widget.imagePath != null) {
       _enhanceImage();
     }
   }
 
+  void _playGuidance() {
+    if (!mounted) return;
+    final lang = LanguageProvider.of(context);
+    final langCode = lang.langCode;
+    final text = langCode == 'hi' ? lang.t('enhancerTtsGuidanceHi') : lang.t('enhancerTtsGuidanceEn');
+    _ttsService.speak(text, language: langCode);
+  }
+
   @override
   void dispose() {
+    _ttsService.stop();
     _scanController.dispose();
     super.dispose();
   }
@@ -149,6 +166,7 @@ class _AIImageStudioScreenState extends State<AIImageStudioScreen>
   void _useEnhancedPhoto() {
     if (_hasNavigatedBack) return;
     _hasNavigatedBack = true;
+    _ttsService.stop();
     final imagePath = _showEnhanced && _enhancedBase64 != null
         ? _enhancedBase64!
         : widget.imagePath!;
@@ -158,6 +176,7 @@ class _AIImageStudioScreenState extends State<AIImageStudioScreen>
   void _keepOriginal() {
     if (_hasNavigatedBack) return;
     _hasNavigatedBack = true;
+    _ttsService.stop();
     Navigator.pop(context, {'useEnhanced': false, 'imagePath': widget.imagePath});
   }
 
@@ -168,6 +187,7 @@ class _AIImageStudioScreenState extends State<AIImageStudioScreen>
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop && !_hasNavigatedBack) {
           _hasNavigatedBack = true;
+          _ttsService.stop();
           Navigator.pop(context, null);
         }
       },
@@ -181,6 +201,7 @@ class _AIImageStudioScreenState extends State<AIImageStudioScreen>
             onPressed: () {
               if (!_hasNavigatedBack) {
                 _hasNavigatedBack = true;
+                _ttsService.stop();
                 Navigator.pop(context, null);
               }
             },
@@ -203,6 +224,13 @@ class _AIImageStudioScreenState extends State<AIImageStudioScreen>
               ),
             ],
           ),
+          actions: [
+            VoiceMuteButton(
+              color: AppColors.cream,
+              onReplay: _playGuidance,
+            ),
+            const SizedBox(width: 8),
+          ],
         ),
         body: Column(
           children: [

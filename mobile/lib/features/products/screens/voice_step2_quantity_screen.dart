@@ -12,6 +12,7 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/api_config.dart';
 import '../../../core/services/deepgram_stream_service.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/voice_mute_button.dart';
 import '../models/product_draft.dart';
 import '../../../../core/localization/language_provider.dart';
 import 'voice_step3_story_screen.dart';
@@ -91,7 +92,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
     }
 
     if (!_showExtractedForm && !_ttsAutoPlayed) {
-      _ttsAutoPlayTimer = Timer(const Duration(seconds: 1), _autoPlayGuidance);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _autoPlayGuidance());
     }
   }
 
@@ -419,6 +420,13 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
           ],
         ),
         centerTitle: true,
+        actions: [
+          VoiceMuteButton(
+            color: AppColors.cream,
+            onReplay: _speakGuidance,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
@@ -577,7 +585,6 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
   }
 
   Widget _buildGuidingQuestionsCard() {
-    final langCode = _selectedLocaleId.split('_').first;
     final lang = LanguageProvider.of(context);
 
     String mainLabel;

@@ -9,6 +9,8 @@ import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../../core/services/api_config.dart';
+import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/voice_mute_button.dart';
 import '../models/product_draft.dart';
 
 class AIPriceAssistantScreen extends StatefulWidget {
@@ -31,12 +33,31 @@ class _AIPriceAssistantScreenState extends State<AIPriceAssistantScreen> {
   int _comparablesFound = 0;
   String _reason = '';
   List<dynamic> _sources = [];
+  final TtsService _ttsService = TtsService();
 
   @override
   void initState() {
     super.initState();
     _expectedPrice = widget.draft.expectedPrice ?? widget.draft.price ?? 700;
+    _ttsService.initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _playGuidance();
+    });
     _fetchPriceSuggestion();
+  }
+
+  void _playGuidance() {
+    if (!mounted) return;
+    final lang = LanguageProvider.of(context);
+    final langCode = lang.langCode;
+    final text = langCode == 'hi' ? lang.t('priceAssistantTtsGuidanceHi') : lang.t('priceAssistantTtsGuidanceEn');
+    _ttsService.speak(text, language: langCode);
+  }
+
+  @override
+  void dispose() {
+    _ttsService.stop();
+    super.dispose();
   }
 
   Future<void> _fetchPriceSuggestion() async {
@@ -133,6 +154,7 @@ class _AIPriceAssistantScreenState extends State<AIPriceAssistantScreen> {
   }
 
   void _choosePriceAndProceed(int finalPrice) {
+    _ttsService.stop();
     widget.draft.price = finalPrice;
     Navigator.pushNamed(context, '/ready-to-publish', arguments: widget.draft);
   }
@@ -311,13 +333,23 @@ class _AIPriceAssistantScreenState extends State<AIPriceAssistantScreen> {
         foregroundColor: AppColors.cream,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            _ttsService.stop();
+            Navigator.pop(context);
+          },
         ),
         title: Text(
           lang.t('aiPriceAssistant'),
           style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream),
         ),
         centerTitle: true,
+        actions: [
+          VoiceMuteButton(
+            color: AppColors.cream,
+            onReplay: _playGuidance,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: _isLoading ? _buildLoadingView() : _buildPriceAnalysisView(),
