@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/helpers/craft_image_helper.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/marketplace_product.dart';
 import '../services/b2b_service.dart';
 import 'b2b_product_detail_screen.dart';
@@ -75,6 +76,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
       body: SafeArea(
@@ -98,7 +100,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                         controller: _searchController,
                         onSubmitted: (_) => _searchProducts(),
                         decoration: InputDecoration(
-                          hintText: 'Search products...',
+                          hintText: lang.t('b2bSearchProducts'),
                           hintStyle: TextStyle(
                             color: AppColors.brown.withValues(alpha: 0.4),
                             fontSize: 14,
@@ -164,7 +166,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                       children: [
                         // Category
                         Text(
-                          'Category',
+                          lang.t('b2bCategory'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -177,7 +179,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                           runSpacing: 6,
                           children: [
                             _buildFilterChip(
-                              'All',
+                              lang.t('b2bAll'),
                               _selectedCategory == null,
                               () => setState(() => _selectedCategory = null),
                             ),
@@ -192,7 +194,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
 
                         // Craft Type
                         Text(
-                          'Craft Type',
+                          lang.t('b2bCraftType'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -205,7 +207,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                           runSpacing: 6,
                           children: [
                             _buildFilterChip(
-                              'All',
+                              lang.t('b2bAll'),
                               _selectedCraftType == null,
                               () => setState(() => _selectedCraftType = null),
                             ),
@@ -220,7 +222,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
 
                         // Price range
                         Text(
-                          'Price Range',
+                          lang.t('b2bPriceRange'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -235,7 +237,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                                 controller: _minPriceController,
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
-                                  hintText: 'Min ₹',
+                                  hintText: lang.t('b2bMinPrice'),
                                   hintStyle: TextStyle(
                                     color: AppColors.brown.withValues(alpha: 0.4),
                                     fontSize: 13,
@@ -268,7 +270,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                                 controller: _maxPriceController,
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
-                                  hintText: 'Max ₹',
+                                  hintText: lang.t('b2bMaxPrice'),
                                   hintStyle: TextStyle(
                                     color: AppColors.brown.withValues(alpha: 0.4),
                                     fontSize: 13,
@@ -312,8 +314,8 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            child: const Text(
-                              'Apply Filters',
+                            child: Text(
+                              lang.t('b2bApplyFilters'),
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -330,7 +332,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
               child: Row(
                 children: [
                   Text(
-                    '${_products.length} products found',
+                    '${_products.length}${lang.t('b2bProductsFound')}',
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.brown.withValues(alpha: 0.6),
@@ -358,7 +360,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'No products found',
+                                lang.t('b2bNoProducts'),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -367,7 +369,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Try different filters or search terms',
+                                lang.t('b2bTryDifferent'),
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: AppColors.brown.withValues(alpha: 0.4),
@@ -432,6 +434,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
   }
 
   Widget _buildProductCard(MarketplaceProduct product) {
+    final lang = LanguageProvider.of(context);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -567,7 +570,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                           ),
                         ),
                         Text(
-                          ' /pc',
+                          lang.t('b2bPerPc'),
                           style: TextStyle(
                             fontSize: 10,
                             color: AppColors.brown.withValues(alpha: 0.5),
@@ -577,7 +580,7 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
                     ),
                     if (product.stockQuantity > 0)
                       Text(
-                        'MOQ: ${product.stockQuantity} pcs',
+                        '${lang.t('b2bMoq')}${product.stockQuantity}${lang.t('b2bPcs')}',
                         style: TextStyle(
                           fontSize: 10,
                           color: AppColors.brown.withValues(alpha: 0.5),

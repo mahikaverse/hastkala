@@ -4,6 +4,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/hastkala_bottom_nav.dart';
 
@@ -12,10 +13,11 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Profile', style: AppTextStyles.headlineSmall.copyWith(color: AppColors.cream)),
+        title: Text(lang.t('navProfile'), style: AppTextStyles.headlineSmall.copyWith(color: AppColors.cream)),
         backgroundColor: AppColors.brown,
         foregroundColor: AppColors.cream,
         leading: IconButton(
@@ -64,14 +66,15 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildMenu(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     final items = [
-      _MenuItem(Icons.shopping_bag_outlined, 'My Orders', AppRoutes.orderTracking),
-      _MenuItem(Icons.favorite_outline, 'Wishlist', null),
-      _MenuItem(Icons.location_on_outlined, 'Saved Addresses', null),
-      _MenuItem(Icons.payment_outlined, 'Payment Methods', null),
-      _MenuItem(Icons.help_outline, 'Help & Support', null),
-      _MenuItem(Icons.settings_outlined, 'Settings', null),
-      _MenuItem(Icons.info_outline, 'About HastKala', null),
+      _MenuItem(Icons.shopping_bag_outlined, lang.t('myOrders'), AppRoutes.orderTracking),
+      _MenuItem(Icons.favorite_outline, lang.t('wishlist'), null),
+      _MenuItem(Icons.location_on_outlined, lang.t('savedAddresses'), null),
+      _MenuItem(Icons.payment_outlined, lang.t('paymentMethods'), null),
+      _MenuItem(Icons.help_outline, lang.t('helpSupport'), null),
+      _MenuItem(Icons.settings_outlined, lang.t('settings'), null),
+      _MenuItem(Icons.info_outline, lang.t('aboutHastkala'), null),
     ];
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppDimensions.lg),
@@ -104,6 +107,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildLogout(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.lg),
       child: SizedBox(
@@ -113,10 +117,10 @@ class ProfileScreen extends StatelessWidget {
             showDialog(
               context: context,
               builder: (ctx) => AlertDialog(
-                title: Text('Logout', style: AppTextStyles.titleMedium),
-                content: Text('Are you sure you want to logout?', style: AppTextStyles.bodyMedium),
+                title: Text(lang.t('logout'), style: AppTextStyles.titleMedium),
+                content: Text(lang.t('logoutConfirm'), style: AppTextStyles.bodyMedium),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: AppTextStyles.buttonMedium.copyWith(color: AppColors.textSecondary))),
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: Text(lang.t('cancel'), style: AppTextStyles.buttonMedium.copyWith(color: AppColors.textSecondary))),
                   TextButton(
                     onPressed: () async {
                       Navigator.pop(ctx);
@@ -125,7 +129,7 @@ class ProfileScreen extends StatelessWidget {
                         Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
                       }
                     },
-                    child: Text('Logout', style: AppTextStyles.buttonMedium.copyWith(color: AppColors.terracotta)),
+                    child: Text(lang.t('logout'), style: AppTextStyles.buttonMedium.copyWith(color: AppColors.terracotta)),
                   ),
                 ],
               ),
@@ -136,7 +140,7 @@ class ProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: AppDimensions.md),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusSM)),
           ),
-          child: Text('Logout', style: AppTextStyles.buttonMedium.copyWith(color: AppColors.terracotta)),
+          child: Text(lang.t('logout'), style: AppTextStyles.buttonMedium.copyWith(color: AppColors.terracotta)),
         ),
       ),
     );
@@ -157,7 +161,7 @@ class ProfileScreen extends StatelessWidget {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      items: HastKalaNavItems.buyer,
+      items: HastKalaNavItems.buyer(context),
     );
   }
 }

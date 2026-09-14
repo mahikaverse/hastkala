@@ -4,6 +4,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/user_role.dart';
 import '../../../core/widgets/hast_kala_background.dart';
 
@@ -24,6 +25,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       body: HastKalaBackground(
         child: Column(
@@ -53,13 +55,13 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
                     // Title
                     Text(
-                      'How will you use HastKala?',
+                      lang.t('howWillYouUse'),
                       style: AppTextStyles.headlineLarge,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppDimensions.sm),
                     Text(
-                      'Choose your role to get started.',
+                      lang.t('chooseRole'),
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -69,8 +71,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
                     // Role cards
                     _RoleCard(
-                      title: 'Artisan / Seller',
-                      subtitle: 'Create and sell your handmade products.',
+                      title: lang.t('artisanSeller'),
+                      subtitle: lang.t('artisanSellerDesc'),
                       imagePath: 'assets/seller-enum-img.png',
                       isSelected: _selectedRole == UserRole.seller,
                       onTap: () => setState(() => _selectedRole = UserRole.seller),
@@ -78,8 +80,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     const SizedBox(height: AppDimensions.md),
 
                     _RoleCard(
-                      title: 'B2B Buyer',
-                      subtitle: 'Source products in bulk from artisans.',
+                      title: lang.t('b2bBuyer'),
+                      subtitle: lang.t('b2bBuyerDesc'),
                       imagePath: 'assets/b2b-enum-img.png',
                       isSelected: _selectedRole == UserRole.b2bSeller,
                       onTap: () => setState(() => _selectedRole = UserRole.b2bSeller),
@@ -87,8 +89,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     const SizedBox(height: AppDimensions.md),
 
                     _RoleCard(
-                      title: 'Individual Buyer',
-                      subtitle: 'Discover and buy handmade products.',
+                      title: lang.t('individualBuyer'),
+                      subtitle: lang.t('individualBuyerDesc'),
                       imagePath: 'assets/buyer-enum-img.png',
                       isSelected: _selectedRole == UserRole.buyer,
                       onTap: () => setState(() => _selectedRole = UserRole.buyer),
@@ -122,7 +124,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     elevation: _selectedRole != null ? AppDimensions.elevationSM : 0,
                   ),
                   child: Text(
-                    'Continue',
+                    lang.t('continueBtn'),
                     style: AppTextStyles.buttonLarge.copyWith(
                       color: _selectedRole != null
                           ? AppColors.textOnPrimary

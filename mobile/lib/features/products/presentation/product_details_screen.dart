@@ -5,6 +5,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/product_model.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
@@ -23,6 +24,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   int _quantity = 1;
 
   late final List<String> _galleryImages;
+
+  LanguageProvider get lang => LanguageProvider.of(context);
 
   @override
   void initState() {
@@ -121,7 +124,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           children: [
                             Icon(Icons.handyman_outlined, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.3)),
                             const SizedBox(height: AppDimensions.sm),
-                            Text('Handcrafted with love', style: AppTextStyles.bodySmall),
+                            Text(lang.t('buyerHandcraftedLove'), style: AppTextStyles.bodySmall),
                           ],
                         ),
                       ),
@@ -314,7 +317,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             ),
             const SizedBox(width: AppDimensions.sm),
             Text(
-              '${_product.reviews} reviews',
+              '${_product.reviews} ${lang.t('buyerReviews')}',
               style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
             ),
           ],
@@ -358,7 +361,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
               ),
               child: Text(
-                '$_discountPercent% OFF',
+                '$_discountPercent% ${lang.t('buyerOff')}',
                 style: AppTextStyles.labelSmall.copyWith(color: AppColors.oliveGreen),
               ),
             ),
@@ -383,7 +386,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('CRAFTED BY', style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, letterSpacing: 1.2)),
+            Text(lang.t('buyerCraftedBy'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, letterSpacing: 1.2)),
             const SizedBox(height: AppDimensions.md),
             Row(
               children: [
@@ -434,7 +437,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
               ),
               child: Text(
-                '"Every pattern carries a story passed down through generations."',
+                lang.t('buyerArtisanQuote'),
                 style: AppTextStyles.bodyMedium.copyWith(
                   fontStyle: FontStyle.italic,
                   color: AppColors.brown,
@@ -449,7 +452,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               },
               child: Row(
                 children: [
-                  Text('Meet the Artisan', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
+                  Text(lang.t('buyerMeetArtisan'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
                   const SizedBox(width: 4),
                   Icon(Icons.chevron_right, size: 18, color: AppColors.terracotta),
                 ],
@@ -473,7 +476,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('About this Craft', style: AppTextStyles.titleMedium),
+          Text(lang.t('buyerAboutCraft'), style: AppTextStyles.titleMedium),
           const SizedBox(height: AppDimensions.sm),
           Text(
             _descriptionExpanded ? fullDesc : shortDesc,
@@ -483,7 +486,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           GestureDetector(
             onTap: () => setState(() => _descriptionExpanded = !_descriptionExpanded),
             child: Text(
-              _descriptionExpanded ? 'Read Less' : 'Read More',
+              _descriptionExpanded ? lang.t('buyerReadLess') : lang.t('buyerReadMore'),
               style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta),
             ),
           ),
@@ -496,18 +499,18 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   Widget _buildCraftDetails() {
     final details = [
-      _DetailRow('Material', 'Handwoven Cotton'),
-      _DetailRow('Technique', 'Traditional ${_product.tags.isNotEmpty ? _product.tags.first : 'Handcraft'}'),
-      _DetailRow('Craft Region', _product.location),
-      _DetailRow('Made By', 'Skilled Artisans'),
-      _DetailRow('Care', 'Gentle Hand Wash'),
+      _DetailRow(lang.t('buyerMaterial'), lang.t('buyerHandwovenCotton')),
+      _DetailRow(lang.t('buyerTechnique'), 'Traditional ${_product.tags.isNotEmpty ? _product.tags.first : 'Handcraft'}'),
+      _DetailRow(lang.t('buyerCraftRegion'), _product.location),
+      _DetailRow(lang.t('buyerMadeBy'), lang.t('buyerSkilledArtisans')),
+      _DetailRow(lang.t('buyerCare'), lang.t('buyerGentleHandWash')),
     ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppDimensions.xl, AppDimensions.xxl, AppDimensions.xl, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Craft Details', style: AppTextStyles.titleMedium),
+          Text(lang.t('buyerCraftDetails'), style: AppTextStyles.titleMedium),
           const SizedBox(height: AppDimensions.md),
           Container(
             padding: const EdgeInsets.all(AppDimensions.lg),
@@ -545,11 +548,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   Widget _buildProductHighlights() {
     final highlights = [
-      _Highlight('Handmade', Icons.handyman_outlined),
-      _Highlight('Artisan-made', Icons.person_outline),
-      _Highlight('Eco-conscious', Icons.eco_outlined),
-      _Highlight('Unique piece', Icons.star_outline),
-      _Highlight('Made in India', Icons.flag_outlined),
+      _Highlight(lang.t('buyerHandmade'), Icons.handyman_outlined),
+      _Highlight(lang.t('buyerArtisanMade'), Icons.person_outline),
+      _Highlight(lang.t('buyerEcoConscious'), Icons.eco_outlined),
+      _Highlight(lang.t('buyerUniquePiece'), Icons.star_outline),
+      _Highlight(lang.t('buyerMadeInIndia'), Icons.flag_outlined),
     ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppDimensions.xl, AppDimensions.xxl, AppDimensions.xl, 0),
@@ -597,11 +600,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               children: [
                 Icon(Icons.local_shipping_outlined, size: 20, color: AppColors.brown),
                 const SizedBox(width: AppDimensions.sm),
-                Text('Delivery to Mumbai, Maharashtra', style: AppTextStyles.titleSmall),
+                Text(lang.t('buyerDeliveryTo'), style: AppTextStyles.titleSmall),
                 const Spacer(),
                 GestureDetector(
                   onTap: () {},
-                  child: Text('Change', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
+                  child: Text(lang.t('buyerChange'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
                 ),
               ],
             ),
@@ -610,7 +613,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               children: [
                 Icon(Icons.schedule, size: 16, color: AppColors.textSecondary),
                 const SizedBox(width: AppDimensions.sm),
-                Text('Estimated delivery: 4\u20136 business days', style: AppTextStyles.bodyMedium),
+                Text(lang.t('buyerEstDelivery'), style: AppTextStyles.bodyMedium),
               ],
             ),
             const SizedBox(height: AppDimensions.md),
@@ -620,11 +623,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               children: [
                 Icon(Icons.check_circle_outline, size: 16, color: AppColors.oliveGreen),
                 const SizedBox(width: AppDimensions.sm),
-                Text('Secure packaging', style: AppTextStyles.bodySmall),
+                Text(lang.t('buyerSecurePackaging'), style: AppTextStyles.bodySmall),
                 const SizedBox(width: AppDimensions.xl),
                 Icon(Icons.check_circle_outline, size: 16, color: AppColors.oliveGreen),
                 const SizedBox(width: AppDimensions.sm),
-                Text('Easy support', style: AppTextStyles.bodySmall),
+                Text(lang.t('buyerEasySupport'), style: AppTextStyles.bodySmall),
               ],
             ),
           ],
@@ -641,7 +644,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Quantity', style: AppTextStyles.titleMedium),
+          Text(lang.t('buyerQuantity'), style: AppTextStyles.titleMedium),
           const SizedBox(height: AppDimensions.md),
           Container(
             decoration: BoxDecoration(
@@ -701,7 +704,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Customer Reviews', style: AppTextStyles.titleMedium),
+          Text(lang.t('buyerCustomerReviews'), style: AppTextStyles.titleMedium),
           const SizedBox(height: AppDimensions.md),
           Row(
             children: [
@@ -717,7 +720,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       color: AppColors.mustardGold,
                     )),
                   ),
-                  Text('${_product.reviews} reviews', style: AppTextStyles.bodySmall),
+                  Text('${_product.reviews} ${lang.t('buyerReviews')}', style: AppTextStyles.bodySmall),
                 ],
               ),
             ],
@@ -745,7 +748,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             onTap: () {},
             child: Row(
               children: [
-                Text('See All Reviews', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
+                Text(lang.t('buyerSeeAllReviews'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
                 const SizedBox(width: 4),
                 Icon(Icons.chevron_right, size: 18, color: AppColors.terracotta),
               ],
@@ -795,7 +798,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppDimensions.xl),
-            child: Text('You May Also Like', style: AppTextStyles.titleMedium),
+            child: Text(lang.t('buyerYouMayAlsoLike'), style: AppTextStyles.titleMedium),
           ),
           const SizedBox(height: AppDimensions.md),
           SizedBox(
@@ -910,7 +913,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
                 ),
                 child: Center(
-                  child: Text('Add to Cart', style: AppTextStyles.buttonMedium.copyWith(color: AppColors.brown)),
+                  child: Text(lang.t('buyerAddToCart'), style: AppTextStyles.buttonMedium.copyWith(color: AppColors.brown)),
                 ),
               ),
             ),
@@ -926,7 +929,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
                 ),
                 child: Center(
-                  child: Text('Buy Now', style: AppTextStyles.buttonMedium.copyWith(color: AppColors.cream)),
+                  child: Text(lang.t('buyerBuyNow'), style: AppTextStyles.buttonMedium.copyWith(color: AppColors.cream)),
                 ),
               ),
             ),
@@ -950,10 +953,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _trustBadge(Icons.verified_outlined, 'Verified\nArtisan'),
-            _trustBadge(Icons.lock_outline, 'Secure\nPayment'),
-            _trustBadge(Icons.handyman_outlined, 'Handcrafted\nProduct'),
-            _trustBadge(Icons.favorite_outline, 'Support\nCommunities'),
+            _trustBadge(Icons.verified_outlined, lang.t('buyerVerifiedArtisan')),
+            _trustBadge(Icons.lock_outline, lang.t('buyerSecurePayment')),
+            _trustBadge(Icons.handyman_outlined, lang.t('buyerHandcraftedProduct')),
+            _trustBadge(Icons.favorite_outline, lang.t('buyerSupportCommunities')),
           ],
         ),
       ),
@@ -977,7 +980,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     setState(() => _isWished = !_isWished);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_isWished ? 'Saved to wishlist' : 'Removed from wishlist'),
+        content: Text(_isWished ? lang.t('buyerSavedToWishlist') : lang.t('buyerRemovedFromWishlist')),
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusSM)),
@@ -1004,15 +1007,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2))),
                 ),
                 const SizedBox(height: AppDimensions.lg),
-                Text('Share this craft', style: AppTextStyles.titleMedium),
+                Text(lang.t('buyerShareCraft'), style: AppTextStyles.titleMedium),
                 const SizedBox(height: AppDimensions.lg),
-                _shareOption(Icons.chat_outlined, 'WhatsApp', () => Navigator.pop(ctx)),
-                _shareOption(Icons.camera_alt_outlined, 'Instagram', () => Navigator.pop(ctx)),
-                _shareOption(Icons.link, 'Copy Link', () {
+                _shareOption(Icons.chat_outlined, lang.t('buyerWhatsApp'), () => Navigator.pop(ctx)),
+                _shareOption(Icons.camera_alt_outlined, lang.t('buyerInstagram'), () => Navigator.pop(ctx)),
+                _shareOption(Icons.link, lang.t('buyerCopyLink'), () {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Link copied to clipboard'),
+                      content: Text(lang.t('buyerLinkCopied')),
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusSM)),
                       backgroundColor: AppColors.charcoal,
@@ -1041,14 +1044,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Text('Added to your cart'),
+            Text(lang.t('buyerAddedToCart')),
             const Spacer(),
             GestureDetector(
               onTap: () {
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 Navigator.pushNamed(context, AppRoutes.cart);
               },
-              child: Text('View Cart', style: AppTextStyles.labelMedium.copyWith(color: AppColors.mustardGold)),
+              child: Text(lang.t('buyerViewCart'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.mustardGold)),
             ),
           ],
         ),

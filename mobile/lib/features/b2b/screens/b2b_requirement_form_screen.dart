@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../models/b2b_models.dart';
 import '../services/b2b_service.dart';
 import 'b2b_ai_matches_screen.dart';
@@ -101,6 +102,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     final isEdit = widget.requirement != null;
     final uniqueCategories = _categories.toSet().toList();
     final validCategory = (_selectedCategory != null &&
@@ -127,7 +129,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
             },
           ),
           title: Text(
-            isEdit ? 'Edit Requirement' : 'Post Requirement',
+            isEdit ? lang.t('b2bEditRequirement') : lang.t('b2bPostRequirement'),
             style: const TextStyle(
               color: AppColors.brown,
               fontSize: 18,
@@ -144,20 +146,20 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
               children: [
                 // Title
                 Text(
-                  'Title *',
+                  lang.t('b2bTitleLabel'),
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _titleController,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                  decoration: _inputDecoration('e.g. Handwoven cotton dupattas'),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? lang.t('b2bRequired') : null,
+                  decoration: _inputDecoration(lang.t('b2bTitleHint')),
                 ),
                 const SizedBox(height: 16),
 
                 // Category
                 Text(
-                  'Category',
+                  lang.t('b2bCategoryLabel'),
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
                 ),
                 const SizedBox(height: 6),
@@ -173,7 +175,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                       value: validCategory,
                       isExpanded: true,
                       hint: Text(
-                        'Select category',
+                        lang.t('b2bSelectCategory'),
                         style: TextStyle(color: AppColors.brown.withValues(alpha: 0.4), fontSize: 14),
                       ),
                       items: uniqueCategories.map((c) => DropdownMenuItem(
@@ -188,7 +190,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
 
               // Quantity
               Text(
-                'Quantity *',
+                lang.t('b2bQuantityLabel'),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 6),
@@ -196,17 +198,17 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                 controller: _quantityController,
                 keyboardType: TextInputType.number,
                 validator: (v) {
-                  if (v == null || v.isEmpty) return 'Required';
-                  if (int.tryParse(v) == null || int.parse(v) <= 0) return 'Enter valid quantity';
+                  if (v == null || v.isEmpty) return lang.t('b2bRequired');
+                  if (int.tryParse(v) == null || int.parse(v) <= 0) return lang.t('b2bValidQuantity');
                   return null;
                 },
-                decoration: _inputDecoration('Number of pieces'),
+                decoration: _inputDecoration(lang.t('b2bQuantityHint')),
               ),
               const SizedBox(height: 16),
 
               // Budget range
               Text(
-                'Budget Range (₹/piece)',
+                lang.t('b2bBudgetRangeLabel'),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 6),
@@ -216,7 +218,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                     child: TextFormField(
                       controller: _budgetMinController,
                       keyboardType: TextInputType.number,
-                      decoration: _inputDecoration('Min ₹'),
+                      decoration: _inputDecoration(lang.t('b2bBudgetMin')),
                     ),
                   ),
                   const Padding(
@@ -227,7 +229,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                     child: TextFormField(
                       controller: _budgetMaxController,
                       keyboardType: TextInputType.number,
-                      decoration: _inputDecoration('Max ₹'),
+                      decoration: _inputDecoration(lang.t('b2bBudgetMax')),
                     ),
                   ),
                 ],
@@ -236,19 +238,19 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
 
               // Delivery location
               Text(
-                'Delivery Location',
+                lang.t('b2bDeliveryLocationLabel'),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _locationController,
-                decoration: _inputDecoration('City / State'),
+                decoration: _inputDecoration(lang.t('b2bDeliveryLocationHint')),
               ),
               const SizedBox(height: 16),
 
               // Deadline
               Text(
-                'Deadline',
+                lang.t('b2bDeadlineLabel'),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 6),
@@ -276,7 +278,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                       Text(
                         _deadline != null
                             ? '${_deadline!.day}/${_deadline!.month}/${_deadline!.year}'
-                            : 'Select deadline',
+                            : lang.t('b2bSelectDeadline'),
                         style: TextStyle(
                           color: _deadline != null ? AppColors.brown : AppColors.brown.withValues(alpha: 0.4),
                           fontSize: 14,
@@ -290,28 +292,28 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
 
               // Customization
               Text(
-                'Customization Details',
+                lang.t('b2bCustomizationLabel'),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _customizationController,
                 maxLines: 2,
-                decoration: _inputDecoration('Colors, sizes, branding, packaging...'),
+                decoration: _inputDecoration(lang.t('b2bCustomizationHint')),
               ),
               const SizedBox(height: 16),
 
               // Description
               Text(
-                'Description *',
+                lang.t('b2bDescriptionLabel'),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brown.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 4,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                decoration: _inputDecoration('Describe your full requirement in detail...'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? lang.t('b2bRequired') : null,
+                decoration: _inputDecoration(lang.t('b2bDescriptionHint')),
               ),
               const SizedBox(height: 20),
 
@@ -343,16 +345,16 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'AI Artisan Matcher',
-                            style: TextStyle(
+                          Text(
+                            lang.t('b2bAiArtisanMatcher'),
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: AppColors.brown,
                             ),
                           ),
                           Text(
-                            'Analyze with HastKala AI & find artisans who can make this',
+                            lang.t('b2bAiMatcherDesc'),
                             style: TextStyle(
                               fontSize: 11.5,
                               color: AppColors.brown.withValues(alpha: 0.65),
@@ -365,7 +367,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                     ElevatedButton.icon(
                       onPressed: _previewAIMatches,
                       icon: const Icon(Icons.bolt, size: 14),
-                      label: const Text('Match AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      label: Text(lang.t('b2bMatchAi'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -403,7 +405,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                         )
                       : Text(
-                          isEdit ? 'Update Requirement' : 'Post & Find Matching Artisans',
+                          isEdit ? lang.t('b2bUpdateRequirement') : lang.t('b2bPostAndFindArtisans'),
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                 ),
@@ -439,10 +441,11 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
   }
 
   void _previewAIMatches() {
+    final lang = LanguageProvider.of(context);
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please enter what you need (Title) first!'),
+          content: Text(lang.t('b2bAiMatcherTitleRequired')),
           backgroundColor: AppColors.terracotta,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -477,6 +480,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
   }
 
   Future<void> _submit() async {
+    final lang = LanguageProvider.of(context);
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
 
@@ -506,7 +510,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
       if (result != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.requirement != null ? 'Requirement updated!' : 'Requirement posted! Finding matching artisans...'),
+            content: Text(widget.requirement != null ? lang.t('b2bReqUpdated') : lang.t('b2bReqPosted')),
             backgroundColor: AppColors.oliveGreen,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -522,7 +526,7 @@ class _B2BRequirementFormScreenState extends State<B2BRequirementFormScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Failed. Please try again.'),
+            content: Text(lang.t('b2bReqFailed')),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

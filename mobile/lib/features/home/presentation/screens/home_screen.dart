@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/language_provider.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 
 /// Placeholder home screen.
@@ -12,10 +13,11 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AppScaffold(
-      appBar: HastKalaAppBar(title: 'HastKala'),
+    final lang = LanguageProvider.of(context);
+    return AppScaffold(
+      appBar: HastKalaAppBar(title: lang.t('appName')),
       body: Center(
-        child: Text('Home Screen'),
+        child: Text(lang.t('homeScreen')),
       ),
     );
   }

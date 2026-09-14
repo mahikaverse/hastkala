@@ -4,6 +4,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/hast_kala_background.dart';
 
@@ -38,12 +39,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
 
     if (email.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your email address');
+      setState(() => _errorMessage = LanguageProvider.of(context).t('pleaseEnterEmail'));
       _emailFocus.requestFocus();
       return;
     }
     if (password.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your password');
+      setState(() => _errorMessage = LanguageProvider.of(context).t('pleaseEnterPassword'));
       _passwordFocus.requestFocus();
       return;
     }
@@ -64,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       setState(() {
         _isLoading = false;
-        _errorMessage = result.errorMessage ?? 'Login failed. Please try again.';
+        _errorMessage = result.errorMessage ?? LanguageProvider.of(context).t('loginFailed');
       });
     }
   }
@@ -72,6 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    final lang = LanguageProvider.of(context);
 
     return Scaffold(
       body: HastKalaBackground(
@@ -109,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 2),
                       Center(
                         child: Text(
-                          'Direct Bridge for Artisans & Handloom',
+                          lang.t('appTagline'),
                           style: AppTextStyles.caption.copyWith(
                             letterSpacing: 0.8,
                           ),
@@ -119,13 +121,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Welcome section
                       Text(
-                        'Welcome Back',
+                        lang.t('welcomeBackTitle'),
                         style: AppTextStyles.headlineLarge,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppDimensions.xs),
                       Text(
-                        'Sign in to your account',
+                        lang.t('signInToAccount'),
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -160,8 +162,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             _AuthField(
                               controller: _emailController,
                               focusNode: _emailFocus,
-                              label: 'Email address',
-                              hint: 'you@example.com',
+                              label: lang.t('emailAddress'),
+                              hint: lang.t('emailHint'),
                               icon: Icons.email_outlined,
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
@@ -173,8 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             _AuthField(
                               controller: _passwordController,
                               focusNode: _passwordFocus,
-                              label: 'Password',
-                              hint: 'Enter your password',
+                              label: lang.t('password'),
+                              hint: lang.t('enterPassword'),
                               icon: Icons.lock_outline,
                               obscureText: !_isPasswordVisible,
                               textInputAction: TextInputAction.done,
@@ -195,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             // Login button
                             _AuthButton(
-                              label: 'Login',
+                              label: lang.t('login'),
                               isLoading: _isLoading,
                               onPressed: _handleLogin,
                             ),
@@ -215,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
+                        lang.t('noAccount'),
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -224,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onTap: () =>
                             Navigator.pushNamed(context, AppRoutes.roleSelection),
                         child: Text(
-                          'Sign Up',
+                          lang.t('signUp'),
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.terracotta,
                             fontWeight: FontWeight.w600,

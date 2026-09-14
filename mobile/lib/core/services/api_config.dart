@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 class ApiConfig {
   static String? _customBaseUrl;
-  static String _envIp = '192.168.1.5';
+  static String _envIp = '192.168.1.35';
   static String _envPort = '8000';
   static String _envGroqApiKey = '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';
   static bool _initialized = false;

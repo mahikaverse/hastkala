@@ -4,6 +4,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/user_role.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/hast_kala_background.dart';
@@ -54,37 +55,37 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   String? _validateName(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Full name is required';
+    if (v == null || v.trim().isEmpty) return LanguageProvider.of(context).t('nameRequired');
     return null;
   }
 
   String? _validateEmail(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Email is required';
+    if (v == null || v.trim().isEmpty) return LanguageProvider.of(context).t('emailRequired');
     final email = v.trim();
     if (!email.contains('@') || !email.contains('.')) {
-      return 'Please enter a valid email address';
+      return LanguageProvider.of(context).t('validEmail');
     }
     return null;
   }
 
   String? _validatePhone(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Phone number is required';
+    if (v == null || v.trim().isEmpty) return LanguageProvider.of(context).t('phoneRequired');
     final phone = v.trim().replaceAll(RegExp(r'[\s\-]'), '');
     if (!RegExp(r'^\+?\d{7,15}$').hasMatch(phone)) {
-      return 'Please enter a valid phone number';
+      return LanguageProvider.of(context).t('validPhone');
     }
     return null;
   }
 
   String? _validatePassword(String? v) {
-    if (v == null || v.isEmpty) return 'Password is required';
-    if (v.length < 6) return 'Password must be at least 6 characters';
+    if (v == null || v.isEmpty) return LanguageProvider.of(context).t('passwordRequired');
+    if (v.length < 6) return LanguageProvider.of(context).t('passwordMin');
     return null;
   }
 
   String? _validateConfirm(String? v) {
-    if (v == null || v.isEmpty) return 'Please confirm your password';
-    if (v != _passwordController.text) return 'Passwords do not match';
+    if (v == null || v.isEmpty) return LanguageProvider.of(context).t('confirmPasswordRequired');
+    if (v != _passwordController.text) return LanguageProvider.of(context).t('passwordsNoMatch');
     return null;
   }
 
@@ -114,7 +115,7 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() {
         _isLoading = false;
         _errorMessage =
-            result.errorMessage ?? 'Registration failed. Please try again.';
+            result.errorMessage ?? LanguageProvider.of(context).t('registrationFailed');
       });
     }
   }
@@ -122,6 +123,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    final lang = LanguageProvider.of(context);
 
     return Scaffold(
       body: HastKalaBackground(
@@ -162,7 +164,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                         // Title
                         Text(
-                          'Create your account',
+                          lang.t('createAccount'),
                           style: AppTextStyles.headlineLarge,
                           textAlign: TextAlign.center,
                         ),
@@ -233,8 +235,8 @@ class _SignupScreenState extends State<SignupScreen> {
                               _AuthField(
                                 controller: _nameController,
                                 focusNode: _nameFocus,
-                                label: 'Full Name',
-                                hint: 'Enter your full name',
+                                label: lang.t('fullName'),
+                                hint: lang.t('enterFullName'),
                                 icon: Icons.person_outline_rounded,
                                 textInputAction: TextInputAction.next,
                                 validator: _validateName,
@@ -247,8 +249,8 @@ class _SignupScreenState extends State<SignupScreen> {
                               _AuthField(
                                 controller: _emailController,
                                 focusNode: _emailFocus,
-                                label: 'Email address',
-                                hint: 'you@example.com',
+                                label: lang.t('emailAddress'),
+                                hint: lang.t('emailHint'),
                                 icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
@@ -262,8 +264,8 @@ class _SignupScreenState extends State<SignupScreen> {
                               _AuthField(
                                 controller: _phoneController,
                                 focusNode: _phoneFocus,
-                                label: 'Phone number',
-                                hint: '+91 98765 43210',
+                                label: lang.t('phoneNumber'),
+                                hint: lang.t('phoneHint'),
                                 icon: Icons.phone_outlined,
                                 keyboardType: TextInputType.phone,
                                 textInputAction: TextInputAction.next,
@@ -277,8 +279,8 @@ class _SignupScreenState extends State<SignupScreen> {
                               _AuthField(
                                 controller: _passwordController,
                                 focusNode: _passwordFocus,
-                                label: 'Password',
-                                hint: 'Min 6 characters',
+                                label: lang.t('password'),
+                                hint: lang.t('minChars'),
                                 icon: Icons.lock_outline_rounded,
                                 obscureText: !_isPasswordVisible,
                                 textInputAction: TextInputAction.next,
@@ -303,8 +305,8 @@ class _SignupScreenState extends State<SignupScreen> {
                               _AuthField(
                                 controller: _confirmController,
                                 focusNode: _confirmFocus,
-                                label: 'Confirm password',
-                                hint: 'Re-enter your password',
+                                label: lang.t('confirmPassword'),
+                                hint: lang.t('reEnterPassword'),
                                 icon: Icons.lock_outline_rounded,
                                 obscureText: !_isConfirmVisible,
                                 textInputAction: TextInputAction.done,
@@ -326,7 +328,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                               // Create Account button
                               _AuthButton(
-                                label: 'Create Account',
+                                label: lang.t('createAccountBtn'),
                                 isLoading: _isLoading,
                                 onPressed: _handleSignup,
                               ),
@@ -347,7 +349,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Already have an account? ',
+                        lang.t('alreadyHaveAccount'),
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -359,7 +361,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           (route) => false,
                         ),
                         child: Text(
-                          'Login',
+                          lang.t('login'),
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.terracotta,
                             fontWeight: FontWeight.w600,

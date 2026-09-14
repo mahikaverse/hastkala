@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../models/b2b_models.dart';
 import '../services/b2b_service.dart';
 
@@ -34,6 +35,7 @@ class _B2BOrdersScreenState extends State<B2BOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
       appBar: AppBar(
@@ -44,7 +46,7 @@ class _B2BOrdersScreenState extends State<B2BOrdersScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'My Orders',
+          lang.t('b2bMyOrders'),
           style: TextStyle(
             color: AppColors.brown,
             fontSize: 18,
@@ -62,7 +64,7 @@ class _B2BOrdersScreenState extends State<B2BOrdersScreen> {
                       Icon(Icons.shopping_bag_outlined, size: 64, color: AppColors.brown.withValues(alpha: 0.2)),
                       const SizedBox(height: 16),
                       Text(
-                        'No orders yet',
+                        lang.t('b2bNoOrders'),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

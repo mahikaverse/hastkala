@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/helpers/craft_image_helper.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/marketplace_product.dart';
 import '../models/b2b_models.dart';
 import '../services/b2b_service.dart';
@@ -68,7 +69,8 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final productName = widget.product?.name ?? widget.artisanName ?? 'Artisan';
+    final lang = LanguageProvider.of(context);
+    final productName = widget.product?.name ?? widget.artisanName ?? lang.t('b2bArtisan');
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
       appBar: AppBar(
@@ -79,7 +81,7 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Send Enquiry',
+          lang.t('b2bSendEnquiry'),
           style: TextStyle(
             color: AppColors.brown,
             fontSize: 18,
@@ -164,7 +166,7 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
                           ),
                           if (widget.product != null)
                             Text(
-                              '₹${widget.product!.price.toStringAsFixed(0)}/piece',
+                              '₹${widget.product!.price.toStringAsFixed(0)}${lang.t('b2bPerPiece')}',
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: AppColors.terracotta,
@@ -181,7 +183,7 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
 
               // Quantity
               Text(
-                'Quantity *',
+                '${lang.t('b2bQuantity')} *',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -193,17 +195,17 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
                 controller: _quantityController,
                 keyboardType: TextInputType.number,
                 validator: (v) {
-                  if (v == null || v.isEmpty) return 'Required';
-                  if (int.tryParse(v) == null || int.parse(v) <= 0) return 'Enter valid quantity';
+                  if (v == null || v.isEmpty) return lang.t('b2bRequired');
+                  if (int.tryParse(v) == null || int.parse(v) <= 0) return lang.t('b2bEnterValidQuantity');
                   return null;
                 },
-                decoration: _inputDecoration('Enter quantity'),
+                decoration: _inputDecoration(lang.t('b2bEnterQuantity')),
               ),
               const SizedBox(height: 16),
 
               // Budget per piece
               Text(
-                'Budget per piece (₹)',
+                '${lang.t('b2bBudgetPerPiece')} (₹)',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -214,13 +216,13 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
               TextFormField(
                 controller: _budgetController,
                 keyboardType: TextInputType.number,
-                decoration: _inputDecoration('Your target price'),
+                decoration: _inputDecoration(lang.t('b2bTargetPrice')),
               ),
               const SizedBox(height: 16),
 
               // Delivery location
               Text(
-                'Delivery Location',
+                lang.t('b2bDeliveryLocation'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -230,13 +232,13 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _locationController,
-                decoration: _inputDecoration('City / State'),
+                decoration: _inputDecoration(lang.t('b2bCityState')),
               ),
               const SizedBox(height: 16),
 
               // Deadline
               Text(
-                'Deadline',
+                lang.t('b2bDeadline'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -274,7 +276,7 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
                       Text(
                         _deadline != null
                             ? '${_deadline!.day}/${_deadline!.month}/${_deadline!.year}'
-                            : 'Select date',
+                            : lang.t('b2bSelectDate'),
                         style: TextStyle(
                           color: _deadline != null
                               ? AppColors.brown
@@ -290,7 +292,7 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
 
               // Customization
               Text(
-                'Customization Requirements',
+                lang.t('b2bCustomizationRequirements'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -301,13 +303,13 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
               TextFormField(
                 controller: _customizationController,
                 maxLines: 2,
-                decoration: _inputDecoration('Colors, sizes, branding, packaging...'),
+                decoration: _inputDecoration(lang.t('b2bCustomizationHint')),
               ),
               const SizedBox(height: 16),
 
               // Message
               Text(
-                'Message *',
+                '${lang.t('b2bMessage')} *',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -318,8 +320,8 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
               TextFormField(
                 controller: _messageController,
                 maxLines: 4,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                decoration: _inputDecoration('Describe your requirement in detail...'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? lang.t('b2bRequired') : null,
+                decoration: _inputDecoration(lang.t('b2bMessageHint')),
               ),
               const SizedBox(height: 28),
 
@@ -346,9 +348,9 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text(
-                          'Send Enquiry',
-                          style: TextStyle(
+                      : Text(
+                          lang.t('b2bSendEnquiry'),
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -392,6 +394,7 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
   }
 
   Future<void> _submitEnquiry() async {
+    final lang = LanguageProvider.of(context);
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
 
@@ -426,7 +429,7 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
       if (result != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Enquiry sent successfully!'),
+            content: Text(lang.t('b2bEnquirySentSuccess')),
             backgroundColor: AppColors.oliveGreen,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -436,7 +439,7 @@ class _B2BEnquiryFormScreenState extends State<B2BEnquiryFormScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Failed to send enquiry. Please try again.'),
+            content: Text(lang.t('b2bEnquirySendFailed')),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

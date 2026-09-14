@@ -958,7 +958,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      items: HastKalaNavItems.artisanLegacy,
+      items: HastKalaNavItems.artisanLegacy(context),
     );
   }
 

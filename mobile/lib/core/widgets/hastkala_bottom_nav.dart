@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../core/localization/language_provider.dart';
 
 class HastKalaBottomNavItem {
   const HastKalaBottomNavItem({
@@ -201,100 +202,112 @@ class HastKalaBottomNavigation extends StatelessWidget {
 }
 
 abstract class HastKalaNavItems {
-  static const artisan = [
-    HastKalaBottomNavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.festival_outlined,
-      activeIcon: Icons.festival_rounded,
-      label: 'Schemes',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.storefront_outlined,
-      activeIcon: Icons.storefront_rounded,
-      label: 'Market',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person_rounded,
-      label: 'Profile',
-    ),
-  ];
+  static List<HastKalaBottomNavItem> artisan(BuildContext context) {
+    final lang = LanguageProvider.of(context);
+    return [
+      HastKalaBottomNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: lang.t('navHome'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.festival_outlined,
+        activeIcon: Icons.festival_rounded,
+        label: lang.t('navSchemes'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.storefront_outlined,
+        activeIcon: Icons.storefront_rounded,
+        label: lang.t('navMarket'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person_rounded,
+        label: lang.t('navProfile'),
+      ),
+    ];
+  }
 
-  static const artisanLegacy = [
-    HastKalaBottomNavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.inventory_2_outlined,
-      activeIcon: Icons.inventory_2_rounded,
-      label: 'Products',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.receipt_long_outlined,
-      activeIcon: Icons.receipt_long_rounded,
-      label: 'Orders',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person_rounded,
-      label: 'Profile',
-    ),
-  ];
+  static List<HastKalaBottomNavItem> artisanLegacy(BuildContext context) {
+    final lang = LanguageProvider.of(context);
+    return [
+      HastKalaBottomNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: lang.t('navHome'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.inventory_2_outlined,
+        activeIcon: Icons.inventory_2_rounded,
+        label: lang.t('navProducts'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.receipt_long_outlined,
+        activeIcon: Icons.receipt_long_rounded,
+        label: lang.t('navOrders'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person_rounded,
+        label: lang.t('navProfile'),
+      ),
+    ];
+  }
 
-  static const b2b = [
-    HastKalaBottomNavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore_rounded,
-      label: 'Explore',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.forum_outlined,
-      activeIcon: Icons.forum_rounded,
-      label: 'Enquiries',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person_rounded,
-      label: 'Profile',
-    ),
-  ];
+  static List<HastKalaBottomNavItem> b2b(BuildContext context) {
+    final lang = LanguageProvider.of(context);
+    return [
+      HastKalaBottomNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: lang.t('navHome'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.explore_outlined,
+        activeIcon: Icons.explore_rounded,
+        label: lang.t('navExplore'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.forum_outlined,
+        activeIcon: Icons.forum_rounded,
+        label: lang.t('navEnquiries'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person_rounded,
+        label: lang.t('navProfile'),
+      ),
+    ];
+  }
 
-  static const buyer = [
-    HastKalaBottomNavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore_rounded,
-      label: 'Explore',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.shopping_cart_outlined,
-      activeIcon: Icons.shopping_cart_rounded,
-      label: 'Cart',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.receipt_long_outlined,
-      activeIcon: Icons.receipt_long_rounded,
-      label: 'Orders',
-    ),
-    HastKalaBottomNavItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person_rounded,
-      label: 'Profile',
-    ),
-  ];
+  static List<HastKalaBottomNavItem> buyer(BuildContext context) {
+    final lang = LanguageProvider.of(context);
+    return [
+      HastKalaBottomNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: lang.t('navHome'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.explore_outlined,
+        activeIcon: Icons.explore_rounded,
+        label: lang.t('navExplore'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.shopping_cart_outlined,
+        activeIcon: Icons.shopping_cart_rounded,
+        label: lang.t('navCart'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.receipt_long_outlined,
+        activeIcon: Icons.receipt_long_rounded,
+        label: lang.t('navOrders'),
+      ),
+      HastKalaBottomNavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person_rounded,
+        label: lang.t('navProfile'),
+      ),
+    ];
+  }
 }

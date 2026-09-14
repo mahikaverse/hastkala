@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/product_model.dart';
 
 class OrderTrackingScreen extends StatelessWidget {
@@ -10,10 +11,11 @@ class OrderTrackingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Order Details', style: AppTextStyles.headlineSmall.copyWith(color: AppColors.cream)),
+        title: Text(lang.t('orderDetails'), style: AppTextStyles.headlineSmall.copyWith(color: AppColors.cream)),
         backgroundColor: AppColors.brown,
         foregroundColor: AppColors.cream,
         leading: IconButton(
@@ -31,11 +33,11 @@ class OrderTrackingScreen extends StatelessWidget {
           children: [
             _buildOrderHeader(),
             const SizedBox(height: AppDimensions.xxl),
-            _buildTimeline(),
+            _buildTimeline(context),
             const SizedBox(height: AppDimensions.xxl),
             _buildProductCard(),
             const SizedBox(height: AppDimensions.xxl),
-            _buildDeliveryDetails(),
+            _buildDeliveryDetails(context),
             const SizedBox(height: AppDimensions.xxl),
             _buildActions(context),
           ],
@@ -55,18 +57,19 @@ class OrderTrackingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeline() {
+  Widget _buildTimeline(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     final steps = [
-      _TimelineStep('Order Placed', '12 Aug, 10:30 AM', true),
-      _TimelineStep('Packed', '12 Aug, 2:45 PM', true),
-      _TimelineStep('Shipped', '13 Aug, 9:10 AM', true),
-      _TimelineStep('Out for Delivery', '14 Aug, 8:20 AM', true),
-      _TimelineStep('Delivered', '14 Aug, 11:45 AM', true),
+      _TimelineStep(lang.t('orderPlaced'), '12 Aug, 10:30 AM', true),
+      _TimelineStep(lang.t('packed'), '12 Aug, 2:45 PM', true),
+      _TimelineStep(lang.t('shipped'), '13 Aug, 9:10 AM', true),
+      _TimelineStep(lang.t('outForDelivery'), '14 Aug, 8:20 AM', true),
+      _TimelineStep(lang.t('delivered'), '14 Aug, 11:45 AM', true),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Tracking', style: AppTextStyles.titleMedium),
+        Text(lang.t('tracking'), style: AppTextStyles.titleMedium),
         const SizedBox(height: AppDimensions.lg),
         ...List.generate(steps.length, (i) {
           final step = steps[i];
@@ -157,11 +160,12 @@ class OrderTrackingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDeliveryDetails() {
+  Widget _buildDeliveryDetails(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Delivering to', style: AppTextStyles.titleMedium),
+        Text(lang.t('deliveringTo'), style: AppTextStyles.titleMedium),
         const SizedBox(height: AppDimensions.sm),
         Container(
           width: double.infinity,
@@ -185,13 +189,14 @@ class OrderTrackingScreen extends StatelessWidget {
   }
 
   Widget _buildActions(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () {},
             icon: Icon(Icons.support_agent_outlined, size: 18, color: AppColors.terracotta),
-            label: Text('Contact Support', style: AppTextStyles.buttonMedium.copyWith(color: AppColors.terracotta)),
+            label: Text(lang.t('contactSupport'), style: AppTextStyles.buttonMedium.copyWith(color: AppColors.terracotta)),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.terracotta),
               padding: const EdgeInsets.symmetric(vertical: AppDimensions.md),
@@ -204,7 +209,7 @@ class OrderTrackingScreen extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: () => Navigator.pop(context),
             icon: Icon(Icons.shopping_bag_outlined, size: 18, color: AppColors.cream),
-            label: Text('Buy Again', style: AppTextStyles.buttonMedium.copyWith(color: AppColors.cream)),
+            label: Text(lang.t('buyAgain'), style: AppTextStyles.buttonMedium.copyWith(color: AppColors.cream)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.terracotta,
               foregroundColor: AppColors.cream,

@@ -1,0 +1,10 @@
+INFO:     Started server process [14880]
+INFO:     Waiting for application startup.
+INFO:hastkala:Loading AI model on startup...
+INFO:hastkala.ai:[BG REMOVE] Initializing rembg u2net session...
+INFO:hastkala.ai:[BG REMOVE] rembg model loaded successfully
+INFO:hastkala:AI model loaded. Server ready!
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8000): only one usage of each socket address (protocol/network address/port) is normally permitted
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.

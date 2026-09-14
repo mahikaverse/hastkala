@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/helpers/craft_image_helper.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/marketplace_product.dart';
 import '../services/b2b_service.dart';
 import 'b2b_enquiry_form_screen.dart';
@@ -38,6 +39,7 @@ class _B2BProductDetailScreenState extends State<B2BProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     final product = widget.product;
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
@@ -162,7 +164,7 @@ class _B2BProductDetailScreenState extends State<B2BProductDetailScreen> {
                         ),
                       ),
                       Text(
-                        ' /piece',
+                        ' ${lang.t('b2bPerPiece')}',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.brown.withValues(alpha: 0.5),
@@ -177,7 +179,7 @@ class _B2BProductDetailScreenState extends State<B2BProductDetailScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'MOQ: ${product.stockQuantity}',
+                            '${lang.t('b2bMoq')}${product.stockQuantity}',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -206,7 +208,7 @@ class _B2BProductDetailScreenState extends State<B2BProductDetailScreen> {
 
                   // Description
                   Text(
-                    'Description',
+                    lang.t('b2bDescription'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -237,7 +239,7 @@ class _B2BProductDetailScreenState extends State<B2BProductDetailScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Delivery negotiable • Bulk orders welcome',
+                            lang.t('b2bDeliveryBulk'),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -322,9 +324,9 @@ class _B2BProductDetailScreenState extends State<B2BProductDetailScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Bulk Quote',
-                    style: TextStyle(
+                  child: Text(
+                    lang.t('b2bBulkQuote'),
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -350,9 +352,9 @@ class _B2BProductDetailScreenState extends State<B2BProductDetailScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Contact',
-                    style: TextStyle(
+                  child: Text(
+                    lang.t('b2bContact'),
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),

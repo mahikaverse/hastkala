@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/marketplace_product.dart';
 
 class CompareScreen extends StatefulWidget {
@@ -31,6 +32,7 @@ class _CompareScreenState extends State<CompareScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
       appBar: AppBar(
@@ -41,7 +43,7 @@ class _CompareScreenState extends State<CompareScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Compare Products',
+          lang.t('b2bCompareProducts'),
           style: TextStyle(
             color: AppColors.brown,
             fontSize: 18,
@@ -61,7 +63,7 @@ class _CompareScreenState extends State<CompareScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No products to compare',
+                    lang.t('b2bNoCompare'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -70,7 +72,7 @@ class _CompareScreenState extends State<CompareScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Select products from Explore to compare',
+                    lang.t('b2bSelectToCompare'),
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.brown.withValues(alpha: 0.4),
@@ -160,12 +162,12 @@ class _CompareScreenState extends State<CompareScreen> {
                         ),
                       ),
                       children: [
-                        _buildRow('Price', (p) => '₹${p.price.toStringAsFixed(0)}'),
-                        _buildRow('Category', (p) => p.category.isNotEmpty ? p.category : '-'),
-                        _buildRow('Craft Type', (p) => (p.craftType ?? '').isNotEmpty ? (p.craftType ?? '') : '-'),
-                        _buildRow('Material', (p) => (p.material ?? '').isNotEmpty ? (p.material ?? '') : '-'),
-                        _buildRow('Stock', (p) => '${p.stockQuantity} pcs'),
-                        _buildRow('Description', (p) {
+                        _buildRow(lang.t('b2bPrice'), (p) => '₹${p.price.toStringAsFixed(0)}'),
+                        _buildRow(lang.t('b2bCategory'), (p) => p.category.isNotEmpty ? p.category : '-'),
+                        _buildRow(lang.t('b2bCraftType'), (p) => (p.craftType ?? '').isNotEmpty ? (p.craftType ?? '') : '-'),
+                        _buildRow(lang.t('b2bMaterial'), (p) => (p.material ?? '').isNotEmpty ? (p.material ?? '') : '-'),
+                        _buildRow(lang.t('b2bStock'), (p) => '${p.stockQuantity} pcs'),
+                        _buildRow(lang.t('b2bDescription'), (p) {
                           final desc = p.description;
                           return desc.length > 80 ? '${desc.substring(0, 80)}...' : desc;
                         }),

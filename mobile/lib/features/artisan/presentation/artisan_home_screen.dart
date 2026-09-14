@@ -768,7 +768,7 @@ class _ArtisanHomeScreenState extends State<ArtisanHomeScreen> {
         final routes = [null, AppRoutes.manageProducts, AppRoutes.artisanAddProduct, AppRoutes.artisanOrders, AppRoutes.artisanProfile];
         if (routes[i] != null) Navigator.pushNamed(context, routes[i]!);
       },
-      items: HastKalaNavItems.artisanLegacy,
+      items: HastKalaNavItems.artisanLegacy(context),
     );
   }
 }

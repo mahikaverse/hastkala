@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../models/b2b_models.dart';
 import '../services/b2b_service.dart';
 
@@ -40,6 +41,7 @@ class _B2BEnquiriesScreenState extends State<B2BEnquiriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
       body: SafeArea(
@@ -49,7 +51,7 @@ class _B2BEnquiriesScreenState extends State<B2BEnquiriesScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Text(
-                'My Enquiries',
+                lang.t('b2bMyEnquiries'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -66,11 +68,11 @@ class _B2BEnquiriesScreenState extends State<B2BEnquiriesScreen> {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    _buildFilter('all', 'All'),
-                    _buildFilter('pending', 'Pending'),
-                    _buildFilter('replied', 'Replied'),
-                    _buildFilter('accepted', 'Accepted'),
-                    _buildFilter('rejected', 'Rejected'),
+                    _buildFilter('all', lang.t('b2bAll')),
+                    _buildFilter('pending', lang.t('b2bPending')),
+                    _buildFilter('replied', lang.t('b2bReplied')),
+                    _buildFilter('accepted', lang.t('b2bAccepted')),
+                    _buildFilter('rejected', lang.t('b2bRejected')),
                   ],
                 ),
               ),
@@ -87,7 +89,7 @@ class _B2BEnquiriesScreenState extends State<B2BEnquiriesScreen> {
                               Icon(Icons.forum_outlined, size: 64, color: AppColors.brown.withValues(alpha: 0.2)),
                               const SizedBox(height: 16),
                               Text(
-                                'No enquiries found',
+                                lang.t('b2bNoEnquiries'),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -144,6 +146,7 @@ class _B2BEnquiriesScreenState extends State<B2BEnquiriesScreen> {
   }
 
   Widget _buildEnquiryCard(B2BEnquiry enquiry) {
+    final lang = LanguageProvider.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -228,12 +231,12 @@ class _B2BEnquiriesScreenState extends State<B2BEnquiriesScreen> {
             children: [
               if (enquiry.quantity > 0)
                 Text(
-                  'Qty: ${enquiry.quantity}',
+                  '${lang.t('b2bQty')}${enquiry.quantity}',
                   style: TextStyle(fontSize: 11, color: AppColors.brown.withValues(alpha: 0.5)),
                 ),
               if (enquiry.budget != null)
                 Text(
-                  'Budget: ₹${enquiry.budget!.toInt()}/pc',
+                  '${lang.t('b2bBudget')}${enquiry.budget!.toInt()}${lang.t('b2bPerPiece')}',
                   style: TextStyle(fontSize: 11, color: AppColors.terracotta.withValues(alpha: 0.7)),
                 ),
               if (enquiry.deliveryLocation != null)

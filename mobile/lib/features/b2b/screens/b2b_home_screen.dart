@@ -9,6 +9,7 @@ import 'b2b_explore_screen.dart';
 import 'b2b_requirement_form_screen.dart';
 import 'b2b_product_detail_screen.dart';
 import 'b2b_artisan_profile_screen.dart';
+import '../../../core/localization/language_provider.dart';
 
 class B2BHomeScreen extends StatefulWidget {
   const B2BHomeScreen({super.key});
@@ -55,6 +56,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
       body: SafeArea(
@@ -85,7 +87,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'B2B Marketplace\nfor Indian Crafts',
+                            lang.t('b2bTagline'),
                             maxLines: 2,
                             style: TextStyle(
                               fontSize: 11,
@@ -190,7 +192,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                       }
                     },
                     decoration: InputDecoration(
-                      hintText: 'Search products, artisans, craft clusters...',
+                      hintText: lang.t('b2bSearchHint'),
                       hintStyle: TextStyle(
                         color: AppColors.brown.withValues(alpha: 0.4),
                         fontSize: 14,
@@ -263,10 +265,10 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatItem(Icons.groups_outlined, '5,000+', 'Artisans', AppColors.terracotta),
-                      _buildStatItem(Icons.category_outlined, '20+', 'Craft Categories', AppColors.oliveGreen),
-                      _buildStatItem(Icons.location_on_outlined, '200+', 'Craft Clusters', AppColors.mustardGold),
-                      _buildStatItem(Icons.verified_outlined, 'Trusted by', 'Businesses', AppColors.brown),
+                      _buildStatItem(Icons.groups_outlined, '5,000+', lang.t('b2bStatArtisans'), AppColors.terracotta),
+                      _buildStatItem(Icons.category_outlined, '20+', lang.t('b2bStatCategories'), AppColors.oliveGreen),
+                      _buildStatItem(Icons.location_on_outlined, '200+', lang.t('b2bStatClusters'), AppColors.mustardGold),
+                      _buildStatItem(Icons.verified_outlined, 'Trusted by', lang.t('b2bStatBusinesses'), AppColors.brown),
                     ],
                   ),
                 ),
@@ -275,7 +277,8 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
 
             // ── Shop by Craft Category ──
             _buildSectionHeader(
-              title: 'Shop by Craft Category',
+              title: lang.t('b2bShopByCategory'),
+              lang: lang,
               padding: const EdgeInsets.fromLTRB(20, 24, 16, 0),
               onViewAll: () {
                 Navigator.push(
@@ -292,13 +295,13 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                   children: [
-                    _buildCategoryItem('Terracotta', 'assets/craft/craft_terracotta_pot.jpg', AppColors.terracotta),
-                    _buildCategoryItem('Bamboo\n& Cane', 'assets/craft/craft_bamboo_basket.jpg', AppColors.mustardGold),
-                    _buildCategoryItem('Handloom\n& Textiles', 'assets/craft/craft_handwoven_fabric.jpg', AppColors.oliveGreen),
-                    _buildCategoryItem('Handmade\nJewellery', 'assets/craft/craft_lac_bangles.jpg', AppColors.terracotta),
-                    _buildCategoryItem('Woodcraft', 'assets/craft/craft_wooden_carved_box.jpg', AppColors.brown),
-                    _buildCategoryItem('Home Decor', 'assets/craft/craft_brass_metal.jpg', AppColors.mustardGold),
-                    _buildCategoryItem('More', '', AppColors.brown),
+                    _buildCategoryItem(lang.t('b2bTerracotta'), 'assets/craft/craft_terracotta_pot.jpg', AppColors.terracotta, lang: lang),
+                    _buildCategoryItem(lang.t('b2bBambooCane'), 'assets/craft/craft_bamboo_basket.jpg', AppColors.mustardGold, lang: lang),
+                    _buildCategoryItem(lang.t('b2bHandloom'), 'assets/craft/craft_handwoven_fabric.jpg', AppColors.oliveGreen, lang: lang),
+                    _buildCategoryItem(lang.t('b2bJewellery'), 'assets/craft/craft_lac_bangles.jpg', AppColors.terracotta, lang: lang),
+                    _buildCategoryItem(lang.t('b2bWoodcraft'), 'assets/craft/craft_wooden_carved_box.jpg', AppColors.brown, lang: lang),
+                    _buildCategoryItem(lang.t('b2bHomeDecor'), 'assets/craft/craft_brass_metal.jpg', AppColors.mustardGold, lang: lang),
+                    _buildCategoryItem(lang.t('b2bMore'), '', AppColors.brown, lang: lang),
                   ],
                 ),
               ),
@@ -356,8 +359,8 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 spacing: 8,
                                 children: [
-                                  const Text(
-                                    'Post a Requirement',
+                                   Text(
+                                    lang.t('b2bPostRequirementBanner'),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 14,
@@ -370,8 +373,8 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                                       color: AppColors.terracotta,
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Text(
-                                      'AI MATCH',
+                                    child: Text(
+                                      lang.t('b2bAiMatch'),
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 8,
@@ -384,7 +387,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                'Share your product needs and get matched with verified artisan manufacturers.',
+                                lang.t('b2bPostBannerDesc'),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -407,7 +410,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Post Now',
+                                lang.t('b2bPostNow'),
                                 style: TextStyle(
                                   color: AppColors.brown,
                                   fontSize: 11,
@@ -428,7 +431,8 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
 
             // ── Featured Artisan Products ──
             _buildSectionHeader(
-              title: 'Featured Artisan Products',
+              title: lang.t('b2bFeaturedProducts'),
+              lang: lang,
               padding: const EdgeInsets.fromLTRB(20, 24, 16, 12),
               onViewAll: () {
                 Navigator.push(
@@ -458,17 +462,17 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                           itemCount: _featuredProducts.length.clamp(0, 6),
                           separatorBuilder: (_, __) => const SizedBox(width: 12),
                           itemBuilder: (context, index) {
-                            return _buildProductCard(_featuredProducts[index]);
+                              return _buildProductCard(_featuredProducts[index], lang);
                           },
                         )
                       : ListView(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           children: [
-                            _buildDemoProductCard('Folk Painted Terracotta Pots', 750, 50, 'Molela, Rajasthan'),
-                            _buildDemoProductCard('Handmade Terracotta Dinner...', 450, 100, 'Khurja, Uttar Pradesh'),
-                            _buildDemoProductCard('Bamboo Hanging Lamp', 950, 50, 'Tripura'),
-                            _buildDemoProductCard('Handloom Silk Saree', 620, 20, 'Bhagalpur, Bihar'),
+                            _buildDemoProductCard('Folk Painted Terracotta Pots', 750, 50, 'Molela, Rajasthan', lang),
+                            _buildDemoProductCard('Handmade Terracotta Dinner...', 450, 100, 'Khurja, Uttar Pradesh', lang),
+                            _buildDemoProductCard('Bamboo Hanging Lamp', 950, 50, 'Tripura', lang),
+                            _buildDemoProductCard('Handloom Silk Saree', 620, 20, 'Bhagalpur, Bihar', lang),
                           ],
                         ),
                 ),
@@ -476,7 +480,8 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
 
             // ── Featured Artisan Manufacturers ──
             _buildSectionHeader(
-              title: 'Featured Artisan Manufacturers',
+              title: lang.t('b2bFeaturedManufacturers'),
+              lang: lang,
               padding: const EdgeInsets.fromLTRB(20, 20, 16, 12),
               onViewAll: () {
                 Navigator.push(
@@ -498,16 +503,16 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                             itemCount: _topArtisans.length.clamp(0, 4),
                             separatorBuilder: (_, __) => const SizedBox(width: 12),
                             itemBuilder: (context, index) {
-                              return _buildManufacturerCard(_topArtisans[index]);
+                              return _buildManufacturerCard(_topArtisans[index], lang);
                             },
                           )
                         : ListView(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                             children: [
-                              _buildDemoManufacturerCard('Shakti Self Help Group', 'Women Artisans Collective', true, 'assets/artisans/artisan_meera.jpg'),
-                              _buildDemoManufacturerCard('Kashmir Wood Crafts', 'Srinagar, J&K', true, 'assets/artisans/artisan_sita.jpg'),
-                              _buildDemoManufacturerCard('Kutch Weavers Association', 'Bhuj, Gujarat', true, 'assets/artisans/artisan_arjun.jpg'),
+                              _buildDemoManufacturerCard('Shakti Self Help Group', 'Women Artisans Collective', true, 'assets/artisans/artisan_meera.jpg', lang),
+                              _buildDemoManufacturerCard('Kashmir Wood Crafts', 'Srinagar, J&K', true, 'assets/artisans/artisan_sita.jpg', lang),
+                              _buildDemoManufacturerCard('Kutch Weavers Association', 'Bhuj, Gujarat', true, 'assets/artisans/artisan_arjun.jpg', lang),
                             ],
                           ),
               ),
@@ -525,6 +530,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
   Widget _buildSectionHeader({
     required String title,
     required VoidCallback onViewAll,
+    required LanguageProvider lang,
     EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(20, 20, 16, 12),
   }) {
     return SliverToBoxAdapter(
@@ -554,7 +560,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'View All',
+                      lang.t('b2bViewAll'),
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -607,7 +613,7 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
     );
   }
 
-  Widget _buildCategoryItem(String label, String assetPath, Color color) {
+  Widget _buildCategoryItem(String label, String assetPath, Color color, {LanguageProvider? lang}) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -644,7 +650,7 @@ Icons.palette_outlined,
                             size: 28,
                           ),
                       )
-                    : label == 'More'
+                    : label == (lang?.t('b2bMore') ?? 'More')
                         ? Icon(
                             Icons.grid_view_rounded,
                             color: color,
@@ -676,7 +682,7 @@ Icons.palette_outlined,
     );
   }
 
-  Widget _buildDemoProductCard(String name, int price, int minOrder, String location) {
+  Widget _buildDemoProductCard(String name, int price, int minOrder, String location, LanguageProvider lang) {
     return GestureDetector(
       onTap: () {},
       child: Container(
@@ -772,7 +778,7 @@ Icons.palette_outlined,
                           ),
                         ),
                         Text(
-                          ' / piece',
+                          lang.t('b2bPerPiece'),
                           style: TextStyle(
                             fontSize: 10,
                             color: AppColors.brown.withValues(alpha: 0.5),
@@ -782,7 +788,7 @@ Icons.palette_outlined,
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Min. Order: $minOrder pcs',
+                      '${lang.t('b2bMinOrder')}: $minOrder ${lang.t('b2bPcs')}',
                       style: TextStyle(
                         fontSize: 10,
                         color: AppColors.brown.withValues(alpha: 0.5),
@@ -820,7 +826,7 @@ Icons.palette_outlined,
     );
   }
 
-  Widget _buildProductCard(MarketplaceProduct product) {
+  Widget _buildProductCard(MarketplaceProduct product, LanguageProvider lang) {
     final firstImage = product.imageUrls.isNotEmpty ? product.imageUrls.first.trim() : '';
     final hasNetworkImage = firstImage.isNotEmpty &&
         (firstImage.startsWith('http://') || firstImage.startsWith('https://'));
@@ -962,7 +968,7 @@ Icons.palette_outlined,
                           ),
                         ),
                         Text(
-                          ' / piece',
+                          lang.t('b2bPerPiece'),
                           style: TextStyle(
                             fontSize: 10,
                             color: AppColors.brown.withValues(alpha: 0.5),
@@ -973,7 +979,7 @@ Icons.palette_outlined,
                     if (product.stockQuantity > 0) ...[
                       const SizedBox(height: 2),
                       Text(
-                        'Min. Order: ${product.stockQuantity} pcs',
+                        '${lang.t('b2bMinOrder')}: ${product.stockQuantity} ${lang.t('b2bPcs')}',
                         style: TextStyle(
                           fontSize: 10,
                           color: AppColors.brown.withValues(alpha: 0.5),
@@ -1012,7 +1018,7 @@ Icons.palette_outlined,
     );
   }
 
-  Widget _buildManufacturerCard(ArtisanProfile artisan) {
+  Widget _buildManufacturerCard(ArtisanProfile artisan, LanguageProvider lang) {
     final fallbackAsset = ArtisanImageHelper.getAssetForArtisan(
       name: artisan.name,
       craftType: artisan.craftSpecialization,
@@ -1125,7 +1131,7 @@ Icons.palette_outlined,
                           const Icon(Icons.verified, size: 13, color: Colors.blue),
                           const SizedBox(width: 3),
                           Text(
-                            'Verified',
+                            lang.t('b2bVerified'),
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -1144,7 +1150,7 @@ Icons.palette_outlined,
     );
   }
 
-  Widget _buildDemoManufacturerCard(String name, String subtitle, bool verified, String assetPath) {
+  Widget _buildDemoManufacturerCard(String name, String subtitle, bool verified, String assetPath, LanguageProvider lang) {
     return GestureDetector(
       onTap: () {},
       child: Container(
@@ -1221,7 +1227,7 @@ Icons.palette_outlined,
                           const Icon(Icons.verified, size: 13, color: Colors.blue),
                           const SizedBox(width: 3),
                           Text(
-                            'Verified',
+                            lang.t('b2bVerified'),
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,

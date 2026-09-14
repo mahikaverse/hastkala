@@ -4,6 +4,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/product_model.dart';
 
 class CartScreen extends StatefulWidget {
@@ -26,10 +27,11 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('My Cart (${_items.length})', style: AppTextStyles.headlineSmall.copyWith(color: AppColors.cream)),
+        title: Text('${lang.t('myCart')} (${_items.length})', style: AppTextStyles.headlineSmall.copyWith(color: AppColors.cream)),
         backgroundColor: AppColors.brown,
         foregroundColor: AppColors.cream,
         leading: IconButton(
@@ -40,7 +42,7 @@ class _CartScreenState extends State<CartScreen> {
           if (_items.isNotEmpty)
             TextButton(
               onPressed: () => setState(() => _items.clear()),
-              child: Text('Clear All', style: AppTextStyles.labelMedium.copyWith(color: AppColors.cream)),
+              child: Text(lang.t('clearAll'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.cream)),
             ),
         ],
       ),
@@ -50,6 +52,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildEmptyState() {
+    final lang = LanguageProvider.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.xxl),
@@ -58,7 +61,7 @@ class _CartScreenState extends State<CartScreen> {
           children: [
             Icon(Icons.shopping_cart_outlined, size: 80, color: AppColors.warmBeige),
             const SizedBox(height: AppDimensions.xl),
-            Text('Your cart is waiting for something handmade \u2764\uFE0F', textAlign: TextAlign.center, style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary)),
+            Text(lang.t('cartEmpty'), textAlign: TextAlign.center, style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary)),
             const SizedBox(height: AppDimensions.xxl),
             ElevatedButton(
               onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.productListing),
@@ -68,7 +71,7 @@ class _CartScreenState extends State<CartScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: AppDimensions.xxl, vertical: AppDimensions.md),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusSM)),
               ),
-              child: Text('Explore Crafts', style: AppTextStyles.buttonMedium.copyWith(color: AppColors.cream)),
+              child: Text(lang.t('exploreCrafts'), style: AppTextStyles.buttonMedium.copyWith(color: AppColors.cream)),
             ),
           ],
         ),
@@ -175,6 +178,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildPriceDetails() {
+    final lang = LanguageProvider.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimensions.xl),
       decoration: BoxDecoration(
@@ -185,13 +189,13 @@ class _CartScreenState extends State<CartScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Price Details', style: AppTextStyles.titleMedium),
+          Text(lang.t('priceDetails'), style: AppTextStyles.titleMedium),
           const SizedBox(height: AppDimensions.md),
-          _priceRow('Subtotal', '\u20B9$_subtotal'),
+          _priceRow(lang.t('subtotal'), '\u20B9$_subtotal'),
           const SizedBox(height: AppDimensions.sm),
-          _priceRow('Shipping', '\u20B9$_shipping'),
+          _priceRow(lang.t('shipping'), '\u20B9$_shipping'),
           const Divider(color: AppColors.divider, height: AppDimensions.xxl),
-          _priceRow('Total', '\u20B9$_total', isBold: true),
+          _priceRow(lang.t('total'), '\u20B9$_total', isBold: true),
         ],
       ),
     );
@@ -208,6 +212,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildCheckoutButton() {
+    final lang = LanguageProvider.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.lg),
@@ -219,7 +224,7 @@ class _CartScreenState extends State<CartScreen> {
             minimumSize: const Size(double.infinity, 52),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMD)),
           ),
-          child: Text('Proceed to Checkout (\u20B9$_total)', style: AppTextStyles.buttonLarge.copyWith(color: AppColors.cream)),
+          child: Text('${lang.t('proceedToCheckout')} (\u20B9$_total)', style: AppTextStyles.buttonLarge.copyWith(color: AppColors.cream)),
         ),
       ),
     );

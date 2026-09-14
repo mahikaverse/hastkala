@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/services/app_intro_audio_service.dart';
 import '../../../core/services/auth_service.dart';
 
@@ -101,6 +102,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Widget _buildScreenOne(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Container(
       decoration: const BoxDecoration(
         image: DecorationImage(
@@ -116,7 +118,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             const SizedBox(height: 160),
             // Main heading
             Text(
-              "India's Crafts\nDeserve a Bigger Stage",
+              lang.t('onboardTitle1'),
               textAlign: TextAlign.center,
               style: AppTextStyles.displaySmall.copyWith(
                 color: AppColors.brown,
@@ -126,7 +128,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             const SizedBox(height: 16),
             // Supporting text
             Text(
-              "Discover, showcase, and sell\ntraditional crafts to the world.",
+              lang.t('onboardDesc1'),
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyLarge.copyWith(
                 color: AppColors.charcoal,
@@ -140,6 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Widget _buildScreenTwo(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Container(
       decoration: const BoxDecoration(
         image: DecorationImage(
@@ -154,7 +157,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           children: [
             const SizedBox(height: 160),
             Text(
-              "Support Local Artisans",
+              lang.t('onboardTitle2'),
               textAlign: TextAlign.center,
               style: AppTextStyles.displaySmall.copyWith(
                 color: AppColors.brown,
@@ -163,7 +166,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              "Explore a curated collection of authentic crafts.",
+              lang.t('onboardDesc2'),
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyLarge.copyWith(
                 color: AppColors.charcoal,
@@ -177,6 +180,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Widget _buildScreenThree(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Container(
       decoration: const BoxDecoration(
         image: DecorationImage(
@@ -191,7 +195,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           children: [
             const SizedBox(height: 160),
             Text(
-              "Start Your Journey",
+              lang.t('onboardStart'),
               textAlign: TextAlign.center,
               style: AppTextStyles.displaySmall.copyWith(
                 color: AppColors.brown,
@@ -200,7 +204,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              "Join thousands of artisans and buyers\nbuilding India's craft economy.",
+              lang.t('onboardDesc3'),
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyLarge.copyWith(
                 color: AppColors.charcoal,

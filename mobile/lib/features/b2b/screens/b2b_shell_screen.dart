@@ -108,7 +108,7 @@ class _B2BShellScreenState extends State<B2BShellScreen> {
           currentIndex: _currentIndex,
           selectedNavIndex: _screenToNav(_currentIndex),
           onTap: _onNavTapped,
-          items: HastKalaNavItems.b2b,
+          items: HastKalaNavItems.b2b(context),
           centerButton: HastKalaCenterButton(
             icon: Icons.add_rounded,
             label: lang.t('postRequirement'),

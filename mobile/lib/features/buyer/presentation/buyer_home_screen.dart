@@ -4,6 +4,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/product_model.dart';
 import '../../../core/widgets/adaptive_product_image.dart';
 import '../../../core/widgets/hastkala_bottom_nav.dart';
@@ -93,20 +94,22 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Widget _buildGreeting() {
+    final lang = LanguageProvider.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppDimensions.lg, AppDimensions.md, AppDimensions.lg, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Namaste, Ananya', style: AppTextStyles.headlineMedium.copyWith(color: AppColors.charcoal)),
+          Text('${lang.t('buyerNamaste')}Ananya', style: AppTextStyles.headlineMedium.copyWith(color: AppColors.charcoal)),
           const SizedBox(height: 2),
-          Text('Discover something handmade', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+          Text(lang.t('buyerSubtitle'), style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
         ],
       ),
     );
   }
 
   Widget _buildSearchSection() {
+    final lang = LanguageProvider.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppDimensions.lg, AppDimensions.md, AppDimensions.lg, 0),
       child: Row(
@@ -128,7 +131,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                     const SizedBox(width: AppDimensions.sm),
                     Expanded(
                       child: Text(
-                        'What are you looking for?',
+                        lang.t('buyerSearchHint'),
                         style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
                       ),
                     ),
@@ -154,6 +157,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Widget _buildAskHastKala() {
+    final lang = LanguageProvider.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppDimensions.lg, AppDimensions.md, AppDimensions.lg, 0),
       child: Row(
@@ -171,7 +175,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                 children: [
                   Icon(Icons.auto_awesome, color: AppColors.mustardGold, size: 16),
                   const SizedBox(width: 4),
-                  Text('Ask HastKala', style: AppTextStyles.labelMedium.copyWith(color: AppColors.cream)),
+                  Text(lang.t('buyerAskAi'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.cream)),
                   const SizedBox(width: 4),
                   Icon(Icons.chevron_right, color: AppColors.cream, size: 16),
                 ],
@@ -193,7 +197,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                 children: [
                   Icon(Icons.home_outlined, color: AppColors.terracotta, size: 16),
                   const SizedBox(width: 4),
-                  Text('Find something special\nfor my home', style: AppTextStyles.labelSmall.copyWith(color: AppColors.charcoal, fontSize: 10, height: 1.2)),
+                  Text(lang.t('buyerFindSpecial'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.charcoal, fontSize: 10, height: 1.2)),
                 ],
               ),
             ),
@@ -204,6 +208,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Widget _buildHeroBanner() {
+    final lang = LanguageProvider.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, AppDimensions.xxl, 0, 0),
       child: Column(
@@ -249,13 +254,13 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                               color: AppColors.cream.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
                             ),
-                            child: Text('HANDMADE COLLECTION', style: AppTextStyles.labelSmall.copyWith(color: AppColors.cream, fontSize: 9, letterSpacing: 1.2)),
+                            child: Text(lang.t('buyerCollectionTag'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.cream, fontSize: 9, letterSpacing: 1.2)),
                           ),
                           const SizedBox(height: AppDimensions.sm),
-                          Text('Crafted by Hands,\nChosen by You.', style: AppTextStyles.headlineLarge.copyWith(color: AppColors.cream, height: 1.15, fontWeight: FontWeight.w700)),
+                          Text(lang.t('buyerCollectionHeadline'), style: AppTextStyles.headlineLarge.copyWith(color: AppColors.cream, height: 1.15, fontWeight: FontWeight.w700)),
                           const SizedBox(height: AppDimensions.sm),
                           Text(
-                            'Discover beautiful handmade treasures and meet the talented artisans who create them.',
+                            lang.t('buyerCollectionDesc'),
                             style: AppTextStyles.bodySmall.copyWith(color: AppColors.cream.withValues(alpha: 0.85), height: 1.4),
                           ),
                           const SizedBox(height: AppDimensions.md),
@@ -270,7 +275,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text('View Crafts', style: AppTextStyles.labelMedium.copyWith(color: AppColors.cream)),
+                                  Text(lang.t('buyerViewCrafts'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.cream)),
                                   const SizedBox(width: 4),
                                   Icon(Icons.chevron_right, color: AppColors.cream, size: 16),
                                 ],
@@ -306,12 +311,13 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Widget _buildExploreByCraft() {
+    final lang = LanguageProvider.of(context);
     final categories = [
-      _CatItem('Pottery', _categoryImages[0]),
-      _CatItem('Textiles', _categoryImages[1]),
-      _CatItem('Woodwork', _categoryImages[2]),
-      _CatItem('Jewelry', _categoryImages[3]),
-      _CatItem('Home Decor', _categoryImages[4]),
+      _CatItem(lang.t('buyerPottery'), _categoryImages[0]),
+      _CatItem(lang.t('buyerTextiles'), _categoryImages[1]),
+      _CatItem(lang.t('buyerWoodwork'), _categoryImages[2]),
+      _CatItem(lang.t('buyerJewelry'), _categoryImages[3]),
+      _CatItem(lang.t('buyerHomeDecor'), _categoryImages[4]),
     ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, AppDimensions.xxl, 0, 0),
@@ -322,12 +328,12 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Explore by Craft', style: AppTextStyles.titleMedium),
+                Text(lang.t('buyerExploreByCraft'), style: AppTextStyles.titleMedium),
                 GestureDetector(
                   onTap: () => Navigator.pushNamed(context, AppRoutes.productListing),
                   child: Row(
                     children: [
-                      Text('See All', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
+                      Text(lang.t('buyerSeeAll'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
                       Icon(Icons.chevron_right, color: AppColors.terracotta, size: 16),
                     ],
                   ),
@@ -385,6 +391,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Widget _buildCuratedForYou() {
+    final lang = LanguageProvider.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, AppDimensions.xxl, 0, 0),
       child: Column(
@@ -397,15 +404,15 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Curated for You', style: AppTextStyles.titleMedium),
-                    Text('Crafts you\'ll love, picked just for you.', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+                    Text(lang.t('buyerCuratedForYou'), style: AppTextStyles.titleMedium),
+                    Text(lang.t('buyerCuratedDesc'), style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
                   ],
                 ),
                 GestureDetector(
                   onTap: () => Navigator.pushNamed(context, AppRoutes.productListing),
                   child: Row(
                     children: [
-                      Text('All', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
+                      Text(lang.t('buyerAll'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
                       Icon(Icons.chevron_right, color: AppColors.terracotta, size: 16),
                     ],
                   ),
@@ -495,13 +502,14 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Widget _buildCraftOfTheWeek() {
+    final lang = LanguageProvider.of(context);
     final product = MockProducts.all[0];
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppDimensions.lg, AppDimensions.xxl, AppDimensions.lg, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Craft of the Week', style: AppTextStyles.titleMedium),
+          Text(lang.t('buyerCraftOfTheWeek'), style: AppTextStyles.titleMedium),
           const SizedBox(height: AppDimensions.md),
           Container(
             width: double.infinity,
@@ -559,7 +567,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text('View Craft', style: AppTextStyles.labelMedium.copyWith(color: AppColors.cream)),
+                              Text(lang.t('buyerViewCraft'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.cream)),
                               const SizedBox(width: 4),
                               Icon(Icons.chevron_right, color: AppColors.cream, size: 16),
                             ],
@@ -592,7 +600,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      items: HastKalaNavItems.buyer,
+      items: HastKalaNavItems.buyer(context),
     );
   }
 }

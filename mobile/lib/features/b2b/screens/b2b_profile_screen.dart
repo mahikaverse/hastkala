@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/services/auth_service.dart';
 import '../services/b2b_service.dart';
 import 'b2b_saved_artisans_screen.dart';
@@ -74,21 +75,21 @@ class _B2BProfileScreenState extends State<B2BProfileScreen> {
     }
   }
 
-  Future<void> _logout() async {
+  Future<void> _logout(dynamic lang) async {
     if (_isLoggingOut) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Are you sure you want to logout?'),
-        content: const Text('You will be redirected to the login screen.'),
+        title: Text(lang.t('b2bLogoutConfirm')),
+        content: Text(lang.t('b2bLogoutRedirect')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(lang.t('b2bCancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            child: Text(lang.t('logout'), style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -107,6 +108,7 @@ class _B2BProfileScreenState extends State<B2BProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
       body: SafeArea(
@@ -116,9 +118,9 @@ class _B2BProfileScreenState extends State<B2BProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Header ──
-              const Center(
+              Center(
                 child: Text(
-                  'Profile',
+                  lang.t('b2bProfile'),
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -126,7 +128,7 @@ class _B2BProfileScreenState extends State<B2BProfileScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // ── Avatar + Name ──
               Center(
@@ -164,7 +166,7 @@ class _B2BProfileScreenState extends State<B2BProfileScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        _businessType,
+                        lang.t('b2bBuyer'),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -196,9 +198,9 @@ class _B2BProfileScreenState extends State<B2BProfileScreen> {
 
               // ── Contact Info ──
               _buildInfoCard([
-                _buildInfoRow(Icons.email_outlined, 'Email', _user?.email ?? 'Not provided'),
+                _buildInfoRow(Icons.email_outlined, lang.t('b2bEmail'), _user?.email ?? lang.t('b2bNotProvided')),
                 if (_phone != null)
-                  _buildInfoRow(Icons.phone_outlined, 'Phone', _phone!),
+                  _buildInfoRow(Icons.phone_outlined, lang.t('b2bPhone'), _phone!),
               ]),
               const SizedBox(height: 16),
 
@@ -213,19 +215,19 @@ class _B2BProfileScreenState extends State<B2BProfileScreen> {
                     children: [
                       SizedBox(
                         width: effectiveWidth,
-                        child: _buildStatCard('Req', _stats['requirements'] ?? 0, AppColors.terracotta),
+                        child: _buildStatCard(lang.t('b2bReq'), _stats['requirements'] ?? 0, AppColors.terracotta),
                       ),
                       SizedBox(
                         width: effectiveWidth,
-                        child: _buildStatCard('Enq', _stats['enquiries'] ?? 0, AppColors.oliveGreen),
+                        child: _buildStatCard(lang.t('b2bEnq'), _stats['enquiries'] ?? 0, AppColors.oliveGreen),
                       ),
                       SizedBox(
                         width: effectiveWidth,
-                        child: _buildStatCard('Orders', _stats['orders'] ?? 0, AppColors.mustardGold),
+                        child: _buildStatCard(lang.t('b2bOrders'), _stats['orders'] ?? 0, AppColors.mustardGold),
                       ),
                       SizedBox(
                         width: effectiveWidth,
-                        child: _buildStatCard('Saved', _stats['saved'] ?? 0, AppColors.brown),
+                        child: _buildStatCard(lang.t('b2bSaved'), _stats['saved'] ?? 0, AppColors.brown),
                       ),
                     ],
                   );
@@ -236,39 +238,39 @@ class _B2BProfileScreenState extends State<B2BProfileScreen> {
               // ── Menu Items ──
               _buildMenuItem(
                 Icons.bookmark_outline,
-                'Saved Artisans',
+                lang.t('b2bSavedArtisans'),
                 () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const B2BSavedArtisansScreen()));
                 },
               ),
               _buildMenuItem(
                 Icons.shopping_bag_outlined,
-                'My Orders',
+                lang.t('b2bMyOrders'),
                 () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const B2BOrdersScreen()));
                 },
               ),
               _buildMenuItem(
                 Icons.list_alt_outlined,
-                'My Requirements',
+                lang.t('b2bMyRequirements'),
                 () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const B2BRequirementsScreen()));
                 },
               ),
               _buildMenuItem(
                 Icons.forum_outlined,
-                'My Enquiries',
+                lang.t('b2bMyEnquiries'),
                 () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const B2BEnquiriesScreen()));
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // ── Logout ──
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: _isLoggingOut ? null : _logout,
+                  onPressed: _isLoggingOut ? null : () => _logout(lang),
                   icon: _isLoggingOut
                       ? const SizedBox(
                           width: 18,
@@ -277,7 +279,7 @@ class _B2BProfileScreenState extends State<B2BProfileScreen> {
                         )
                       : Icon(Icons.logout, color: Colors.red.shade700),
                   label: Text(
-                    _isLoggingOut ? 'Logging out...' : 'Logout',
+                    _isLoggingOut ? lang.t('b2bLoggingOut') : lang.t('logout'),
                     style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(

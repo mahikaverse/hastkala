@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../services/b2b_service.dart';
 
 class B2BSavedArtisansScreen extends StatefulWidget {
@@ -33,6 +34,7 @@ class _B2BSavedArtisansScreenState extends State<B2BSavedArtisansScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
       appBar: AppBar(
@@ -43,7 +45,7 @@ class _B2BSavedArtisansScreenState extends State<B2BSavedArtisansScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Saved Artisans',
+          lang.t('b2bSavedArtisans'),
           style: TextStyle(
             color: AppColors.brown,
             fontSize: 18,
@@ -61,7 +63,7 @@ class _B2BSavedArtisansScreenState extends State<B2BSavedArtisansScreen> {
                       Icon(Icons.bookmark_border, size: 64, color: AppColors.brown.withValues(alpha: 0.2)),
                       const SizedBox(height: 16),
                       Text(
-                        'No saved artisans',
+                        lang.t('b2bNoSavedArtisans'),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -99,7 +101,7 @@ class _B2BSavedArtisansScreenState extends State<B2BSavedArtisansScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  saved['name'] ?? 'Artisan',
+                                  saved['name'] ?? lang.t('b2bArtisan'),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(

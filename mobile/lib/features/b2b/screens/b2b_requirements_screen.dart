@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../models/b2b_models.dart';
 import '../services/b2b_service.dart';
 import 'b2b_requirement_form_screen.dart';
@@ -53,6 +54,7 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
       body: SafeArea(
@@ -74,9 +76,9 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
                     },
                   ),
                   const SizedBox(width: 4),
-                  const Text(
-                    'My Requirements',
-                    style: TextStyle(
+                  Text(
+                    lang.t('b2bMyRequirements'),
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppColors.brown,
@@ -85,7 +87,7 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.add_circle, color: AppColors.terracotta, size: 28),
-                    tooltip: 'Post Requirement',
+                    tooltip: lang.t('b2bPostRequirement'),
                     onPressed: () async {
                       final result = await Navigator.push(
                         context,
@@ -110,9 +112,9 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
                               children: [
                                 Icon(Icons.assignment_outlined, size: 64, color: AppColors.terracotta.withValues(alpha: 0.3)),
                                 const SizedBox(height: 16),
-                                const Text(
-                                  'No Requirements Yet',
-                                  style: TextStyle(
+                                Text(
+                                  lang.t('b2bNoRequirements'),
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.brown,
@@ -120,7 +122,7 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Post what you need and our HastKala AI will instantly match you with verified artisans.',
+                                  lang.t('b2bNoReqDesc'),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 13,
@@ -137,7 +139,7 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
                                     if (result == true || result != null) _loadRequirements();
                                   },
                                   icon: const Icon(Icons.auto_awesome, size: 18),
-                                  label: const Text('Post a Requirement', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  label: Text(lang.t('b2bPostRequirement'), style: const TextStyle(fontWeight: FontWeight.bold)),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.terracotta,
                                     foregroundColor: Colors.white,
@@ -158,7 +160,7 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
                             itemCount: _requirements.length,
                             itemBuilder: (context, index) {
                               final req = _requirements[index];
-                              return _buildRequirementCard(req);
+                              return _buildRequirementCard(req, lang);
                             },
                           ),
                         ),
@@ -169,7 +171,7 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
     );
   }
 
-  Widget _buildRequirementCard(B2BRequirement req) {
+  Widget _buildRequirementCard(B2BRequirement req, LanguageProvider lang) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -291,14 +293,14 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: AppColors.terracotta.withValues(alpha: 0.25)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.auto_awesome, size: 12, color: AppColors.terracotta),
-                          SizedBox(width: 4),
+                          const Icon(Icons.auto_awesome, size: 12, color: AppColors.terracotta),
+                          const SizedBox(width: 4),
                           Text(
-                            'AI Matches',
-                            style: TextStyle(
+                            lang.t('b2bAiMatches'),
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               color: AppColors.terracotta,
@@ -360,16 +362,17 @@ class _B2BRequirementsScreenState extends State<B2BRequirementsScreen> {
   }
 
   Future<void> _deleteRequirement(String id) async {
+    final lang = LanguageProvider.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Requirement?'),
-        content: const Text('This action cannot be undone.'),
+        title: Text(lang.t('b2bDeleteReq')),
+        content: Text(lang.t('b2bDeleteReqDesc')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(lang.t('b2bCancel'))),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(lang.t('b2bDelete'), style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),

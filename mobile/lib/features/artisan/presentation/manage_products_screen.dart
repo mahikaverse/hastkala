@@ -736,7 +736,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      items: HastKalaNavItems.artisanLegacy,
+      items: HastKalaNavItems.artisanLegacy(context),
     );
   }
 }

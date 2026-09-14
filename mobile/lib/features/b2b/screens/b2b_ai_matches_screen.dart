@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../models/b2b_models.dart';
 import '../services/b2b_service.dart';
 import 'b2b_artisan_profile_screen.dart';
@@ -100,6 +101,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return PopScope(
       canPop: true,
       child: Scaffold(
@@ -121,8 +123,8 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'AI Artisan Matches',
+                Text(
+                  lang.t('b2bAiArtisanMatches'),
                   style: TextStyle(
                     color: AppColors.brown,
                     fontSize: 18,
@@ -138,13 +140,13 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                     ),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.auto_awesome, color: Colors.white, size: 11),
                       SizedBox(width: 3),
                       Text(
-                        'HASTKALA AI',
+                        lang.t('b2bHastkalaAi'),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -162,12 +164,12 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
             IconButton(
               icon: const Icon(Icons.refresh, color: AppColors.terracotta),
               onPressed: _fetchMatches,
-              tooltip: 'Re-analyze with AI',
+              tooltip: lang.t('b2bReanalyze'),
             ),
           ],
         ),
         body: _isLoading
-            ? _buildLoadingState()
+            ? _buildLoadingState(lang)
             : RefreshIndicator(
                 onRefresh: _fetchMatches,
                 color: AppColors.terracotta,
@@ -179,7 +181,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 4, 18, 0),
                         child: Text(
-                          'AI-powered matches based on your requirement',
+                          lang.t('b2bAiPowered'),
                           style: TextStyle(
                             fontSize: 12.5,
                             color: AppColors.brown.withValues(alpha: 0.55),
@@ -190,30 +192,30 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                       const SizedBox(height: 12),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 18),
-                        child: _buildRequirementCard(widget.requirement),
+                        child: _buildRequirementCard(widget.requirement, lang),
                       ),
                       const SizedBox(height: 14),
                       if (_matchResult != null &&
                           _matchResult!.aiAnalysis.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 18),
-                          child: _buildAIAnalysisCard(_matchResult!),
+                          child: _buildAIAnalysisCard(_matchResult!, lang),
                         ),
                       const SizedBox(height: 20),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 18),
-                        child: _buildSectionHeader(),
+                        child: _buildSectionHeader(lang),
                       ),
                       const SizedBox(height: 10),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 18),
-                        child: _buildFilterChips(),
+                        child: _buildFilterChips(lang),
                       ),
                       const SizedBox(height: 14),
                       if (_filteredMatches.isEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 18),
-                          child: _buildEmptyMatches(),
+                          child: _buildEmptyMatches(lang),
                         )
                       else
                         ..._filteredMatches.map(
@@ -231,7 +233,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(LanguageProvider lang) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -248,8 +250,8 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
             ),
           ),
           const SizedBox(height: 22),
-          const Text(
-            'HastKala AI is analysing requirement...',
+          Text(
+            lang.t('b2bHastkalaAiAnalyzing'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -260,7 +262,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              'Evaluating craft specializations, workshop capacity, and geographic proximity across registered Indian artisans.',
+              lang.t('b2bEvaluatingArtisans'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
@@ -274,7 +276,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
     );
   }
 
-  Widget _buildRequirementCard(B2BRequirement req) {
+  Widget _buildRequirementCard(B2BRequirement req, LanguageProvider lang) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -406,7 +408,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
     );
   }
 
-  Widget _buildAIAnalysisCard(B2BMatchResult result) {
+  Widget _buildAIAnalysisCard(B2BMatchResult result, LanguageProvider lang) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -440,9 +442,9 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'AI Craft & Capacity Analysis',
+                  lang.t('b2bAiCraftAnalysis'),
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -494,7 +496,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                 const SizedBox(width: 5),
                 Expanded(
                   child: Text(
-                    'Est. Production Time: ${result.estimatedProductionTime}',
+                    '${lang.t('b2bEstProductionTime')}${result.estimatedProductionTime}',
                     style: const TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
@@ -510,15 +512,15 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
     );
   }
 
-  Widget _buildSectionHeader() {
+  Widget _buildSectionHeader(LanguageProvider lang) {
     final count = _filteredMatches.length;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            const Text(
-              'Matching Artisans',
+            Text(
+              lang.t('b2bMatchingArtisans'),
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
@@ -544,7 +546,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
           ],
         ),
         Text(
-          'Ranked by AI',
+          lang.t('b2bRankedByAi'),
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -555,17 +557,21 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
     );
   }
 
-  Widget _buildFilterChips() {
-    final filters = ['All', '90%+', 'Verified'];
+  Widget _buildFilterChips(LanguageProvider lang) {
+    final filters = [
+      {'value': 'All', 'label': lang.t('b2bAll')},
+      {'value': '90%+', 'label': '90%+'},
+      {'value': 'Verified', 'label': lang.t('b2bVerified')},
+    ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: filters.map((f) {
-          final isSelected = _selectedFilter == f;
+          final isSelected = _selectedFilter == f['value'];
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
-              label: Text(f),
+              label: Text(f['label']!),
               selected: isSelected,
               selectedColor: AppColors.terracotta,
               backgroundColor: Colors.white,
@@ -584,7 +590,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                       : AppColors.brown.withValues(alpha: 0.15),
                 ),
               ),
-              onSelected: (_) => setState(() => _selectedFilter = f),
+              onSelected: (_) => setState(() => _selectedFilter = f['value']!),
             ),
           );
         }).toList(),
@@ -592,7 +598,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
     );
   }
 
-  Widget _buildEmptyMatches() {
+  Widget _buildEmptyMatches(LanguageProvider lang) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
@@ -610,8 +616,8 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
             color: AppColors.brown.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'No matching artisans found for filter',
+          Text(
+            lang.t('b2bNoMatchingArtisans'),
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
@@ -620,7 +626,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Try switching filter to "All" or updating the requirement details.',
+            lang.t('b2bTrySwitchingFilter'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
@@ -633,6 +639,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
   }
 
   Widget _buildArtisanCard(B2BMatchedArtisan m) {
+    final lang = LanguageProvider.of(context);
     final scoreColor = m.matchScore >= 90
         ? AppColors.oliveGreen
         : m.matchScore >= 75
@@ -808,7 +815,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'AI MATCH',
+                      lang.t('b2bAiMatch'),
                       style: TextStyle(
                         fontSize: 8.5,
                         fontWeight: FontWeight.bold,
@@ -866,7 +873,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(
                       Icons.auto_awesome,
@@ -875,7 +882,7 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                     ),
                     SizedBox(width: 6),
                     Text(
-                      'Why this matches?',
+                      lang.t('b2bWhyThisMatches'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -909,10 +916,10 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                     ? ElevatedButton.icon(
                         onPressed: null,
                         icon: const Icon(Icons.check_circle_outline, size: 14),
-                        label: const FittedBox(
+                        label: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'Enquiry Sent',
+                            lang.t('b2bEnquirySent'),
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ),
@@ -948,10 +955,10 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                           }
                         },
                         icon: const Icon(Icons.send_outlined, size: 14),
-                        label: const FittedBox(
+                        label: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'Send Enquiry',
+                            lang.t('b2bSendEnquiry'),
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ),
@@ -980,10 +987,10 @@ class _B2BAIMatchesScreenState extends State<B2BAIMatchesScreen> {
                     );
                   },
                   icon: const Icon(Icons.person_outline_rounded, size: 14),
-                  label: const FittedBox(
+                  label: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      'View Profile',
+                      lang.t('b2bViewProfile'),
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   ),

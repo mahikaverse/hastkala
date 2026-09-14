@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/helpers/craft_image_helper.dart';
 import '../../../core/helpers/artisan_image_helper.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/artisan_profile.dart';
 import '../../../core/models/marketplace_product.dart';
 import '../services/b2b_service.dart';
@@ -78,6 +79,7 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     final artisan = widget.artisan;
     final cleanLoc = _cleanLocation(artisan.location, artisan.state);
 
@@ -125,7 +127,7 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
             const SizedBox(height: 20),
 
             // ── Stats ──
-            _buildStats(artisan),
+            _buildStats(artisan, lang),
 
             const SizedBox(height: 24),
 
@@ -141,7 +143,7 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
             if (artisan.craftSpecialization.isNotEmpty) _buildSpecialization(artisan),
 
             // ── Products ──
-            _buildProductsSection(),
+            _buildProductsSection(lang),
           ],
         ),
       ),
@@ -179,8 +181,8 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
               );
             },
             icon: const Icon(Icons.send_outlined, size: 18),
-            label: const Text(
-              'Send Enquiry',
+            label: Text(
+              lang.t('b2bSendEnquiry'),
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             style: ElevatedButton.styleFrom(
@@ -351,7 +353,7 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
 
   // ── STATS ─────────────────────────────────────────────────────────────────
 
-  Widget _buildStats(ArtisanProfile artisan) {
+  Widget _buildStats(ArtisanProfile artisan, LanguageProvider lang) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -365,19 +367,19 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
           children: [
             _buildStatItem(
               '${_products.length}',
-              'Products',
+              lang.t('b2bProducts'),
               AppColors.terracotta,
             ),
             _buildDivider(),
             _buildStatItem(
               artisan.averageRating > 0 ? artisan.averageRating.toStringAsFixed(1) : '-',
-              'Rating',
+              lang.t('b2bRating'),
               AppColors.mustardGold,
             ),
             _buildDivider(),
             _buildStatItem(
               artisan.yearsOfExperience > 0 ? '${artisan.yearsOfExperience}yr' : '-',
-              'Experience',
+              lang.t('b2bExperience'),
               AppColors.oliveGreen,
             ),
           ],
@@ -422,6 +424,7 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
   // ── JOURNEY & HERITAGE ────────────────────────────────────────────────────
 
   Widget _buildJourneyCard(ArtisanProfile artisan) {
+    final lang = LanguageProvider.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -462,7 +465,7 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Artisan\'s Journey & Heritage',
+                        lang.t('b2bArtisanJourney'),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -500,13 +503,14 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
   // ── ABOUT ─────────────────────────────────────────────────────────────────
 
   Widget _buildAbout(ArtisanProfile artisan) {
+    final lang = LanguageProvider.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'About',
+            lang.t('b2bAbout'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -530,13 +534,14 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
   // ── SPECIALIZATION ────────────────────────────────────────────────────────
 
   Widget _buildSpecialization(ArtisanProfile artisan) {
+    final lang = LanguageProvider.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Specialization',
+            lang.t('b2bSpecialization'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -572,14 +577,14 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
 
   // ── PRODUCTS ──────────────────────────────────────────────────────────────
 
-  Widget _buildProductsSection() {
+  Widget _buildProductsSection(LanguageProvider lang) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-          child: Text(
-            'Products (${_products.length})',
+              child: Text(
+                '${lang.t('b2bProducts')} (${_products.length})',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -600,7 +605,7 @@ class _B2BArtisanProfileScreenState extends State<B2BArtisanProfileScreen> {
             padding: const EdgeInsets.all(40),
             child: Center(
               child: Text(
-                'No products listed yet',
+                lang.t('b2bNoProductsListed'),
                 style: TextStyle(
                   color: AppColors.brown.withValues(alpha: 0.4),
                 ),

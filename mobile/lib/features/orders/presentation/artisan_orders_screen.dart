@@ -270,7 +270,7 @@ class ArtisanOrdersScreen extends StatelessWidget {
           Navigator.pushNamed(context, routes[i]!);
         }
       },
-      items: HastKalaNavItems.artisanLegacy,
+      items: HastKalaNavItems.artisanLegacy(context),
     );
   }
 }

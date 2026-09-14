@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/services/app_intro_audio_service.dart';
 import '../../../core/widgets/hast_kala_background.dart';
 
@@ -136,8 +137,9 @@ class _Tagline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Text(
-      'Bringing Indian Craft to Every Market',
+      lang.t('splashTagline'),
       textAlign: TextAlign.center,
       style: TextStyle(
         fontSize: 14,

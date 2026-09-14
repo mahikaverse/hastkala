@@ -4,6 +4,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/product_model.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -27,10 +28,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = LanguageProvider.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Checkout', style: AppTextStyles.headlineSmall.copyWith(color: AppColors.cream)),
+        title: Text(lang.t('checkout'), style: AppTextStyles.headlineSmall.copyWith(color: AppColors.cream)),
         backgroundColor: AppColors.brown,
         foregroundColor: AppColors.cream,
         leading: IconButton(
@@ -59,13 +61,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildProgressIndicator() {
+    final lang = LanguageProvider.of(context);
     return Row(
       children: [
-        _step(0, 'Address'),
+        _step(0, lang.t('address')),
         _stepLine(),
-        _step(1, 'Payment'),
+        _step(1, lang.t('payment')),
         _stepLine(),
-        _step(2, 'Review'),
+        _step(2, lang.t('review')),
       ],
     );
   }
@@ -105,10 +108,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildDeliveryAddress() {
+    final lang = LanguageProvider.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Delivery Address', style: AppTextStyles.titleMedium),
+        Text(lang.t('deliveryAddress'), style: AppTextStyles.titleMedium),
         const SizedBox(height: AppDimensions.md),
         Container(
           width: double.infinity,
@@ -145,7 +149,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               TextButton(
                 onPressed: () {},
-                child: Text('Change', style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
+                child: Text(lang.t('change'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.terracotta)),
               ),
             ],
           ),
@@ -155,16 +159,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildPaymentMethod() {
+    final lang = LanguageProvider.of(context);
     final methods = [
-      _PaymentOption('UPI', 'GPay, PhonePe, Paytm', Icons.account_balance_wallet_outlined),
-      _PaymentOption('Credit / Debit Card', 'Visa, Mastercard, RuPay', Icons.credit_card_outlined),
-      _PaymentOption('Net Banking', 'All major banks', Icons.account_balance_outlined),
-      _PaymentOption('Cash on Delivery', 'Pay when delivered', Icons.money_outlined),
+      _PaymentOption(lang.t('upi'), lang.t('upiDesc'), Icons.account_balance_wallet_outlined),
+      _PaymentOption(lang.t('creditDebit'), lang.t('creditDebitDesc'), Icons.credit_card_outlined),
+      _PaymentOption(lang.t('netBanking'), lang.t('netBankingDesc'), Icons.account_balance_outlined),
+      _PaymentOption(lang.t('cod'), lang.t('codDesc'), Icons.money_outlined),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Payment Method', style: AppTextStyles.titleMedium),
+        Text(lang.t('paymentMethod'), style: AppTextStyles.titleMedium),
         const SizedBox(height: AppDimensions.md),
         ...methods.map((m) => _paymentOption(m)),
       ],
@@ -209,10 +214,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildOrderSummary() {
+    final lang = LanguageProvider.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Order Summary', style: AppTextStyles.titleMedium),
+        Text(lang.t('orderSummary'), style: AppTextStyles.titleMedium),
         const SizedBox(height: AppDimensions.md),
         ..._items.map((item) => Padding(
           padding: const EdgeInsets.only(bottom: AppDimensions.sm),
@@ -242,11 +248,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         )),
         const Divider(color: AppColors.divider, height: AppDimensions.xxl),
-        _priceRow('Subtotal', '\u20B9$_subtotal'),
+        _priceRow(lang.t('subtotal'), '\u20B9$_subtotal'),
         const SizedBox(height: AppDimensions.sm),
-        _priceRow('Shipping', '\u20B9$_shipping'),
+        _priceRow(lang.t('shipping'), '\u20B9$_shipping'),
         const Divider(color: AppColors.divider, height: AppDimensions.xxl),
-        _priceRow('Total', '\u20B9$_total', isBold: true),
+        _priceRow(lang.t('total'), '\u20B9$_total', isBold: true),
       ],
     );
   }
@@ -262,6 +268,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildBottomButton() {
+    final lang = LanguageProvider.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.lg),
@@ -275,7 +282,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             minimumSize: const Size(double.infinity, 52),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusMD)),
           ),
-          child: Text('Continue to Payment', style: AppTextStyles.buttonLarge.copyWith(color: AppColors.cream)),
+          child: Text(lang.t('continueToPayment'), style: AppTextStyles.buttonLarge.copyWith(color: AppColors.cream)),
         ),
       ),
     );

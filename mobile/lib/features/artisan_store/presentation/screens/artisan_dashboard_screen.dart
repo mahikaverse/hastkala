@@ -1139,7 +1139,7 @@ class _ArtisanDashboardScreenState extends State<ArtisanDashboardScreen> {
       onTap: (index) {
         setState(() => _currentNavIndex = index);
       },
-      items: HastKalaNavItems.artisan,
+      items: HastKalaNavItems.artisan(context),
       centerButton: HastKalaCenterButton(
         icon: Icons.camera_alt_rounded,
         label: lang.t('add'),

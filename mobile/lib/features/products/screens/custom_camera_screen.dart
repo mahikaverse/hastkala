@@ -241,6 +241,7 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTick
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
     final detectedHeight = _calculateHeight();
 
     return Scaffold(
@@ -255,12 +256,13 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTick
               child: CircularProgressIndicator(color: AppColors.cream),
             ),
 
-          // Single Vertical Ruler Scale & Calipers (when enabled)
+          // Measurement overlay (when enabled)
           if (_showRuler && _isInitialized) ...[
-            _buildHorizontalCaliper(isTop: true, screenHeight: screenHeight),
-            _buildHorizontalCaliper(isTop: false, screenHeight: screenHeight),
-            _buildVerticalRulerScale(screenHeight),
-            _buildHeightBadge(screenHeight, detectedHeight),
+            _buildMeasurementFrame(screenWidth, screenHeight),
+            _buildHorizontalCaliper(isTop: true, screenHeight: screenHeight, screenWidth: screenWidth),
+            _buildHorizontalCaliper(isTop: false, screenHeight: screenHeight, screenWidth: screenWidth),
+            _buildVerticalRulerScale(screenHeight, screenWidth),
+            _buildHeightBadge(screenWidth, screenHeight, detectedHeight),
             _buildDistanceGuide(),
           ],
 
@@ -303,8 +305,12 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTick
 
   static const double _rulerTopFraction = 0.14;
   static const double _rulerBottomFraction = 0.74;
+  static const double _frameWidthFraction = 0.82;
+  static const double _rulerWidth = 50.0;
 
-  Widget _buildVerticalRulerScale(double screenHeight) {
+  Widget _buildVerticalRulerScale(double screenHeight, double screenWidth) {
+    final frameWidth = screenWidth * _frameWidthFraction;
+    final frameLeft = (screenWidth - frameWidth) / 2;
     final rulerTop = screenHeight * _rulerTopFraction;
     final rulerHeight = screenHeight * (_rulerBottomFraction - _rulerTopFraction);
     final topRatio = ((screenHeight * _topLineY) - rulerTop) / rulerHeight;
@@ -312,26 +318,42 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTick
 
     return Positioned(
       top: rulerTop,
-      right: 12,
-      width: 46,
+      left: frameLeft + frameWidth - _rulerWidth,
+      width: _rulerWidth,
       height: rulerHeight,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
+          // Glass panel background
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  width: 0.5,
+                ),
+              ),
+            ),
+          ),
           // Scale Painter (graduations, numbers, active range highlight)
           Positioned.fill(
-            child: CustomPaint(
-              painter: VerticalRulerPainter(
-                topRatio: topRatio.clamp(0.0, 1.0),
-                bottomRatio: bottomRatio.clamp(0.0, 1.0),
-                maxCm: 30.0,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: CustomPaint(
+                painter: VerticalRulerPainter(
+                  topRatio: topRatio.clamp(0.0, 1.0),
+                  bottomRatio: bottomRatio.clamp(0.0, 1.0),
+                  maxCm: 30.0,
+                ),
               ),
             ),
           ),
           // Top Slider Handle (Draggable directly on ruler)
           Positioned(
             top: (topRatio * rulerHeight) - 16,
-            left: -16,
+            left: -22,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onVerticalDragUpdate: (details) {
@@ -346,7 +368,7 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTick
           // Bottom Slider Handle (Draggable directly on ruler)
           Positioned(
             top: (bottomRatio * rulerHeight) - 16,
-            left: -16,
+            left: -22,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onVerticalDragUpdate: (details) {
@@ -365,7 +387,7 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTick
 
   Widget _buildScaleThumb({required bool isTop}) {
     return SizedBox(
-      width: 34,
+      width: 36,
       height: 32,
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -373,18 +395,18 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTick
           Icon(
             Icons.arrow_right_rounded,
             color: AppColors.mustardGold,
-            size: 20,
+            size: 18,
           ),
           Container(
-            width: 14,
-            height: 14,
+            width: 12,
+            height: 12,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppColors.mustardGold,
               border: Border.all(color: Colors.white, width: 2.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.6),
+                  color: Colors.black.withValues(alpha: 0.5),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -396,13 +418,15 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTick
     );
   }
 
-  Widget _buildHorizontalCaliper({required bool isTop, required double screenHeight}) {
+  Widget _buildHorizontalCaliper({required bool isTop, required double screenHeight, required double screenWidth}) {
     final currentY = isTop ? _topLineY : _bottomLineY;
+    final frameWidth = screenWidth * _frameWidthFraction;
+    final frameLeft = (screenWidth - frameWidth) / 2;
 
     return Positioned(
-      top: (screenHeight * currentY) - 20,
-      left: 16,
-      right: 64, // Leaves space for the ruler on the right
+      top: (screenHeight * currentY) - 1,
+      left: frameLeft,
+      width: frameWidth - _rulerWidth,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onVerticalDragUpdate: (details) {
@@ -416,56 +440,47 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTick
           });
         },
         child: SizedBox(
-          height: 40,
+          height: 2,
           child: Stack(
-            alignment: Alignment.center,
+            clipBehavior: Clip.none,
             children: [
-              // Delicate laser guideline with left fade
-              Container(
-                height: 1.5,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      AppColors.mustardGold.withValues(alpha: 0.35),
-                      AppColors.mustardGold.withValues(alpha: 0.95),
-                    ],
-                    stops: const [0.0, 0.25, 1.0],
-                  ),
-                ),
-              ),
-              // Caliper tick at the left edge
-              Positioned(
-                left: 10,
+              // Measurement line inside frame
+              Positioned.fill(
                 child: Container(
-                  width: 2,
-                  height: 14,
                   decoration: BoxDecoration(
-                    color: AppColors.mustardGold.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(1),
-                  ),
-                ),
-              ),
-              // Caliper label pill
-              Positioned(
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: AppColors.mustardGold.withValues(alpha: 0.6),
-                      width: 1,
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.mustardGold.withValues(alpha: 0.85),
+                        AppColors.mustardGold.withValues(alpha: 0.3),
+                      ],
                     ),
+                  ),
+                ),
+              ),
+              // Compact pill label attached to the left edge
+              Positioned(
+                left: 0,
+                top: -11,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.mustardGold,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
                   child: Text(
                     isTop ? 'TOP' : 'BASE',
                     style: const TextStyle(
-                      color: AppColors.mustardGold,
+                      color: Colors.black,
                       fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
                     ),
                   ),
                 ),
@@ -477,49 +492,85 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with SingleTick
     );
   }
 
-  Widget _buildHeightBadge(double screenHeight, double detectedHeight) {
-    final midY = screenHeight * ((_topLineY + _bottomLineY) / 2);
+  Widget _buildHeightBadge(double screenWidth, double screenHeight, double detectedHeight) {
+    final frameWidth = screenWidth * _frameWidthFraction;
+    final frameLeft = (screenWidth - frameWidth) / 2;
+    final frameTop = screenHeight * _rulerTopFraction;
 
     return Positioned(
-      top: midY - 18,
-      right: 70,
+      top: frameTop - 56,
+      left: frameLeft + frameWidth - _rulerWidth - 130,
       child: IgnorePointer(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.82),
-            borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+            color: Colors.black.withValues(alpha: 0.75),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppColors.mustardGold,
-              width: 1.4,
+              color: AppColors.mustardGold.withValues(alpha: 0.35),
+              width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.mustardGold.withValues(alpha: 0.3),
-                blurRadius: 10,
-                spreadRadius: 1,
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 6,
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('📏', style: TextStyle(fontSize: 14)),
-              const SizedBox(width: 6),
+              Icon(Icons.straighten, color: AppColors.mustardGold, size: 16),
+              const SizedBox(width: 8),
               Text(
-                '${detectedHeight.toStringAsFixed(1)} cm',
+                detectedHeight.toStringAsFixed(1),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  letterSpacing: 0.3,
+                  fontSize: 20,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(width: 3),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  'cm',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMeasurementFrame(double screenWidth, double screenHeight) {
+    final frameWidth = screenWidth * _frameWidthFraction;
+    final frameLeft = (screenWidth - frameWidth) / 2;
+    final frameTop = screenHeight * _rulerTopFraction;
+    final frameBottom = screenHeight * _rulerBottomFraction;
+    final frameHeight = frameBottom - frameTop;
+
+    return Positioned(
+      left: frameLeft,
+      top: frameTop,
+      width: frameWidth,
+      height: frameHeight,
+      child: IgnorePointer(
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.2),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
       ),
@@ -843,34 +894,17 @@ class VerticalRulerPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Dark frosted ruler track
-    final trackPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.68)
-      ..style = PaintingStyle.fill;
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      const Radius.circular(14),
-    );
-    canvas.drawRRect(rrect, trackPaint);
-
-    // 2. Outer border
-    final borderPaint = Paint()
-      ..color = AppColors.mustardGold.withValues(alpha: 0.45)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    canvas.drawRRect(rrect, borderPaint);
-
-    // 3. Active measurement span highlight
+    // 1. Active measurement span highlight
     final topY = (topRatio * size.height).clamp(0.0, size.height);
     final bottomY = (bottomRatio * size.height).clamp(0.0, size.height);
     if (bottomY > topY) {
       final activePaint = Paint()
-        ..color = AppColors.mustardGold.withValues(alpha: 0.24)
+        ..color = AppColors.mustardGold.withValues(alpha: 0.18)
         ..style = PaintingStyle.fill;
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTRB(2, topY, size.width - 2, bottomY),
-          const Radius.circular(6),
+          const Radius.circular(4),
         ),
         activePaint,
       );
@@ -878,7 +912,7 @@ class VerticalRulerPainter extends CustomPainter {
       // Left active indicator strip
       final activeBarPaint = Paint()
         ..color = AppColors.mustardGold
-        ..strokeWidth = 3.0
+        ..strokeWidth = 2.5
         ..strokeCap = StrokeCap.round;
       canvas.drawLine(
         Offset(3, topY),
@@ -887,16 +921,16 @@ class VerticalRulerPainter extends CustomPainter {
       );
     }
 
-    // 4. Graduations (0 cm at bottom, 30 cm at top)
-    const double paddingY = 14.0;
+    // 2. Graduations (0 cm at bottom, 30 cm at top)
+    const double paddingY = 12.0;
     final usableHeight = size.height - (paddingY * 2);
 
     final tickPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.45)
+      ..color = Colors.white.withValues(alpha: 0.5)
       ..strokeWidth = 1.0;
     final majorTickPaint = Paint()
       ..color = AppColors.mustardGold
-      ..strokeWidth = 1.6;
+      ..strokeWidth = 1.5;
 
     final textPainter = TextPainter(
       textDirection: TextDirection.ltr,
@@ -910,8 +944,8 @@ class VerticalRulerPainter extends CustomPainter {
       if (isMajor) {
         // Major tick
         canvas.drawLine(
-          Offset(size.width - 14, y),
-          Offset(size.width - 4, y),
+          Offset(size.width - 12, y),
+          Offset(size.width - 2, y),
           majorTickPaint,
         );
 
@@ -919,21 +953,21 @@ class VerticalRulerPainter extends CustomPainter {
         textPainter.text = TextSpan(
           text: '$cm',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.85),
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
+            color: Colors.white.withValues(alpha: 0.9),
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
           ),
         );
         textPainter.layout();
         textPainter.paint(
           canvas,
-          Offset(size.width - 17 - textPainter.width, y - (textPainter.height / 2)),
+          Offset(size.width - 15 - textPainter.width, y - (textPainter.height / 2)),
         );
       } else {
         // Minor tick
         canvas.drawLine(
-          Offset(size.width - 8, y),
-          Offset(size.width - 4, y),
+          Offset(size.width - 6, y),
+          Offset(size.width - 2, y),
           tickPaint,
         );
       }

@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     HOST: str = "127.0.0.1"
     PORT: int = 8000
-    BACKEND_IP: str = "192.168.1.5"
+    BACKEND_IP: str = "192.168.1.35"
 
     SUPABASE_URL: str = ""
     SUPABASE_PUBLISHABLE_KEY: str = ""

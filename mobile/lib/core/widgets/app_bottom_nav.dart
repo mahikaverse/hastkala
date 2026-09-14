@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
+import '../../core/localization/language_provider.dart';
 
 /// A single bottom navigation item.
 class AppBottomNavItem {
@@ -82,102 +83,111 @@ class AppBottomNav extends StatelessWidget {
 
 /// Pre-defined navigation items for each user role.
 abstract class AppBottomNavItems {
-  static const artisan = [
-    AppBottomNavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home,
-      label: 'Home',
-      route: '/artisan/home',
-    ),
-    AppBottomNavItem(
-      icon: Icons.inventory_2_outlined,
-      activeIcon: Icons.inventory_2,
-      label: 'Products',
-      route: '/artisan/products',
-    ),
-    AppBottomNavItem(
-      icon: Icons.add_circle_outline,
-      activeIcon: Icons.add_circle,
-      label: 'Add Product',
-      route: '/artisan/add-product',
-    ),
-    AppBottomNavItem(
-      icon: Icons.receipt_long_outlined,
-      activeIcon: Icons.receipt_long,
-      label: 'Orders',
-      route: '/artisan/orders',
-    ),
-    AppBottomNavItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person,
-      label: 'Profile',
-      route: '/artisan/profile',
-    ),
-  ];
+  static List<AppBottomNavItem> artisan(BuildContext context) {
+    final lang = LanguageProvider.of(context);
+    return [
+      AppBottomNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home,
+        label: lang.t('navHome'),
+        route: '/artisan/home',
+      ),
+      AppBottomNavItem(
+        icon: Icons.inventory_2_outlined,
+        activeIcon: Icons.inventory_2,
+        label: lang.t('navProducts'),
+        route: '/artisan/products',
+      ),
+      AppBottomNavItem(
+        icon: Icons.add_circle_outline,
+        activeIcon: Icons.add_circle,
+        label: lang.t('navAddProduct'),
+        route: '/artisan/add-product',
+      ),
+      AppBottomNavItem(
+        icon: Icons.receipt_long_outlined,
+        activeIcon: Icons.receipt_long,
+        label: lang.t('navOrders'),
+        route: '/artisan/orders',
+      ),
+      AppBottomNavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: lang.t('navProfile'),
+        route: '/artisan/profile',
+      ),
+    ];
+  }
 
-  static const b2b = [
-    AppBottomNavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home,
-      label: 'Home',
-      route: '/b2b/home',
-    ),
-    AppBottomNavItem(
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore,
-      label: 'Explore',
-      route: '/b2b/explore',
-    ),
-    AppBottomNavItem(
-      icon: Icons.add_circle_outline,
-      activeIcon: Icons.add_circle,
-      label: 'Post Req',
-      route: '/b2b/requirements',
-    ),
-    AppBottomNavItem(
-      icon: Icons.forum_outlined,
-      activeIcon: Icons.forum,
-      label: 'Enquiries',
-      route: '/b2b/enquiries',
-    ),
-    AppBottomNavItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person,
-      label: 'Profile',
-      route: '/b2b/profile',
-    ),
-  ];
+  static List<AppBottomNavItem> b2b(BuildContext context) {
+    final lang = LanguageProvider.of(context);
+    return [
+      AppBottomNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home,
+        label: lang.t('navHome'),
+        route: '/b2b/home',
+      ),
+      AppBottomNavItem(
+        icon: Icons.explore_outlined,
+        activeIcon: Icons.explore,
+        label: lang.t('navExplore'),
+        route: '/b2b/explore',
+      ),
+      AppBottomNavItem(
+        icon: Icons.add_circle_outline,
+        activeIcon: Icons.add_circle,
+        label: lang.t('postRequirement'),
+        route: '/b2b/requirements',
+      ),
+      AppBottomNavItem(
+        icon: Icons.forum_outlined,
+        activeIcon: Icons.forum,
+        label: lang.t('navEnquiries'),
+        route: '/b2b/enquiries',
+      ),
+      AppBottomNavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: lang.t('navProfile'),
+        route: '/b2b/profile',
+      ),
+    ];
+  }
 
-  static const buyer = [
-    AppBottomNavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home,
-      label: 'Home',
-      route: '/buyer/home',
-    ),
-    AppBottomNavItem(
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore,
-      label: 'Explore',
-      route: '/buyer/explore',
-    ),
-    AppBottomNavItem(
-      icon: Icons.shopping_cart_outlined,
-      activeIcon: Icons.shopping_cart,
-      label: 'Cart',
-      route: '/buyer/cart',
-    ),
-    AppBottomNavItem(
-      icon: Icons.receipt_long_outlined,
-      activeIcon: Icons.receipt_long,
-      label: 'Orders',
-      route: '/buyer/orders',
-    ),
-    AppBottomNavItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person,
-      label: 'Profile',
-      route: '/buyer/profile',
-    ),
-  ];
+  static List<AppBottomNavItem> buyer(BuildContext context) {
+    final lang = LanguageProvider.of(context);
+    return [
+      AppBottomNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home,
+        label: lang.t('navHome'),
+        route: '/buyer/home',
+      ),
+      AppBottomNavItem(
+        icon: Icons.explore_outlined,
+        activeIcon: Icons.explore,
+        label: lang.t('navExplore'),
+        route: '/buyer/explore',
+      ),
+      AppBottomNavItem(
+        icon: Icons.shopping_cart_outlined,
+        activeIcon: Icons.shopping_cart,
+        label: lang.t('navCart'),
+        route: '/buyer/cart',
+      ),
+      AppBottomNavItem(
+        icon: Icons.receipt_long_outlined,
+        activeIcon: Icons.receipt_long,
+        label: lang.t('navOrders'),
+        route: '/buyer/orders',
+      ),
+      AppBottomNavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: lang.t('navProfile'),
+        route: '/buyer/profile',
+      ),
+    ];
+  }
 }
