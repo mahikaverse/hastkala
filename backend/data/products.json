@@ -1,5 +1,30 @@
 [
   {
+    "id": "prod_1789398523144",
+    "name": "Cotton Chain Hair",
+    "price": 200.0,
+    "original_price": 200.0,
+    "category": "Textiles & Handloom",
+    "craft": "",
+    "material": "Cotton",
+    "color": "",
+    "artisan_name": "Ramesh Kumar",
+    "artisan_id": "ap_1",
+    "store_id": "st_1",
+    "location": "Jaipur, Rajasthan",
+    "description": "This product is a cotton chain hair accessory. It weighs 5 grams and is used by children for school.",
+    "craft_story": "This craft is made with a lot of hard work in our state. My grandfather taught me this craft in my family. The special feature of this product is that it looks very good and is very durable. We make it with a lot of love.",
+    "making_time": "24 hours",
+    "tags": [
+      "Cotton",
+      "Handmade"
+    ],
+    "image_url": "https://acutpnwhubbmptbgtnih.supabase.co/storage/v1/object/public/products/prod_1789398523144.jpg",
+    "stock": 10,
+    "is_published": true,
+    "created_at": "2026-09-14T15:08:43Z"
+  },
+  {
     "id": "prod_1789330581006",
     "name": "Plastic Bottle",
     "price": 60.0,

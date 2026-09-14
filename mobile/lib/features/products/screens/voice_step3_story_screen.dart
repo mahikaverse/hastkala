@@ -165,9 +165,19 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     };
     _sttService.onError = (error) {
       debugPrint('[LIVE STT ERROR] $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), duration: const Duration(seconds: 4), backgroundColor: AppColors.error),
+        );
+      }
     };
     final langCode = _selectedLocaleId.split('_').first;
-    _sttService.start(language: langCode);
+    final started = await _sttService.start(language: langCode);
+    if (!started && mounted) {
+      _recordingTimer?.cancel();
+      _waveController.stop();
+      setState(() => _isRecording = false);
+    }
   }
 
   Future<void> _stopRecording() async {
@@ -191,11 +201,12 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
       return;
     }
 
-    if (_audioPath != null) {
-      final file = File(_audioPath!);
+    final audioPath = _audioPath ?? _sttService.lastCompletedChunkPath;
+    if (audioPath != null) {
+      final file = File(audioPath);
       final exists = await file.exists();
       final size = exists ? await file.length() : 0;
-      debugPrint('[Step3] Audio file: $_audioPath, exists=$exists, size=$size bytes');
+      debugPrint('[Step3] Audio file: $audioPath, exists=$exists, size=$size bytes');
 
       if (exists && size > 1000) {
         await _extractFromAudioFile();
@@ -247,13 +258,14 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   }
 
   Future<void> _extractFromAudioFile() async {
-    if (_audioPath == null) return;
+    final audioPath = _audioPath ?? _sttService.lastCompletedChunkPath;
+    if (audioPath == null) return;
     setState(() => _isExtracting = true);
 
     final langCode = _selectedLocaleId.split('_').first;
 
     try {
-      final file = File(_audioPath!);
+      final file = File(audioPath);
       final bytes = await file.readAsBytes();
       debugPrint('[Step3 Audio] Uploading ${bytes.length} bytes');
 
@@ -406,7 +418,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
           children: [
             Text(lang.t('step3Title'), style: AppTextStyles.titleMedium.copyWith(color: AppColors.cream)),
             const SizedBox(height: 2),
-            Text('विरासत और कहानी', style: AppTextStyles.bodySmall.copyWith(color: AppColors.cream.withValues(alpha: 0.8), fontSize: 11)),
+            Text(lang.t('step3SubtitleHindi'), style: AppTextStyles.bodySmall.copyWith(color: AppColors.cream.withValues(alpha: 0.8), fontSize: 11)),
           ],
         ),
         centerTitle: true,

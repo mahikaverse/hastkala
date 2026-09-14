@@ -185,9 +185,19 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     };
     _sttService.onError = (error) {
       debugPrint('[LIVE STT ERROR] $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), duration: const Duration(seconds: 4), backgroundColor: AppColors.error),
+        );
+      }
     };
     final langCode = _selectedLocaleId.split('_').first;
-    _sttService.start(language: langCode);
+    final started = await _sttService.start(language: langCode);
+    if (!started && mounted) {
+      _recordingTimer?.cancel();
+      _waveController.stop();
+      setState(() => _isRecording = false);
+    }
   }
 
   Future<void> _stopRecording() async {
@@ -211,11 +221,13 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
       return;
     }
 
-    if (_audioPath != null) {
-      final file = File(_audioPath!);
+    // Try audio fallback from DeepgramStreamService
+    final audioPath = _audioPath ?? _sttService.lastCompletedChunkPath;
+    if (audioPath != null) {
+      final file = File(audioPath);
       final exists = await file.exists();
       final size = exists ? await file.length() : 0;
-      debugPrint('[Process] Audio file: $_audioPath, exists=$exists, size=$size bytes');
+      debugPrint('[Process] Audio file: $audioPath, exists=$exists, size=$size bytes');
 
       if (exists && size > 1000) {
         await _extractFromAudioFile();
@@ -295,13 +307,14 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   }
 
   Future<void> _extractFromAudioFile() async {
-    if (_audioPath == null) return;
+    final audioPath = _audioPath ?? _sttService.lastCompletedChunkPath;
+    if (audioPath == null) return;
     if (mounted) setState(() => _isExtracting = true);
 
     final langCode = _selectedLocaleId.split('_').first;
 
     try {
-      final file = File(_audioPath!);
+      final file = File(audioPath);
       final bytes = await file.readAsBytes();
       debugPrint('[AudioUpload] File size: ${bytes.length} bytes');
 
@@ -548,7 +561,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             ),
             const SizedBox(height: 2),
             Text(
-              'उत्पाद का विवरण',
+              lang.t('step1SubtitleHindi'),
               style: AppTextStyles.bodySmall.copyWith(color: AppColors.cream.withValues(alpha: 0.8), fontSize: 11),
             ),
           ],

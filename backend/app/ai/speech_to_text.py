@@ -70,17 +70,18 @@ def _transcribe_deepgram(
 
     params = {
         "model": "nova-3",
-        "paragraphs": "true",
-        "utt_split": "true",
+        "smart_format": "true",
+        "filler_words": "true",
+        "utt_split": "0.5",
     }
     if language:
         params["language"] = language
-        params["detect_language"] = "false"
-        logger.info(f"[STT] Explicit language={language}, detect_language=false")
+        params["detect_language"] = "true"
+        logger.info(f"[STT] Language hint={language}, detect_language=true")
     else:
-        params["language"] = "hi"
-        params["detect_language"] = "false"
-        logger.info(f"[STT] Default language=hi, detect_language=false")
+        # No language specified — let Deepgram auto-detect
+        params["detect_language"] = "true"
+        logger.info("[STT] No language specified, detect_language=true (auto-detect)")
 
     logger.info(f"[STT] Deepgram params: {params}, mime={mime}")
 
@@ -89,7 +90,7 @@ def _transcribe_deepgram(
         "Content-Type": mime,
     }
 
-    with httpx.Client(timeout=60.0) as client:
+    with httpx.Client(timeout=15.0) as client:
         resp = client.post(
             "https://api.deepgram.com/v1/listen",
             params=params,
