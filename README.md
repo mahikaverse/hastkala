@@ -120,6 +120,4 @@ HastKala exists to ensure that every artisan — regardless of location or techn
 
 ---
 
-## License
-
-Private — WorkHolic Agency
+ 
