@@ -402,6 +402,50 @@ class B2BService {
     }
   }
 
+  /// Fetches artisans from the buyer's region.
+  /// Returns city artisans first, then same-state artisans (deduplicated).
+  Future<List<ArtisanProfile>> getArtisansByRegion({
+    String? city,
+    String? state,
+  }) async {
+    try {
+      final all = <ArtisanProfile>[];
+      final seenIds = <String>{};
+
+      // 1. Fetch city artisans first
+      if (city != null && city.isNotEmpty) {
+        final cityData = await _client
+            .from('artisans')
+            .select()
+            .ilike('location', '%$city%')
+            .order('created_at', ascending: false)
+            .limit(20);
+        for (final row in (cityData as List)) {
+          final artisan = ArtisanProfile.fromMap(_artisanToCamel(row as Map<String, dynamic>));
+          if (seenIds.add(artisan.id)) all.add(artisan);
+        }
+      }
+
+      // 2. Fill with same-state artisans not already in list
+      if (state != null && state.isNotEmpty) {
+        final stateData = await _client
+            .from('artisans')
+            .select()
+            .eq('state', state)
+            .order('created_at', ascending: false)
+            .limit(30);
+        for (final row in (stateData as List)) {
+          final artisan = ArtisanProfile.fromMap(_artisanToCamel(row as Map<String, dynamic>));
+          if (seenIds.add(artisan.id)) all.add(artisan);
+        }
+      }
+
+      return all;
+    } catch (e) {
+      return [];
+    }
+  }
+
   Future<ArtisanProfile?> getArtisan(String artisanId) async {
     try {
       final data = await _client

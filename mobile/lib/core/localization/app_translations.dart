@@ -650,6 +650,14 @@ class AppTranslations {
       'b2bMinOrder': 'Min. Order: ',
       'b2bPcs': ' pcs',
       'b2bVerified': 'Verified',
+      'b2bCraftsFromRegion': 'Crafts From Your Region',
+      'b2bNoLocalArtisans': 'No artisans found in your area',
+      'b2bShowingStateArtisans': 'Showing artisans from your state',
+      'b2bRegionalArtisansTitle': 'Artisans Near You',
+      'b2bFilterCity': 'City',
+      'b2bFilterNearby': 'Nearby',
+      'b2bFilterState': 'State',
+      'b2bSelectCity': 'Select City',
 
       // ─── B2B EXPLORE ───────────────────────────────────────
       'b2bSearchProducts': 'Search products...',
@@ -1575,6 +1583,14 @@ class AppTranslations {
       'b2bMinOrder': 'न्यूनतम ऑर्डर: ',
       'b2bPcs': ' पीस',
       'b2bVerified': 'सत्यापित',
+      'b2bCraftsFromRegion': 'आपके क्षेत्र की शिल्प',
+      'b2bNoLocalArtisans': 'आपके क्षेत्र में कोई कारीगर नहीं मिला',
+      'b2bShowingStateArtisans': 'आपके राज्य के कारीगर दिखा रहे हैं',
+      'b2bRegionalArtisansTitle': 'आपके निकट के कारीगर',
+      'b2bFilterCity': 'शहर',
+      'b2bFilterNearby': 'आस-पास',
+      'b2bFilterState': 'राज्य',
+      'b2bSelectCity': 'शहर चुनें',
 
       // ─── B2B EXPLORE ───────────────────────────────────────
       'b2bSearchProducts': 'उत्पाद खोजें...',

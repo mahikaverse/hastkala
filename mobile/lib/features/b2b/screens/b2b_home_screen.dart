@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/helpers/craft_image_helper.dart';
 import '../../../core/helpers/artisan_image_helper.dart';
@@ -9,6 +10,7 @@ import 'b2b_explore_screen.dart';
 import 'b2b_requirement_form_screen.dart';
 import 'b2b_product_detail_screen.dart';
 import 'b2b_artisan_profile_screen.dart';
+import 'b2b_regional_artisans_screen.dart';
 import '../../../core/localization/language_provider.dart';
 
 class B2BHomeScreen extends StatefulWidget {
@@ -24,6 +26,8 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
   bool _isLoading = true;
   List<MarketplaceProduct> _featuredProducts = [];
   List<ArtisanProfile> _topArtisans = [];
+  List<ArtisanProfile> _regionalArtisans = [];
+  bool _hasBuyerLocation = false;
 
   @override
   void initState() {
@@ -43,9 +47,30 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
         _topArtisans = results[1] as List<ArtisanProfile>;
         _isLoading = false;
       });
+      _loadRegionalArtisans();
     } catch (e) {
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _loadRegionalArtisans() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      final city = user?.userMetadata?['location'] as String?;
+      final state = user?.userMetadata?['state'] as String?;
+      List<ArtisanProfile> artisans;
+      if (city != null || state != null) {
+        artisans = await _service.getArtisansByRegion(city: city, state: state);
+      } else {
+        artisans = await _service.getArtisans();
+      }
+      if (mounted && artisans.isNotEmpty) {
+        setState(() {
+          _regionalArtisans = artisans;
+          _hasBuyerLocation = true;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -517,6 +542,68 @@ class _B2BHomeScreenState extends State<B2BHomeScreen> {
                           ),
               ),
             ),
+
+            // ── Crafts From Your Region ──
+            if (_hasBuyerLocation && !_isLoading) ...[
+              _buildSectionHeader(
+                title: lang.t('b2bCraftsFromRegion'),
+                lang: lang,
+                padding: const EdgeInsets.fromLTRB(20, 20, 16, 12),
+                onViewAll: () {
+                  final user = Supabase.instance.client.auth.currentUser;
+                  final city = user?.userMetadata?['location'] as String?;
+                  final state = user?.userMetadata?['state'] as String?;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => B2BRegionalArtisansScreen(
+                        buyerCity: city,
+                        buyerState: state,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 175,
+                  child: _regionalArtisans.isNotEmpty
+                      ? ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: _regionalArtisans.length.clamp(0, 6),
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            return _buildRegionalArtisanCard(_regionalArtisans[index], lang);
+                          },
+                        )
+                      : Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 40),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.location_off_outlined,
+                                  size: 32,
+                                  color: AppColors.brown.withValues(alpha: 0.25),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  lang.t('b2bNoLocalArtisans'),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.brown.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ],
 
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
@@ -1236,6 +1323,174 @@ Icons.palette_outlined,
                           ),
                         ],
                       ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRegionalArtisanCard(ArtisanProfile artisan, LanguageProvider lang) {
+    final fallbackAsset = ArtisanImageHelper.getAssetForArtisan(
+      name: artisan.name,
+      craftType: artisan.craftSpecialization,
+      artisanId: artisan.id,
+    );
+    final useNetwork = !ArtisanImageHelper.isForeignerOrInvalidPhoto(artisan.avatarUrl);
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => B2BArtisanProfileScreen(artisan: artisan),
+          ),
+        );
+      },
+      child: Container(
+        width: 160,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.brown.withValues(alpha: 0.08)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: SizedBox(
+                width: double.infinity,
+                height: 80,
+                child: useNetwork
+                    ? Image.network(
+                        artisan.avatarUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          fallbackAsset,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: AppColors.terracotta.withValues(alpha: 0.08),
+                            child: Center(
+                              child: Text(
+                                artisan.name.isNotEmpty ? artisan.name[0].toUpperCase() : 'A',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.terracotta.withValues(alpha: 0.3),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Image.asset(
+                        fallbackAsset,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: AppColors.terracotta.withValues(alpha: 0.08),
+                          child: Center(
+                            child: Text(
+                              artisan.name.isNotEmpty ? artisan.name[0].toUpperCase() : 'A',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.terracotta.withValues(alpha: 0.3),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      artisan.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.brown,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      artisan.craftSpecialization,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.terracotta.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 10,
+                          color: AppColors.brown.withValues(alpha: 0.45),
+                        ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            _cleanLocation(artisan.location, artisan.state),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.brown.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 26,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => B2BArtisanProfileScreen(artisan: artisan),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          side: BorderSide(color: AppColors.terracotta.withValues(alpha: 0.4)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          lang.t('b2bViewProfile'),
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.terracotta,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
