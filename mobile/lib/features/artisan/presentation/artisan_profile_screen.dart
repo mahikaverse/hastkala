@@ -955,7 +955,7 @@ class _ArtisanProfileScreenState extends State<ArtisanProfileScreen> {
           null,
         ];
         if (routes[i] != null) {
-          Navigator.pushNamed(context, routes[i]!);
+          Navigator.pushReplacementNamed(context, routes[i]!);
         }
       },
       items: HastKalaNavItems.artisanLegacy(context),

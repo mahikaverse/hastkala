@@ -57,56 +57,43 @@ Output valid JSON ONLY with these exact keys:
   "artisan_intro": null
 }}"""
 
-EXTRACTION_PROMPT_STEP1 = """You are a factual product data extractor for Indian artisans.
-Extract ONLY the product basic details that the artisan explicitly mentions in their speech.
+EXTRACTION_PROMPT_STEP1 = """You are a product catalog assistant for Indian artisans.
+Build a COMPLETE product listing from the artisan's speech below. A product photo may also be attached.
 
 Speech: "{transcript}"
 
 IMPORTANT: The transcript may be in Hindi, Hinglish, or English. ALL output values MUST be in English.
-Translate Hindi/Hinglish terms to English naturally. Examples:
+Translate Hindi/Hinglish naturally. Examples:
 - "bamboo ki tokri" → material: "Bamboo", product_name: "Bamboo Basket"
 - "mitti ke diye" → material: "Clay", product_name: "Clay Diya"
-- "brown colour hai" → color: "Brown"
 - "baarah inch" → size: "12 inch"
-- "teen din" → making_time: "3 days"
 
-STRICT RULES:
-- Extract ONLY what the artisan actually said.
-- Do NOT invent, assume, or embellish any information.
-- If something was NOT mentioned, set it to null.
-- Do NOT use generic filler words like "handcrafted", "handmade", "traditional", "premium".
-- Product name must be the actual product described in English. Examples:
-  - "Mai bamboo ki tokri banata hu" → product_name: "Bamboo Basket"
-  - "Mai mitti ke diye banata hu" → product_name: "Clay Diya"
-  - "Mai blue pottery ka vase banata hu" → product_name: "Blue Pottery Vase"
-  - NEVER: "Handcrafted Item", "Handmade Craft", "Handicraft Product"
-- Category must match the actual product/material:
-  - Bamboo/Cane products → "Bamboo & Cane"
-  - Clay/Terracotta/Pottery → "Pottery & Ceramics"
-  - Silk/Cotton/Saree/Kurta → "Textiles & Handloom"
-  - Brass/Copper/Bronze metal items → "Metal Craft"
-  - Wood/Wooden items → "Woodwork"
-  - Jewelry items → "Jewelry & Accessories"
-  - Paintings → "Paintings & Art"
-  - Leather items → "Leather Craft"
-  - Stone/Marble items → "Stone Craft"
-  - Anything else → "Other"
-  - Do NOT force a product into a handicraft category if it doesn't belong there.
-- description: MUST contain at least 2 factual sentences based ONLY on what was said. Do NOT add words like "premium", "traditional", "handcrafted" unless the artisan literally said them. Each sentence must be based on verified information. Examples:
-  - "Bamboo basket" → "This product is a bamboo basket. It is made from bamboo."
-  - "Blue vase" → "This product is a blue vase. It is available in a blue color."
-  - "Bamboo basket, brown color, 12 inch, takes 3 days to make" → "This bamboo basket is brown in color and measures 12 inches. It takes approximately three days to make."
+You MUST fill EVERY field with a real value — never null, empty, or "unknown".
+Use this priority for each field:
+1. What the artisan explicitly said in the speech.
+2. What you can observe in the product photo, if one is attached.
+3. A realistic, sensible value for an Indian handicraft product of this kind.
+
+FIELD RULES:
+- product_name: short commercial English name (e.g. "Bamboo Basket", "Blue Pottery Vase", "Handloom Cotton Saree"). Derive from speech first, otherwise from the photo. NEVER output generic names like "Handmade Item", "Craft Product", "Handicraft".
+- category: exactly one of: Bamboo & Cane, Pottery & Ceramics, Textiles & Handloom, Metal Craft, Woodwork, Jewelry & Accessories, Paintings & Art, Leather Craft, Stone Craft, Other Crafts.
+- material: main material (Bamboo, Clay, Terracotta, Brass, Copper, Wood, Cotton, Silk, Marble, Leather, ...). From speech first, else from the photo.
+- craft: making technique (Hand-painted, Hand-carved, Wheel-turned, Handloom woven, Hand-stitched, Block-printed, Lacquered, ...). Infer from the product type if not stated.
+- color: main colour(s) spoken or clearly visible in the photo (e.g. "Brown", "Blue and White", "Multicolour").
+- size: use what the artisan said (e.g. "12 inch", "Medium"). Otherwise estimate a realistic size for this product from the photo (e.g. "Approx. 20 inch").
+- weight: use what the artisan said. Otherwise give a realistic approximate weight for this product (e.g. "Approx. 350 g").
+- description: 2 to 3 simple, honest English sentences for buyers, based on the speech and the photo. Do NOT use marketing filler like "premium", "luxury", "world-class", "exquisite". Plain, factual, warm language.
 
 Output valid JSON ONLY with these exact keys:
 {{
-  "product_name": null,
-  "category": null,
-  "material": null,
-  "craft": null,
-  "color": null,
-  "size": null,
-  "weight": null,
-  "description": null
+  "product_name": "",
+  "category": "",
+  "material": "",
+  "craft": "",
+  "color": "",
+  "size": "",
+  "weight": "",
+  "description": ""
 }}"""
 
 EXTRACTION_PROMPT_STEP2 = """You are a factual data extractor for Indian artisans.
@@ -186,7 +173,10 @@ def _safe_parse_json(raw: str) -> Optional[dict]:
 
 
 def _call_ollama(prompt: str, timeout: float = 5.0) -> Optional[dict]:
-    """Fallback LLM: Ollama (local qwen2.5:3b)."""
+    """Fallback LLM: Ollama (local qwen2.5:3b). Skipped when OLLAMA_BASE_URL is empty."""
+    if not settings.OLLAMA_BASE_URL:
+        logger.info("Ollama disabled (OLLAMA_BASE_URL empty) — skipping local fallback.")
+        return None
     try:
         logger.info(f"Calling Ollama at {settings.OLLAMA_BASE_URL} (model={settings.OLLAMA_MODEL})...")
         with httpx.Client(base_url=settings.OLLAMA_BASE_URL, timeout=httpx.Timeout(timeout, connect=1.5)) as client:
@@ -213,8 +203,12 @@ def _call_ollama(prompt: str, timeout: float = 5.0) -> Optional[dict]:
     return None
 
 
-def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
-    """Primary LLM: Groq API (ultra-fast cloud LPU)."""
+def _call_groq_messages(
+    messages: list,
+    timeout: float = 8.0,
+    max_tokens: int = 350,
+) -> Optional[dict]:
+    """Primary LLM: Groq API (ultra-fast cloud LPU). Accepts plain text or multimodal messages."""
     if not settings.GROQ_API_KEY:
         logger.warning("Groq API key not configured, skipping Groq.")
         return None
@@ -229,9 +223,9 @@ def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
         groq_client = groq.Groq(api_key=settings.GROQ_API_KEY, timeout=timeout)
         resp = groq_client.chat.completions.create(
             model=model_to_use,
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             temperature=0.1,
-            max_tokens=350,
+            max_tokens=max_tokens,
         )
         raw_text = resp.choices[0].message.content or ""
         parsed = _safe_parse_json(raw_text)
@@ -241,6 +235,35 @@ def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
     except Exception as e:
         logger.warning(f"Groq extraction failed: {e}")
     return None
+
+
+def _call_groq(prompt: str, timeout: float = 8.0) -> Optional[dict]:
+    return _call_groq_messages([{"role": "user", "content": prompt}], timeout=timeout)
+
+
+def _call_groq_vision(
+    prompt: str,
+    image_bytes: bytes,
+    image_mime: str = "image/jpeg",
+    timeout: float = 15.0,
+) -> Optional[dict]:
+    """Multimodal extraction: transcript + product photo via Groq vision."""
+    import base64
+
+    b64 = base64.b64encode(image_bytes).decode("ascii")
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{image_mime};base64,{b64}"},
+                },
+            ],
+        }
+    ]
+    return _call_groq_messages(messages, timeout=timeout, max_tokens=500)
 
 
 def extract_with_llm(prompt: str) -> Optional[dict]:
@@ -458,54 +481,108 @@ def extract_fast(transcript: str) -> ProductDetails:
     )
 
 
-def extract_step1_product_details(transcript: str) -> dict:
-    """Step 1: Product Name, Category, Material, Craft, Color, Size, Weight.
-    LLM is PRIMARY for semantic fields (name, category, craft).
-    Regex only fills numeric/factual gaps that LLM may miss.
+def _infer_category_from_material(material: str) -> Optional[str]:
+    m = material.lower()
+    if any(k in m for k in ("bamboo", "cane")):
+        return "Bamboo & Cane"
+    if any(k in m for k in ("clay", "terracotta", "ceramic", "pottery", "porcelain")):
+        return "Pottery & Ceramics"
+    if any(k in m for k in ("cotton", "silk", "linen", "wool", "jute", "khadi", "polyester")):
+        return "Textiles & Handloom"
+    if any(k in m for k in ("brass", "copper", "bronze", "iron", "metal", "aluminium")):
+        return "Metal Craft"
+    if any(k in m for k in ("wood", "teak", "sheesham", "rosewood", "plywood")):
+        return "Woodwork"
+    if any(k in m for k in ("gold", "silver", "bead", "pearl", "zari", "lac", "bangle")):
+        return "Jewelry & Accessories"
+    if "leather" in m:
+        return "Leather Craft"
+    if any(k in m for k in ("marble", "stone", "slate")):
+        return "Stone Craft"
+    return None
+
+
+def _fill_step1_defaults(data: dict) -> dict:
+    """Guarantee no text field of the step-1 form is left empty."""
+    name = _clean_null(data.get("product_name"))
+    category = _clean_null(data.get("category"))
+    material = _clean_null(data.get("material"))
+    craft = _clean_null(data.get("craft"))
+    color = _clean_null(data.get("color"))
+    size = _clean_null(data.get("size"))
+    weight = _clean_null(data.get("weight"))
+    description = _clean_null(data.get("description"))
+
+    material = material or "Mixed Materials"
+    category = category or _infer_category_from_material(material) or "Other Crafts"
+    name = name or f"Handmade {material} Craft"
+    craft = craft or "Handcrafted"
+    color = color or "Natural"
+    size = size or "Standard"
+    weight = weight or "Approx. 300 g"
+
+    if not description:
+        parts = [f"{name}, made from {material.lower()}."]
+        if color and color.lower() != "natural":
+            parts.append(f"It is {color.lower()} in colour.")
+        parts.append("It is handmade, so every piece is slightly unique.")
+        description = " ".join(parts)
+
+    return {
+        "product_name": name,
+        "category": category,
+        "material": material,
+        "craft": craft,
+        "color": color,
+        "size": size,
+        "weight": weight,
+        "description": description,
+    }
+
+
+def extract_step1_product_details(
+    transcript: str,
+    image_bytes: Optional[bytes] = None,
+    image_mime: Optional[str] = None,
+) -> dict:
+    """Step 1: Product Name, Category, Material, Craft, Color, Size, Weight, Description.
+    Never returns an empty text field: speech first, then the product photo,
+    then realistic handicraft defaults.
     """
-    logger.info(f"Extract Step 1: '{transcript[:50]}...'")
+    logger.info(
+        f"Extract Step 1: '{transcript[:50]}...', image={'yes' if image_bytes else 'no'}"
+    )
 
-    prompt = EXTRACTION_PROMPT_STEP1.format(transcript=transcript)
-    llm_data = extract_with_llm(prompt)
+    prompt = EXTRACTION_PROMPT_STEP1.format(transcript=transcript or "(no speech provided)")
 
-    # Start with regex-extracted numeric/factual data as baseline
+    llm_data = None
+    if image_bytes and 0 < len(image_bytes) <= 12 * 1024 * 1024:
+        try:
+            llm_data = _call_groq_vision(
+                prompt, image_bytes, image_mime or "image/jpeg"
+            )
+        except Exception as e:
+            logger.warning(f"Vision extraction failed, falling back to text: {e}")
+    if llm_data is None:
+        llm_data = extract_with_llm(prompt)
+
+    # Regex facts from speech — numbers the LLM may drop
     fast = extract_fast(transcript).model_dump()
     base = {k: _clean_null(v) for k, v in fast.items()}
 
-    # LLM is the primary source — it decides product_name, category, craft, description
     if llm_data:
-        semantic_keys = ["product_name", "category", "craft", "description"]
-        for k in semantic_keys:
+        for k in ["product_name", "category", "craft", "description", "material", "color"]:
             val = _clean_null(llm_data.get(k))
             if val is not None:
                 base[k] = val
-            else:
-                # LLM explicitly said null → don't let regex fill it
-                base[k] = None
+        # Speech-measured numbers beat LLM guesses; LLM fills only the gaps
+        for k in ["size", "weight"]:
+            if _clean_null(base.get(k)) is None:
+                val = _clean_null(llm_data.get(k))
+                if val is not None:
+                    base[k] = val
 
-        # For factual fields, LLM overrides regex if present, else keep regex
-        factual_keys = ["material", "color", "size", "weight"]
-        for k in factual_keys:
-            llm_val = _clean_null(llm_data.get(k))
-            if llm_val is not None:
-                base[k] = llm_val
-    else:
-        # LLM failed — use regex only for what it can do
-        base["product_name"] = None
-        base["category"] = None
-        base["craft"] = None
-        base["description"] = None
-
-    return {
-        "product_name": _clean_null(base.get("product_name")),
-        "category": _clean_null(base.get("category")),
-        "material": _clean_null(base.get("material")),
-        "craft": _clean_null(base.get("craft")),
-        "color": _clean_null(base.get("color")),
-        "size": _clean_null(base.get("size")),
-        "weight": _clean_null(base.get("weight")),
-        "description": _clean_null(base.get("description")),
-    }
+    return _fill_step1_defaults(base)
 
 
 def extract_step2_quantity_details(transcript: str) -> dict:

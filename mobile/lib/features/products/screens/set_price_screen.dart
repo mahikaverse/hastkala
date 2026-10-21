@@ -8,6 +8,7 @@ import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/wizard_exit_dialog.dart';
 import '../../../core/widgets/voice_mute_button.dart';
 import '../models/product_draft.dart';
 
@@ -159,7 +160,10 @@ class _SetPriceScreenState extends State<SetPriceScreen> {
         foregroundColor: AppColors.cream,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            final leave = await showWizardExitDialog(context);
+            if (leave && mounted) Navigator.of(context).pop();
+          },
         ),
         title: Text(
           lang.t('setYourPrice'),

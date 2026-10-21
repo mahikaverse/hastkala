@@ -766,7 +766,7 @@ class _ArtisanHomeScreenState extends State<ArtisanHomeScreen> {
       currentIndex: 0,
       onTap: (i) {
         final routes = [null, AppRoutes.manageProducts, AppRoutes.artisanAddProduct, AppRoutes.artisanOrders, AppRoutes.artisanProfile];
-        if (routes[i] != null) Navigator.pushNamed(context, routes[i]!);
+        if (routes[i] != null) Navigator.pushReplacementNamed(context, routes[i]!);
       },
       items: HastKalaNavItems.artisanLegacy(context),
     );

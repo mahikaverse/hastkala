@@ -244,7 +244,7 @@ class _ArtisanAddProductScreenState extends State<ArtisanAddProductScreen> {
           _statusMessage = lang.t('preparingVoice');
         });
 
-        Navigator.pushNamed(
+        Navigator.pushReplacementNamed(
           context,
           AppRoutes.tellAboutProduct,
           arguments: draft,

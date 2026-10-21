@@ -4,17 +4,34 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     APP_NAME: str = "HastKala Backend"
     APP_VERSION: str = "0.1.0"
-    DEBUG: bool = True
-    HOST: str = "127.0.0.1"
+    DEBUG: bool = False
+
+    # Always bind all interfaces so the server is reachable when deployed
+    # (Render, Docker, LAN). Never use 127.0.0.1 in production.
+    HOST: str = "0.0.0.0"
+    # Render injects its own PORT env var — the value below is only a local default.
     PORT: int = 8000
-    BACKEND_IP: str = "192.168.1.35"
+
+    # Public origin of this API once deployed, e.g. https://hastkala-api.onrender.com
+    # Used to turn relative upload paths into absolute URLs. Empty = relative paths.
+    PUBLIC_BASE_URL: str = ""
+
+    # Comma-separated list of allowed browser origins, or "*"
+    CORS_ORIGINS: str = "*"
+
+    # Preloading the rembg model downloads ~180MB at boot, which can blow the
+    # deployment health-check window. Keep it off in the cloud; it loads lazily
+    # on the first image request instead.
+    PRELOAD_AI_MODEL: bool = False
 
     SUPABASE_URL: str = ""
     SUPABASE_PUBLISHABLE_KEY: str = ""
     SUPABASE_SECRET_KEY: str = ""
     SUPABASE_JWKS_URL: str = ""
 
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    # Empty = local Ollama disabled (there is no Ollama on Render).
+    # Set to http://localhost:11434 in local .env if you run Ollama locally.
+    OLLAMA_BASE_URL: str = ""
     OLLAMA_MODEL: str = "qwen2.5:3b"
     OLLAMA_TIMEOUT: int = 120
 
@@ -24,6 +41,17 @@ class Settings(BaseSettings):
     DEEPGRAM_API_KEY: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        raw = (self.CORS_ORIGINS or "*").strip()
+        if raw == "*":
+            return ["*"]
+        return [o.strip() for o in raw.split(",") if o.strip()]
+
+    @property
+    def base_url(self) -> str:
+        return (self.PUBLIC_BASE_URL or "").rstrip("/")
 
 
 settings = Settings()

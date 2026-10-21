@@ -62,6 +62,9 @@ def _call_llm(system_msg: str, user_msg: str, temperature: float = 0.7, max_toke
 
 
 def _call_ollama(system_msg: str, user_msg: str, temperature: float = 0.7, max_tokens: int = 400) -> Optional[str]:
+    if not settings.OLLAMA_BASE_URL:
+        logger.info("Marketing: Ollama disabled (OLLAMA_BASE_URL empty) — skipping.")
+        return None
     prompt = f"{system_msg}\n\n{user_msg}" if system_msg else user_msg
     try:
         logger.info(f"Marketing: Calling Ollama...")

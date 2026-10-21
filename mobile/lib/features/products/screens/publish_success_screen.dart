@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
@@ -46,11 +47,14 @@ class PublishSuccessScreen extends StatelessWidget {
     final lang = LanguageProvider.of(context);
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
-      },
+onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.manageProducts,
+              (route) => route.isFirst,
+            );
+          }
+        },
       child: Scaffold(
         backgroundColor: AppColors.cream,
         body: SafeArea(
@@ -130,7 +134,10 @@ class PublishSuccessScreen extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).popUntil((route) => route.isFirst);
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        AppRoutes.manageProducts,
+                        (route) => route.isFirst,
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.terracotta,
@@ -169,7 +176,10 @@ class PublishSuccessScreen extends StatelessWidget {
                 const SizedBox(height: AppDimensions.sm),
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      AppRoutes.manageProducts,
+                      (route) => route.isFirst,
+                    );
                   },
                   child: Text(
                     lang.t('goToMyProducts'),

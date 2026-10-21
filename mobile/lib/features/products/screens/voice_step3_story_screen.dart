@@ -12,6 +12,7 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../core/services/api_config.dart';
 import '../../../core/services/deepgram_stream_service.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/wizard_exit_dialog.dart';
 import '../../../core/widgets/voice_mute_button.dart';
 import '../models/product_draft.dart';
 import '../../../../core/localization/language_provider.dart';
@@ -38,6 +39,8 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
   late AnimationController _waveController;
   String _liveCaption = '';
   String? _audioPath;
+  String? _lastSpokenTranscript;
+  bool _extractionFailed = false;
 
   // Deepgram streaming STT
   final DeepgramStreamService _sttService = DeepgramStreamService();
@@ -190,6 +193,10 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     }
 
     if (mounted) setState(() => _isRecording = false);
+    final spoken = _liveCaption.trim();
+    if (spoken.isNotEmpty && !spoken.startsWith('[Audio recording')) {
+      _lastSpokenTranscript = spoken;
+    }
     _processExtraction();
   }
 
@@ -222,7 +229,28 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     }
   }
 
+  Future<void> _extractAgain() async {
+    final saved = _lastSpokenTranscript;
+    if (saved != null && saved.isNotEmpty) {
+      debugPrint('[Step3] Re-extracting from saved transcript');
+      await _extractDetails(saved);
+      return;
+    }
+    final audioPath = _audioPath ?? _sttService.lastCompletedChunkPath;
+    if (audioPath != null && await File(audioPath).exists()) {
+      debugPrint('[Step3] Re-extracting from saved audio: $audioPath');
+      await _extractFromAudioFile();
+      return;
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(LanguageProvider.of(context).t('speakOrTypeStory'))),
+      );
+    }
+  }
+
   Future<void> _extractDetails(String text) async {
+    if (text.trim().isNotEmpty) _lastSpokenTranscript = text.trim();
     setState(() => _isExtracting = true);
     debugPrint('[Step3] Sending to /api/ai/extract-step3: "${text.substring(0, text.length.clamp(0, 80))}..."');
 
@@ -242,11 +270,17 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
         if (data['success'] == true && data['data'] is Map) {
           final serverData = data['data'] as Map<String, dynamic>;
           debugPrint('[Step3] Extracted: $serverData');
-          _populateControllers(serverData);
+          final hadData = _populateControllers(serverData);
+          if (mounted) setState(() => _extractionFailed = !hadData);
+        } else {
+          if (mounted) setState(() => _extractionFailed = true);
         }
+      } else {
+        if (mounted) setState(() => _extractionFailed = true);
       }
     } catch (e) {
       debugPrint('[Step3] Backend call failed: $e');
+      if (mounted) setState(() => _extractionFailed = true);
     }
 
     if (mounted) {
@@ -297,14 +331,16 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
 
             if (transcript.isNotEmpty) _liveCaption = transcript;
 
+            bool hadData = false;
             if (extracted != null) {
               debugPrint('[Step3 Audio] Extracted: $extracted');
-              _populateControllers(extracted);
+              hadData = _populateControllers(extracted);
             }
             if (mounted) {
               setState(() {
                 _isExtracting = false;
                 _showExtractedForm = true;
+                _extractionFailed = !hadData;
               });
             }
             return;
@@ -322,20 +358,26 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
       setState(() {
         _isExtracting = false;
         _showExtractedForm = true;
+        _extractionFailed = true;
       });
     }
   }
 
-  void _populateControllers(Map<String, dynamic> data) {
+  bool _populateControllers(Map<String, dynamic> data) {
+    bool any = false;
     if (data['craft_story'] != null && data['craft_story'].toString().trim().isNotEmpty) {
       _craftStoryCtrl.text = data['craft_story'].toString().trim();
+      any = true;
     }
     if (data['location'] != null && data['location'].toString().trim().isNotEmpty) {
       _locationCtrl.text = data['location'].toString().trim();
+      any = true;
     }
     if (data['artisan_intro'] != null && data['artisan_intro'].toString().trim().isNotEmpty) {
       _artisanIntroCtrl.text = data['artisan_intro'].toString().trim();
+      any = true;
     }
+    return any;
   }
 
   void _saveAndProceedToPricing() {
@@ -412,7 +454,10 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
         foregroundColor: AppColors.cream,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            final leave = await showWizardExitDialog(context);
+            if (leave && mounted) Navigator.of(context).pop();
+          },
         ),
         title: Column(
           children: [
@@ -989,20 +1034,32 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
         Container(
           padding: const EdgeInsets.all(AppDimensions.md),
           decoration: BoxDecoration(
-            color: AppColors.oliveGreen.withValues(alpha: 0.1),
+            color: (_extractionFailed ? AppColors.error : AppColors.oliveGreen).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-            border: Border.all(color: AppColors.oliveGreen.withValues(alpha: 0.3)),
+            border: Border.all(color: (_extractionFailed ? AppColors.error : AppColors.oliveGreen).withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.check_circle, color: AppColors.oliveGreen, size: 20),
+              Icon(
+                _extractionFailed ? Icons.error_outline : Icons.check_circle,
+                color: _extractionFailed ? AppColors.error : AppColors.oliveGreen,
+                size: 20,
+              ),
               const SizedBox(width: AppDimensions.sm),
               Expanded(
                 child: Text(
-                  lang.t('storyCrafted'),
-                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.oliveGreen, fontWeight: FontWeight.bold),
+                  _extractionFailed ? lang.t('couldNotReachAI') : lang.t('storyCrafted'),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: _extractionFailed ? AppColors.error : AppColors.oliveGreen,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
+              if (_extractionFailed)
+                TextButton(
+                  onPressed: _extractAgain,
+                  child: Text(lang.t('extractAgain'), style: TextStyle(color: AppColors.terracotta, fontSize: 12)),
+                ),
               TextButton(
                 onPressed: () => setState(() => _showExtractedForm = false),
                 child: Text(lang.t('speakAgain'), style: TextStyle(color: AppColors.terracotta, fontSize: 12)),

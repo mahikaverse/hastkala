@@ -120,8 +120,9 @@ def create_product(payload: ProductCreatePayload):
             if supabase_url:
                 final_image_url = supabase_url
             else:
-                # Fallback to local server static URL
-                final_image_url = f"/uploads/{image_filename}"
+                # Fallback to server-hosted static URL (absolute once PUBLIC_BASE_URL is set)
+                relative = f"/uploads/{image_filename}"
+                final_image_url = f"{settings.base_url}{relative}" if settings.base_url else relative
         except Exception as e:
             logger.error(f"Failed to process product image: {e}")
 

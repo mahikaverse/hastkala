@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../app/router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_dimensions.dart';
 import '../../../app/theme/app_text_styles.dart';
@@ -259,9 +260,12 @@ class _ReadyToPublishScreenState extends State<ReadyToPublishScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
+onPressed: () {
+                     Navigator.of(context).pushNamedAndRemoveUntil(
+                       AppRoutes.manageProducts,
+                       (route) => route.isFirst,
+                     );
+                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.brown,
                     side: const BorderSide(color: AppColors.border),

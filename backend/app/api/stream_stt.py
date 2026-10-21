@@ -1,9 +1,9 @@
 """WebSocket endpoint for real-time STT via Deepgram Nova-3.
 
 Protocol:
-  Client → Server: binary audio chunks (PCM 16-bit 8kHz mono)
+  Client → Server: binary audio chunks (PCM 16-bit 16kHz mono)
   Client → Server: {"type": "CloseStream"} to finish
-  Server → Client: {"type":"transcript","text":"...","is_final":bool,"language":"..."}
+  Server → Client: {"type":"transcript","text":"...","is_final":bool,"language":"...","start":float,"duration":float}
 """
 import asyncio
 import json
@@ -40,19 +40,36 @@ LANGUAGE_MAP = {
 
 
 def _build_deepgram_url(language: str = "hi") -> str:
-    dg_lang = LANGUAGE_MAP.get(language, language.split("_")[0] if "_" in language else language)
+    requested = language or "hi"
+    dg_lang = LANGUAGE_MAP.get(
+        requested, requested.split("_")[0] if "_" in requested else requested
+    )
+
+    # Hindi/English users speak Hinglish, so use Nova-3 multilingual
+    # code-switching (language=multi) with the fast endpointing Deepgram
+    # recommends for code-switching. Other languages keep their own model.
+    if dg_lang in ("hi", "en"):
+        dg_lang = "multi"
+        endpointing = "100"
+    else:
+        endpointing = "300"
+
     params = urllib.parse.urlencode({
         "model": "nova-3",
         "language": dg_lang,
         "detect_language": "false",
         "interim_results": "true",
-        "endpointing": "300",
+        "endpointing": endpointing,
         "utterance_end_ms": "1000",
         "encoding": "linear16",
         "sample_rate": "16000",
         "channels": "1",
+        "smart_format": "true",
     })
-    logger.info(f"[LIVE STT] Deepgram WS config: language={dg_lang}, encoding=linear16, sample_rate=16000")
+    logger.info(
+        f"[LIVE STT] Deepgram WS config: language={dg_lang}, "
+        f"encoding=linear16, sample_rate=16000, endpointing={endpointing}"
+    )
     return f"{DEEPGRAM_WS_HOST}?{params}"
 
 
@@ -74,7 +91,7 @@ async def stream_stt(websocket: WebSocket):
         return
 
     dg_url = _build_deepgram_url(language)
-    logger.info(f"[LIVE STT] Deepgram URL params: language={language}, encoding=linear16, sample_rate=8000")
+    logger.info(f"[LIVE STT] Connecting to Deepgram (requested language={language})")
 
     try:
         async with websockets.connect(
@@ -138,19 +155,31 @@ async def stream_stt(websocket: WebSocket):
                                 "text": transcript,
                                 "is_final": is_final,
                                 "language": lang,
+                                "start": data.get("start"),
+                                "duration": data.get("duration"),
                             })
                 except Exception as e:
                     logger.error(f"[LIVE STT ERROR] Receive error: {e}")
 
-            done, pending = await asyncio.wait(
-                [
-                    asyncio.create_task(_forward_audio()),
-                    asyncio.create_task(_receive_transcripts()),
-                ],
+            forward_task = asyncio.create_task(_forward_audio())
+            receive_task = asyncio.create_task(_receive_transcripts())
+
+            await asyncio.wait(
+                {forward_task, receive_task},
                 return_when=asyncio.FIRST_COMPLETED,
             )
-            for t in pending:
-                t.cancel()
+
+            # Client finished sending (CloseStream) or dropped: keep draining
+            # Deepgram for a moment so the last words are not lost.
+            if not receive_task.done():
+                try:
+                    await asyncio.wait({receive_task}, timeout=2.0)
+                except Exception:
+                    pass
+
+            for task in (forward_task, receive_task):
+                if not task.done():
+                    task.cancel()
 
     except Exception as e:
         logger.error(f"[LIVE STT ERROR] {e}")

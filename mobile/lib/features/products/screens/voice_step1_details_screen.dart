@@ -41,6 +41,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
   String _liveCaption = '';
   String? _audioPath;
   String? _errorMessage;
+  String? _lastSpokenTranscript;
 
   // Deepgram streaming STT
   final DeepgramStreamService _sttService = DeepgramStreamService();
@@ -210,6 +211,8 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     }
 
     if (mounted) setState(() => _isRecording = false);
+    final spoken = _liveCaption.trim();
+    if (spoken.isNotEmpty) _lastSpokenTranscript = spoken;
     _processExtraction();
   }
 
@@ -250,7 +253,26 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     }
   }
 
+  Future<void> _extractAgain() async {
+    final saved = _lastSpokenTranscript;
+    if (saved != null && saved.isNotEmpty) {
+      debugPrint('[Extract] Re-extracting from saved transcript');
+      await _extractDetailsFromText(saved);
+      return;
+    }
+    final audioPath = _audioPath ?? _sttService.lastCompletedChunkPath;
+    if (audioPath != null && await File(audioPath).exists()) {
+      debugPrint('[Extract] Re-extracting from saved audio: $audioPath');
+      await _extractFromAudioFile();
+      return;
+    }
+    if (mounted) {
+      setState(() => _errorMessage = LanguageProvider.of(context).t('noSpeechDetected'));
+    }
+  }
+
   Future<void> _extractDetailsFromText(String text) async {
+    if (text.trim().isNotEmpty) _lastSpokenTranscript = text.trim();
     if (mounted) setState(() => _isExtracting = true);
 
     debugPrint('[Extract] Sending to backend extract-step1: "${text.substring(0, text.length.clamp(0, 80))}..."');
@@ -259,11 +281,22 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/ai/extract-step1');
       debugPrint('[Extract] POST $uri');
 
-      final resp = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'transcript': text}),
-      ).timeout(const Duration(seconds: 20));
+      final request = http.MultipartRequest('POST', uri);
+      request.fields['transcript'] = text;
+
+      final imageBytes = await _loadDraftImageBytes();
+      if (imageBytes != null) {
+        request.files.add(http.MultipartFile.fromBytes(
+          'image',
+          imageBytes,
+          filename: 'product.jpg',
+          contentType: MediaType('image', 'jpeg'),
+        ));
+        debugPrint('[Extract] Attaching product photo (${imageBytes.length} bytes)');
+      }
+
+      final streamed = await request.send().timeout(const Duration(seconds: 30));
+      final resp = await http.Response.fromStream(streamed);
 
       debugPrint('[Extract] HTTP status: ${resp.statusCode}');
       debugPrint('[Extract] Response body: ${resp.body.substring(0, resp.body.length.clamp(0, 500))}');
@@ -306,6 +339,23 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     }
   }
 
+  Future<List<int>?> _loadDraftImageBytes() async {
+    final path = widget.draft.imagePath;
+    if (path == null || path.isEmpty) return null;
+    try {
+      if (path.startsWith('data:')) {
+        final comma = path.indexOf(',');
+        if (comma < 0) return null;
+        return base64Decode(path.substring(comma + 1));
+      }
+      final file = File(path);
+      if (await file.exists()) return await file.readAsBytes();
+    } catch (e) {
+      debugPrint('[Extract] Could not read draft image: $e');
+    }
+    return null;
+  }
+
   Future<void> _extractFromAudioFile() async {
     final audioPath = _audioPath ?? _sttService.lastCompletedChunkPath;
     if (audioPath == null) return;
@@ -330,6 +380,15 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             filename: 'step1_voice.wav',
             contentType: MediaType('audio', 'wav'),
           ));
+          final imageBytes = await _loadDraftImageBytes();
+          if (imageBytes != null) {
+            req.files.add(http.MultipartFile.fromBytes(
+              'image',
+              imageBytes,
+              filename: 'product.jpg',
+              contentType: MediaType('image', 'jpeg'),
+            ));
+          }
 
           final streamed = await req.send().timeout(const Duration(seconds: 30));
           debugPrint('[AudioUpload] HTTP status: ${streamed.statusCode}');
@@ -433,7 +492,8 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         if (mat != null) _materialCtrl.text = mat;
         if (craft != null) _craftCtrl.text = craft;
         if (color != null) _colorCtrl.text = color;
-        if (size != null) _sizeCtrl.text = size;
+        // Keep the size already detected from the product photo, only fill empty
+        if (size != null && _sizeCtrl.text.trim().isEmpty) _sizeCtrl.text = size;
         if (weight != null) _weightCtrl.text = weight;
         if (desc != null) _descriptionCtrl.text = desc;
       });
@@ -1286,11 +1346,15 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             ),
           ),
           TextButton(
+            onPressed: _extractAgain,
+            child: Text(lang.t('extractAgain'), style: const TextStyle(color: AppColors.terracotta, fontSize: 12)),
+          ),
+          TextButton(
             onPressed: () => setState(() {
               _showExtractedForm = false;
               _errorMessage = null;
             }),
-            child: Text(lang.t('tryAgain'), style: const TextStyle(color: AppColors.terracotta, fontSize: 12)),
+            child: Text(lang.t('speakAgain'), style: const TextStyle(color: AppColors.terracotta, fontSize: 12)),
           ),
         ],
       ),
@@ -1317,11 +1381,15 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
             ),
           ),
           TextButton(
+            onPressed: _extractAgain,
+            child: Text(lang.t('extractAgain'), style: const TextStyle(color: AppColors.terracotta, fontSize: 12)),
+          ),
+          TextButton(
             onPressed: () => setState(() {
               _showExtractedForm = false;
               _errorMessage = null;
             }),
-            child: Text(lang.t('tryAgain'), style: const TextStyle(color: AppColors.terracotta, fontSize: 12)),
+            child: Text(lang.t('speakAgain'), style: const TextStyle(color: AppColors.terracotta, fontSize: 12)),
           ),
         ],
       ),

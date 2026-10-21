@@ -183,6 +183,7 @@ class AppTranslations {
       'speakAgain': 'Speak Again',
       'speechHeardNoDetails': 'Speech heard but no details extracted. Please fill in manually.',
       'tryAgain': 'Try Again',
+      'extractAgain': 'Extract Again',
       'noSpeechDetected': 'No speech detected. Please speak clearly and try again.',
       'speakClearly': 'Please speak clearly about your product, then tap Done.',
       'extractionNoData': 'Extraction returned no data. Please speak more clearly.',
@@ -320,6 +321,10 @@ class AppTranslations {
       'viewProduct': 'View Product',
       'shareProduct': 'Share Product',
       'goToMyProducts': 'Go to My Products',
+      'exitWizardTitle': 'Leave without publishing?',
+      'exitWizardBody': 'Your details are saved as draft. You can continue later.',
+      'continueEditing': 'Continue Editing',
+      'saveAndExit': 'Save & Exit',
 
       // ─── PROFILE NEW ─────────────────────────────────────────
       'myProfile': 'My Profile',
@@ -1120,6 +1125,7 @@ class AppTranslations {
       'speakAgain': 'फिर से बोलो',
       'speechHeardNoDetails': 'आवाज़ सुनी पर डीटेल्स नहीं निकलीं। कृपया खुद भर दो।',
       'tryAgain': 'फिर से कोशिश करो',
+      'extractAgain': 'फिर से एक्सट्रैक्ट करो',
       'noSpeechDetected': 'आवाज़ नहीं आई। साफ़-साफ़ बोलकर फिर से कोशिश करो।',
       'speakClearly': 'कृपया प्रोडक्ट के बारे में साफ़-साफ़ बोलो, फिर Done दबाओ।',
       'extractionNoData': 'कुछ नहीं निकला। ज़्यादा साफ़-साफ़ बोलकर फिर से कोशिश करो।',
@@ -1253,6 +1259,10 @@ class AppTranslations {
       'viewProduct': 'प्रोडक्ट देखो',
       'shareProduct': 'प्रोडक्ट शेयर करो',
       'goToMyProducts': 'मेरे प्रोडक्ट पर जाओ',
+      'exitWizardTitle': 'बिना पब्लिश किए बाहर जाओगे?',
+      'exitWizardBody': 'तुम्हारी डिटेल्स ड्राफ्ट में सेव हैं। बाद में जारी रख सकते हो।',
+      'continueEditing': 'एडिटिंग जारी रखो',
+      'saveAndExit': 'सेव करके बाहर जाओ',
 
       // ─── PROFILE NEW ─────────────────────────────────────────
       'myProfile': 'मेरी प्रोफ़ाइल',

@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: hastkala-api
+    runtime: python
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - backend/**
+        - render.yaml
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: HOST
+        value: 0.0.0.0
+      - key: DEBUG
+        value: "false"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: PRELOAD_AI_MODEL
+        value: "false"
+      - key: OLLAMA_BASE_URL
+        value: ""
+      - key: GROQ_MODEL
+        value: qwen/qwen3.8-27b
+      # ── Secrets: paste the values in the Render dashboard after the first deploy ──
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_JWKS_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      # Set to your live URL after the first deploy, e.g. https://hastkala-api.onrender.com
+      - key: PUBLIC_BASE_URL
+        sync: false

@@ -33,10 +33,13 @@ uploads_dir = Path(__file__).resolve().parent.parent / "data" / "uploads"
 uploads_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
+origins = settings.cors_origin_list
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=origins,
+    # Browsers reject "*" combined with credentials, so only enable it
+    # when explicit origins are configured.
+    allow_credentials=origins != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -56,6 +59,9 @@ app.include_router(marketplace_prep_router)
 
 @app.on_event("startup")
 def startup_event():
+    if not settings.PRELOAD_AI_MODEL:
+        logger.info("AI model preload disabled (PRELOAD_AI_MODEL=false) — it will load on first use.")
+        return
     try:
         logger.info("Loading AI model on startup...")
         get_remove_session()

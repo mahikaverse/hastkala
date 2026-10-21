@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from app.ai.catalog_extractor import (
@@ -36,11 +36,47 @@ async def extract_details(req: TranscriptRequest):
 
 
 @router.post("/extract-step1", response_model=StepExtractionResponse)
-async def extract_step1(req: TranscriptRequest):
-    """Step 1: Extract product name, category, material, craft, color, size, weight."""
-    logger.info(f"Extract Step 1 request: {len(req.transcript)} chars")
+async def extract_step1(request: Request):
+    """Step 1: Extract product name, category, material, craft, color, size, weight.
+
+    Accepts either JSON {"transcript": "..."} or multipart form with a
+    "transcript" field plus an optional "image" file (product photo), so the
+    form can be completed from speech alone, or from speech + photo.
+    """
+    transcript = ""
+    image_bytes = None
+    image_mime = None
+
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("multipart/form-data"):
+        form = await request.form()
+        transcript = str(form.get("transcript") or "").strip()
+        image = form.get("image")
+        if image is not None and hasattr(image, "read"):
+            image_bytes = await image.read()
+            image_mime = getattr(image, "content_type", None) or "image/jpeg"
+            if not image_bytes:
+                image_bytes = None
+    else:
+        try:
+            body = await request.json()
+            transcript = str(body.get("transcript") or "").strip()
+        except Exception:
+            transcript = ""
+
+    logger.info(
+        f"Extract Step 1 request: {len(transcript)} chars, "
+        f"image={'yes' if image_bytes else 'no'}"
+    )
+    if not transcript and not image_bytes:
+        return StepExtractionResponse(
+            success=False, data={}, error="No transcript or image provided"
+        )
+
     try:
-        data = extract_step1_product_details(req.transcript)
+        data = extract_step1_product_details(
+            transcript, image_bytes=image_bytes, image_mime=image_mime
+        )
         return StepExtractionResponse(success=True, data=data)
     except Exception as e:
         logger.error(f"Step 1 extraction error: {e}")

@@ -21,6 +21,7 @@ async def voice_to_catalog(
     file: UploadFile = File(...),
     step: Optional[int] = Query(0, description="0=all, 1=product details, 2=quantity, 3=story"),
     language: Optional[str] = Query(None, description="Language hint e.g. hi, en"),
+    image: Optional[UploadFile] = File(None, description="Optional product photo for step 1"),
 ):
     logger.info(
         f"[VoiceCatalog] Request: filename={file.filename!r}, "
@@ -83,10 +84,27 @@ async def voice_to_catalog(
         }
 
     # ── Step 2: Extraction ──────────────────────────────────────────────────
+    image_bytes = None
+    image_mime = None
+    if image is not None and step == 1:
+        try:
+            image_bytes = await image.read()
+            image_mime = image.content_type or "image/jpeg"
+            if not image_bytes:
+                image_bytes = None
+        except Exception as e:
+            logger.warning(f"[VoiceCatalog] Could not read product image: {e}")
+            image_bytes = None
+
     try:
         if step == 1:
-            logger.info("[VoiceCatalog] Running Step 1 extraction (product details)")
-            data_dict = extract_step1_product_details(transcript)
+            logger.info(
+                f"[VoiceCatalog] Running Step 1 extraction (product details, "
+                f"image={'yes' if image_bytes else 'no'})"
+            )
+            data_dict = extract_step1_product_details(
+                transcript, image_bytes=image_bytes, image_mime=image_mime
+            )
         elif step == 2:
             logger.info("[VoiceCatalog] Running Step 2 extraction (quantity)")
             data_dict = extract_step2_quantity_details(transcript)
