@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../constants/demo_images.dart';
 import '../services/api_config.dart';
 
 class AdaptiveProductImage extends StatelessWidget {
@@ -12,6 +13,7 @@ class AdaptiveProductImage extends StatelessWidget {
   final double? width;
   final double? height;
   final Widget? placeholder;
+  final String? category;
 
   const AdaptiveProductImage({
     super.key,
@@ -20,24 +22,43 @@ class AdaptiveProductImage extends StatelessWidget {
     this.width,
     this.height,
     this.placeholder,
+    this.category,
   });
 
-  Widget _defaultPlaceholder() {
-    return placeholder ??
-        Container(
-          width: width,
-          height: height,
-          color: AppColors.warmBeige,
-          child: const Center(
-            child: Icon(Icons.image_outlined, color: AppColors.textSecondary, size: 28),
-          ),
-        );
+  Widget _network(String url) {
+    return Image.network(
+      url,
+      fit: fit,
+      width: width,
+      height: height,
+      errorBuilder: (_, __, ___) => _fallbackOrPlaceholder(),
+    );
+  }
+
+  Widget _fallbackOrPlaceholder() {
+    // Never show a blank box: custom placeholder if provided, else Unsplash.
+    if (placeholder != null) return placeholder!;
+    return Image.network(
+      unsplashFallbackUrl(seed: imageUrl ?? 'hastkala', category: category),
+      fit: fit,
+      width: width,
+      height: height,
+      errorBuilder: (_, __, ___) => Container(
+        width: width,
+        height: height,
+        color: AppColors.warmBeige,
+        child: const Center(
+          child: Icon(Icons.image_outlined, color: AppColors.textSecondary, size: 28),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     if (imageUrl == null || imageUrl!.trim().isEmpty) {
-      return _defaultPlaceholder();
+      // Empty image -> Unsplash fallback (never blank).
+      return _fallbackOrPlaceholder();
     }
 
     final raw = imageUrl!.trim();
@@ -53,20 +74,14 @@ class AdaptiveProductImage extends StatelessWidget {
           fit: fit,
           width: width,
           height: height,
-          errorBuilder: (_, __, ___) => _defaultPlaceholder(),
+          errorBuilder: (_, __, ___) => _fallbackOrPlaceholder(),
         );
       } catch (_) {}
     }
 
     // 2. HTTP / HTTPS Network image
     if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
-      return Image.network(
-        resolved,
-        fit: fit,
-        width: width,
-        height: height,
-        errorBuilder: (_, __, ___) => _defaultPlaceholder(),
-      );
+      return _network(resolved);
     }
 
     // 3. Local file
@@ -78,7 +93,7 @@ class AdaptiveProductImage extends StatelessWidget {
           fit: fit,
           width: width,
           height: height,
-          errorBuilder: (_, __, ___) => _defaultPlaceholder(),
+          errorBuilder: (_, __, ___) => _fallbackOrPlaceholder(),
         );
       }
     } catch (_) {}
@@ -89,7 +104,7 @@ class AdaptiveProductImage extends StatelessWidget {
       fit: fit,
       width: width,
       height: height,
-      errorBuilder: (_, __, ___) => _defaultPlaceholder(),
+      errorBuilder: (_, __, ___) => _fallbackOrPlaceholder(),
     );
   }
 }

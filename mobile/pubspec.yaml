@@ -82,7 +82,7 @@ flutter:
     - assets/seller-enum-img.png
     - assets/buyer-enum-img.png
     - assets/b2b-enum-img.png
-    - assets/.env
+    - .env
     - assets/exibitions-img.png
     - assets/exibitions2-img.png
     - assets/government1-img.png

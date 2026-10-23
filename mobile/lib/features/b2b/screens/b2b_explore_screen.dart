@@ -42,13 +42,23 @@ class _B2BExploreScreenState extends State<B2BExploreScreen> {
 
   Future<void> _loadFiltersAndProducts() async {
     setState(() => _isLoading = true);
-    final results = await Future.wait([
-      _service.getCategories(),
-      _service.getCraftTypes(),
-    ]);
+    final categoriesF = _service.getCategories();
+    final craftTypesF = _service.getCraftTypes();
+    final productsF = _service.exploreProducts(
+      category: _selectedCategory,
+      craftType: _selectedCraftType,
+      minPrice: double.tryParse(_minPriceController.text),
+      maxPrice: double.tryParse(_maxPriceController.text),
+      search: _searchController.text.isEmpty ? null : _searchController.text,
+    );
+    final results = await Future.wait<List<String>>([categoriesF, craftTypesF]);
     _categories = results[0];
     _craftTypes = results[1];
-    await _searchProducts();
+    final products = await productsF;
+    setState(() {
+      _products = products;
+      _isLoading = false;
+    });
   }
 
   Future<void> _searchProducts() async {

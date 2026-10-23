@@ -36,7 +36,30 @@ class ArtisanProfileService {
 
   /// Get the current artisan's profile directly from Supabase DB,
   /// with automatic fallback to DataService if offline.
-  Future<ArtisanProfile?> getProfile() async {
+  ArtisanProfile? _cachedProfile;
+  Future<void>? _refreshing;
+
+  /// Instant profile read: returns cached profile (if any) immediately and
+  /// refreshes from Supabase in the background. First call still awaits DB.
+  Future<ArtisanProfile?> getProfile({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedProfile != null) {
+      final cached = _cachedProfile;
+      _refreshInBackground();
+      return cached;
+    }
+    return _fetchProfile();
+  }
+
+  void _refreshInBackground() {
+    if (_refreshing != null) return;
+    _refreshing = _fetchProfile()
+        .timeout(const Duration(seconds: 8))
+        .then((_) {})
+        .catchError((_) {})
+        .whenComplete(() => _refreshing = null);
+  }
+
+  Future<ArtisanProfile?> _fetchProfile() async {
     final client = _client;
     final userId = currentUserId;
 
@@ -46,7 +69,8 @@ class ArtisanProfileService {
             .from('artisans')
             .select()
             .eq('user_id', userId)
-            .maybeSingle();
+            .maybeSingle()
+            .timeout(const Duration(seconds: 6));
 
         if (data != null) {
           final profile = ArtisanProfile.fromMap(data);
@@ -79,7 +103,8 @@ class ArtisanProfileService {
             .from('artisans')
             .insert(newProfile.toDbMap())
             .select()
-            .single();
+            .single()
+            .timeout(const Duration(seconds: 8));
 
         final created = ArtisanProfile.fromMap(inserted);
         _syncToDataService(created);
@@ -371,6 +396,7 @@ Guidelines:
   }
 
   void _syncToDataService(ArtisanProfile profile) {
+    _cachedProfile = profile;
     try {
       final list = _dataService.artisanProfiles;
       final idx = list.indexWhere((p) =>

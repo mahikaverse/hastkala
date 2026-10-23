@@ -201,12 +201,48 @@ class FastCatalogExtractor {
       }
     }
 
-    // Return ONLY factual data. No product_name, no craft, no stories.
+    // 11. Product name / category / craft — from what the artisan actually said
+    String? product;
+    String? category;
+    for (final entry in _productTable) {
+      for (final kw in entry.$2.split('|')) {
+        if (_containsWord(lower, kw.trim())) {
+          product = entry.$1;
+          category = entry.$3;
+          break;
+        }
+      }
+      if (product != null) break;
+    }
+    category ??= _categoryFromMaterial(material);
+
+    String? craft;
+    if (processHints.isNotEmpty) {
+      craft = _craftFromHints(processHints);
+    } else if (category != null) {
+      craft = _craftByCategory[category];
+    }
+
+    String? productName;
+    if (product != null) {
+      final adj = _findAdjective(lower);
+      if (adj != null) {
+        productName = '${_capitalize(adj)} $product';
+      } else {
+        final parts = <String>[];
+        if (color != null && color != 'Multicolor') parts.add(color);
+        if (material != null) parts.add(material);
+        parts.add(product);
+        productName = parts.join(' ');
+      }
+    }
+
+    // Factual data + speech-derived semantic fields (offline fallback)
     return {
-      'product_name': null,
-      'category': null,
+      'product_name': productName,
+      'category': category,
       'material': material,
-      'craft': null,
+      'craft': craft,
       'color': color,
       'size': size,
       'weight': weight,
@@ -221,6 +257,123 @@ class FastCatalogExtractor {
       'artisan_intro': null,
     };
   }
+
+  /// (product, keywords, category) — keyword list separated by '|'
+  static const List<(String, String, String)> _productTable = [
+    ('Wall Hanging', 'wall hanging|wall decor', 'Other Crafts'),
+    ('Cushion Cover', 'cushion cover|cushion', 'Textiles & Handloom'),
+    ('Bedsheet', 'bedsheet|bed sheet|chadar', 'Textiles & Handloom'),
+    ('Carpet', 'carpet|rug|darri|durrie|durries|jajam', 'Textiles & Handloom'),
+    ('Saree', 'saree|saadi|sari|sarees', 'Textiles & Handloom'),
+    ('Dupatta', 'dupatta|odhni|odni', 'Textiles & Handloom'),
+    ('Kurta', 'kurti|kurta', 'Textiles & Handloom'),
+    ('Shawl', 'shawl|stole', 'Textiles & Handloom'),
+    ('Toran', 'toran', 'Textiles & Handloom'),
+    ('Jhumka Earrings', 'jhumka|jhumki|earring|earrings', 'Jewelry & Accessories'),
+    ('Bangle', 'bangle|bangles|chudi|chudiyon|kada', 'Jewelry & Accessories'),
+    ('Necklace', 'necklace|haar|mala', 'Jewelry & Accessories'),
+    ('Bracelet', 'bracelet|kangan', 'Jewelry & Accessories'),
+    ('Keychain', 'keychain', 'Jewelry & Accessories'),
+    ('Wallet', 'wallet|purse|batua', 'Leather Craft'),
+    ('Mojari', 'mojari|jutti|chappal|footwear', 'Leather Craft'),
+    ('Bag', 'jhola|handbag|tote bag|jeb', 'Textiles & Handloom'),
+    ('Jewellery Box', 'jewellery box|jewelry box', 'Woodwork'),
+    ('Storage Box', 'petara|sandook|storage box|box', 'Woodwork'),
+    ('Stool', 'stool|chowki|peera|mora', 'Woodwork'),
+    ('Table', 'table|mez', 'Woodwork'),
+    ('Chair', 'chair|kursi', 'Woodwork'),
+    ('Tray', 'tray', 'Woodwork'),
+    ('Toy', 'toy|khilona', 'Woodwork'),
+    ('Drum', 'dholak|dhol|drum|nagara', 'Woodwork'),
+    ('Mirror', 'aaina|aina|sheesha', 'Other Crafts'),
+    ('Thali', 'thali', 'Metal Craft'),
+    ('Lamp', 'table lamp|lamp|deepak', 'Metal Craft'),
+    ('Bell', 'ghanti', 'Metal Craft'),
+    ('Candle Stand', 'candle stand|candle holder', 'Metal Craft'),
+    ('Pen Stand', 'pen stand|pen holder', 'Other Crafts'),
+    ('Diya', 'diya|diye|diyas', 'Pottery & Ceramics'),
+    ('Flower Pot', 'flower pot|planter|gamla|gamle', 'Pottery & Ceramics'),
+    ('Pot', 'matka|kalash|ghada|water pot', 'Pottery & Ceramics'),
+    ('Vase', 'vase', 'Pottery & Ceramics'),
+    ('Bowl', 'katori|katoriyan|bowl', 'Pottery & Ceramics'),
+    ('Mug', 'mug', 'Pottery & Ceramics'),
+    ('Dinner Set', 'dinner set|kitchen set|tableware', 'Pottery & Ceramics'),
+    ('Basket', 'basket|tokri|tokra|tokriyan', 'Bamboo & Cane'),
+    ('Floor Mat', 'chatai|floor mat|gashti', 'Bamboo & Cane'),
+    ('Coaster', 'coaster', 'Bamboo & Cane'),
+    ('Painting', 'painting|chitra|pattachitra|picture', 'Paintings & Art'),
+  ];
+
+  static const Map<String, String> _craftByCategory = {
+    'Bamboo & Cane': 'Handwoven',
+    'Pottery & Ceramics': 'Hand Painted',
+    'Textiles & Handloom': 'Handloom Woven',
+    'Metal Craft': 'Hand Beaten',
+    'Woodwork': 'Hand Carved',
+    'Jewelry & Accessories': 'Hand Assembled',
+    'Paintings & Art': 'Hand Painted',
+    'Leather Craft': 'Hand Stitched',
+    'Stone Craft': 'Hand Carved',
+    'Other Crafts': 'Hand Finished',
+  };
+
+  static const Map<String, String> _hintCraft = {
+    'Wheel-turned': 'Wheel Turned',
+    'Hand-carved': 'Hand Carved',
+    'Hand-painted': 'Hand Painted',
+    'Handloom woven': 'Handloom Woven',
+    'Molded and cured': 'Molded And Cured',
+    'Kiln-baked': 'Kiln Baked',
+  };
+
+  static String _craftFromHints(List<String> hints) {
+    final out = <String>[];
+    for (final h in hints) {
+      final mapped = _hintCraft[h] ?? h;
+      if (!out.contains(mapped)) out.add(mapped);
+    }
+    return out.join(', ');
+  }
+
+  static String? _categoryFromMaterial(String? material) {
+    if (material == null) return null;
+    final m = material.toLowerCase();
+    if (m.contains('bamboo') || m.contains('cane')) return 'Bamboo & Cane';
+    if (m.contains('clay') || m.contains('terracotta') || m.contains('ceramic') ||
+        m.contains('pottery') || m.contains('porcelain')) {
+      return 'Pottery & Ceramics';
+    }
+    if (m.contains('cotton') || m.contains('silk') || m.contains('linen') ||
+        m.contains('wool') || m.contains('jute') || m.contains('khadi')) {
+      return 'Textiles & Handloom';
+    }
+    if (m.contains('brass') || m.contains('copper') || m.contains('bronze') ||
+        m.contains('iron') || m.contains('metal')) {
+      return 'Metal Craft';
+    }
+    if (m.contains('wood') || m.contains('teak') || m.contains('sheesham')) return 'Woodwork';
+    if (m.contains('gold') || m.contains('silver') || m.contains('bead') ||
+        m.contains('pearl') || m.contains('zari')) {
+      return 'Jewelry & Accessories';
+    }
+    if (m.contains('leather')) return 'Leather Craft';
+    if (m.contains('marble') || m.contains('stone')) return 'Stone Craft';
+    return null;
+  }
+
+  static String? _findAdjective(String lower) {
+    const adjectives = [
+      'decorative', 'traditional', 'designer', 'fancy', 'handmade',
+      'handcrafted', 'beautiful', 'unique', 'royal', 'antique', 'custom',
+    ];
+    for (final a in adjectives) {
+      if (_containsWord(lower, a)) return a;
+    }
+    return null;
+  }
+
+  static String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
   static Map<String, dynamic> extractStep1(String transcript) {
     final full = extract(transcript);

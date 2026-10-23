@@ -75,14 +75,14 @@ Use this priority for each field:
 3. A realistic, sensible value for an Indian handicraft product of this kind.
 
 FIELD RULES:
-- product_name: short commercial English name (e.g. "Bamboo Basket", "Blue Pottery Vase", "Handloom Cotton Saree"). Derive from speech first, otherwise from the photo. NEVER output generic names like "Handmade Item", "Craft Product", "Handicraft".
+- product_name: EXACTLY the product the artisan named, in natural English Title Case (e.g. they say "blue pottery vase" -> "Blue Pottery Vase", "bamboo ki tokri" -> "Bamboo Basket"). Never add "Handmade", "Craft", "Item" or "Product" to the name.
 - category: exactly one of: Bamboo & Cane, Pottery & Ceramics, Textiles & Handloom, Metal Craft, Woodwork, Jewelry & Accessories, Paintings & Art, Leather Craft, Stone Craft, Other Crafts.
 - material: main material (Bamboo, Clay, Terracotta, Brass, Copper, Wood, Cotton, Silk, Marble, Leather, ...). From speech first, else from the photo.
 - craft: making technique (Hand-painted, Hand-carved, Wheel-turned, Handloom woven, Hand-stitched, Block-printed, Lacquered, ...). Infer from the product type if not stated.
 - color: main colour(s) spoken or clearly visible in the photo (e.g. "Brown", "Blue and White", "Multicolour").
 - size: use what the artisan said (e.g. "12 inch", "Medium"). Otherwise estimate a realistic size for this product from the photo (e.g. "Approx. 20 inch").
 - weight: use what the artisan said. Otherwise give a realistic approximate weight for this product (e.g. "Approx. 350 g").
-- description: 2 to 3 simple, honest English sentences for buyers, based on the speech and the photo. Do NOT use marketing filler like "premium", "luxury", "world-class", "exquisite". Plain, factual, warm language.
+- description: 2 to 3 SEO-friendly English sentences for buyers — start from the product name and naturally include material, craft, colour and size/use keywords (e.g. "home decor", "gifting"). Plain honest language; NEVER use filler like "premium", "luxury", "world-class", "exquisite".
 
 Output valid JSON ONLY with these exact keys:
 {{
@@ -214,26 +214,42 @@ def _call_groq_messages(
         return None
     try:
         import groq
+    except ImportError:
+        logger.warning("groq package not installed.")
+        return None
 
-        # Fix invalid model names — groq/compound-mini does not exist
-        model_to_use = settings.GROQ_MODEL
-        if not model_to_use or model_to_use.startswith("groq/"):
-            model_to_use = "qwen/qwen3.8-27b"
-        logger.info(f"Calling Groq (model={model_to_use})...")
-        groq_client = groq.Groq(api_key=settings.GROQ_API_KEY, timeout=timeout)
-        resp = groq_client.chat.completions.create(
-            model=model_to_use,
-            messages=messages,
-            temperature=0.1,
-            max_tokens=max_tokens,
-        )
-        raw_text = resp.choices[0].message.content or ""
-        parsed = _safe_parse_json(raw_text)
-        if parsed and isinstance(parsed, dict):
-            logger.info("Groq extraction succeeded!")
-            return parsed
-    except Exception as e:
-        logger.warning(f"Groq extraction failed: {e}")
+    # Try the configured model first, then known-good fallbacks.
+    models: list = []
+    for m in [settings.GROQ_MODEL, "qwen/qwen3.8-27b", "openai/gpt-oss-120b", "allam-2-7b"]:
+        if m and not str(m).startswith("groq/") and m not in models:
+            models.append(m)
+
+    last_err = None
+    for model in models:
+        try:
+            logger.info(f"Calling Groq (model={model})...")
+            groq_client = groq.Groq(api_key=settings.GROQ_API_KEY, timeout=timeout)
+            resp = groq_client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=0.1,
+                max_tokens=max_tokens,
+            )
+            raw_text = resp.choices[0].message.content or ""
+            parsed = _safe_parse_json(raw_text)
+            if parsed and isinstance(parsed, dict):
+                logger.info(f"Groq extraction succeeded (model={model})!")
+                return parsed
+            last_err = ValueError("model returned no parsable JSON")
+        except Exception as e:
+            last_err = e
+            msg = str(e)
+            logger.warning(f"Groq model {model} failed: {msg}")
+            if "Invalid API Key" in msg or "invalid_api_key" in msg:
+                logger.error("GROQ_API_KEY is invalid — fix backend/.env (GROQ_API_KEY).")
+                return None
+    if last_err:
+        logger.warning(f"All Groq models failed: {last_err}")
     return None
 
 
@@ -318,6 +334,7 @@ def extract_fast(transcript: str) -> ProductDetails:
 
     # 2. Material
     materials = [
+        ('Pottery', ['blue pottery', 'pottery', 'kumbhakar']),
         ('Terracotta', ['terracotta', 'teracota', 'pakki mitti', 'baked clay']),
         ('Clay', ['clay', 'mitti', 'chikni mitti', 'kali mitti', 'lal mitti']),
         ('Bamboo', ['bamboo', 'baans', 'bans', 'cane']),
@@ -502,31 +519,191 @@ def _infer_category_from_material(material: str) -> Optional[str]:
     return None
 
 
-def _fill_step1_defaults(data: dict) -> dict:
-    """Guarantee no text field of the step-1 form is left empty."""
+# ──────────────────────────────────────────────────────────────
+# OFFLINE FALLBACK — rule-based extraction (works even if every LLM is down)
+# ──────────────────────────────────────────────────────────────
+
+# (product, keywords, category, craft)
+_PRODUCT_TABLE = [
+    ("Wall Hanging", ("wall hanging", "wall decor", "wall piece"), "Other Crafts", "Hand-painted"),
+    ("Cushion Cover", ("cushion cover", "cushion"), "Textiles & Handloom", "Hand-stitched"),
+    ("Bedsheet", ("bedsheet", "bed sheet", "chadar"), "Textiles & Handloom", "Handloom woven"),
+    ("Table Runner", ("table runner",), "Textiles & Handloom", "Handloom woven"),
+    ("Floor Mat", ("floor mat", "chatai", "gashti"), "Bamboo & Cane", "Handwoven"),
+    ("Carpet", ("carpet", "rug", "darri", "durrie", "durries", "jajam"), "Textiles & Handloom", "Hand-knotted"),
+    ("Saree", ("saree", "saadi", "sari", "sarees"), "Textiles & Handloom", "Handloom woven"),
+    ("Dupatta", ("dupatta", "odhni", "odni"), "Textiles & Handloom", "Handloom woven"),
+    ("Kurta", ("kurti", "kurta"), "Textiles & Handloom", "Hand-stitched"),
+    ("Shawl", ("shawl", "stole"), "Textiles & Handloom", "Hand-woven"),
+    ("Toran", ("toran",), "Textiles & Handloom", "Hand-embroidered"),
+    ("Jhumka Earrings", ("jhumka", "jhumki", "earring", "earrings"), "Jewelry & Accessories", "Hand-assembled"),
+    ("Bangle", ("bangle", "bangles", "chudi", "chudiyon", "kada"), "Jewelry & Accessories", "Hand-assembled"),
+    ("Necklace", ("necklace", "haar", "mala"), "Jewelry & Accessories", "Hand-assembled"),
+    ("Bracelet", ("bracelet", "kangan"), "Jewelry & Accessories", "Hand-assembled"),
+    ("Ring", ("angoothi",), "Jewelry & Accessories", "Hand-assembled"),
+    ("Keychain", ("keychain",), "Jewelry & Accessories", "Hand-assembled"),
+    ("Wallet", ("wallet", "purse", "batua"), "Leather Craft", "Hand-stitched"),
+    ("Bag", ("jhola", "tote bag", "handbag", "jeb"), "Textiles & Handloom", "Hand-stitched"),
+    ("Mojari", ("mojari", "jutti", "chappal", "footwear"), "Leather Craft", "Hand-stitched"),
+    ("Jewellery Box", ("jewellery box", "jewelry box"), "Woodwork", "Hand-carved"),
+    ("Storage Box", ("petara", "sandook", "storage box", "box"), "Woodwork", "Hand-carved"),
+    ("Stool", ("stool", "chowki", "peera", "mora"), "Woodwork", "Hand-carved"),
+    ("Table", ("table", "mez"), "Woodwork", "Hand-carved"),
+    ("Chair", ("chair", "kursi"), "Woodwork", "Hand-carved"),
+    ("Mirror", ("aaina", "aina", "sheesha"), "Other Crafts", "Hand-painted"),
+    ("Toy", ("toy", "khilona"), "Woodwork", "Hand-carved"),
+    ("Drum", ("dholak", "dhol", "drum", "nagara"), "Woodwork", "Hand-carved"),
+    ("Bell", ("ghanti",), "Metal Craft", "Hand-cast"),
+    ("Candle Stand", ("candle stand", "candle holder"), "Metal Craft", "Hand-beaten"),
+    ("Pen Stand", ("pen stand", "pen holder"), "Other Crafts", "Hand-crafted"),
+    ("Tray", ("tray",), "Woodwork", "Hand-carved"),
+    ("Thali", ("thali",), "Metal Craft", "Hand-beaten"),
+    ("Bowl", ("katori", "katoriyan", "bowl"), "Pottery & Ceramics", "Wheel-thrown"),
+    ("Mug", ("mug",), "Pottery & Ceramics", "Wheel-thrown"),
+    ("Cup", ("cup", "glass"), "Pottery & Ceramics", "Wheel-thrown"),
+    ("Dinner Set", ("dinner set", "kitchen set", "tableware"), "Pottery & Ceramics", "Wheel-thrown"),
+    ("Vase", ("vase",), "Pottery & Ceramics", "Wheel-thrown"),
+    ("Flower Pot", ("flower pot", "planter", "gamla", "gamle"), "Pottery & Ceramics", "Wheel-thrown"),
+    ("Pot", ("matka", "kalash", "ghada", "water pot"), "Pottery & Ceramics", "Wheel-thrown"),
+    ("Lamp", ("table lamp", "lamp", "deepak"), "Metal Craft", "Hand-beaten"),
+    ("Diya", ("diya", "diye", "diyas"), "Pottery & Ceramics", "Hand-shaped"),
+    ("Basket", ("basket", "tokri", "tokra", "tokriyan", "tokriyaan"), "Bamboo & Cane", "Handwoven"),
+    ("Coaster", ("coaster",), "Bamboo & Cane", "Handwoven"),
+    ("Painting", ("painting", "chitra", "pattachitra", "picture"), "Paintings & Art", "Hand-painted"),
+]
+
+_CATEGORY_MATERIAL = {
+    "Bamboo & Cane": "Bamboo",
+    "Pottery & Ceramics": "Clay",
+    "Textiles & Handloom": "Cotton",
+    "Metal Craft": "Metal",
+    "Woodwork": "Wood",
+    "Jewelry & Accessories": "Mixed Materials",
+    "Paintings & Art": "Mixed Materials",
+    "Leather Craft": "Leather",
+    "Stone Craft": "Stone",
+    "Other Crafts": "Mixed Materials",
+}
+
+_CRAFT_BY_CATEGORY = {
+    "Bamboo & Cane": "Handwoven",
+    "Pottery & Ceramics": "Hand-shaped",
+    "Textiles & Handloom": "Handloom woven",
+    "Metal Craft": "Hand-beaten",
+    "Woodwork": "Hand-carved",
+    "Jewelry & Accessories": "Hand-assembled",
+    "Paintings & Art": "Hand-painted",
+    "Leather Craft": "Hand-stitched",
+    "Stone Craft": "Hand-carved",
+    "Other Crafts": "Hand-finished",
+}
+
+_GENERIC_NAMES = {
+    "handmade item", "handmade product", "craft product", "handicraft",
+    "handmade", "product", "item", "craft", "handmade craft", "other",
+}
+
+_NAME_PATTERNS = [
+    r'(?:mera naam|my name is|i am called|i\'m)\s+([a-zA-Z]{2,20})',
+    r'(?:naam|name)\s*(?:hai|is|:)?\s*([a-zA-Z]{2,20})',
+]
+
+
+def _detect_product(transcript: str) -> Optional[dict]:
+    """Find the product the artisan actually named (English or Hinglish)."""
+    if not transcript:
+        return None
+    lower = transcript.lower()
+    best = None
+    for product, keywords, category, craft in _PRODUCT_TABLE:
+        for kw in keywords:
+            if re.search(r'\b' + re.escape(kw) + r'\b', lower):
+                if best is None or len(kw) > best["len"]:
+                    best = {"product": product, "category": category, "craft": craft, "len": len(kw)}
+                break
+    if best:
+        best.pop("len", None)
+    return best
+
+
+def _looks_like_measurement(value: str) -> bool:
+    v = (value or "").lower()
+    if not v:
+        return False
+    return bool(re.search(r'\d', v)) or v in {"small", "medium", "large", "xl"}
+
+
+def _is_generic_name(name: str) -> bool:
+    return (name or "").strip().lower().rstrip(".") in _GENERIC_NAMES
+
+
+def _build_product_name(product: str, material: str, color: str) -> str:
+    parts = []
+    if color and color.lower() not in ("natural", "multicolor", "mixed"):
+        parts.append(color)
+    if material and material.lower() != "mixed materials" and material.lower() not in product.lower():
+        parts.append(material)
+    parts.append(product)
+    return " ".join(p.strip() for p in parts if p and p.strip())
+
+
+def _build_description(name: str, material: str, craft: str, color: str,
+                       size: str, weight: str, category: str) -> str:
+    """2–3 plain, SEO-friendly sentences built ONLY from the known facts."""
+    s1 = f"{name} is a {craft.lower()} product"
+    if material and material.lower() != "mixed materials":
+        s1 += f" made from {material.lower()}"
+    s1 += "."
+
+    bits = []
+    if color and color.lower() not in ("natural", "multicolor", "mixed"):
+        bits.append(f"colour {color.lower()}")
+    if _looks_like_measurement(size):
+        bits.append(f"size {size}")
+    if _looks_like_measurement(weight):
+        bits.append(f"weight {weight}")
+    s2 = f"It is available in {', '.join(bits)}." if bits else ""
+
+    s3 = f"A handmade {category.lower()} piece from Indian artisans — perfect for home decor and gifting."
+
+    return " ".join(s for s in (s1, s2, s3) if s)
+
+
+def _fill_step1_defaults(data: dict, transcript: str = "") -> dict:
+    """Guarantee no step-1 field is empty, and never use a generic product name.
+
+    Priority: LLM values -> what the artisan said (rule-based) -> sensible defaults.
+    """
+    detected = _detect_product(transcript) or {}
+
     name = _clean_null(data.get("product_name"))
-    category = _clean_null(data.get("category"))
+    category = _clean_null(data.get("category")) or detected.get("category")
     material = _clean_null(data.get("material"))
-    craft = _clean_null(data.get("craft"))
+    craft = _clean_null(data.get("craft")) or detected.get("craft")
     color = _clean_null(data.get("color"))
     size = _clean_null(data.get("size"))
     weight = _clean_null(data.get("weight"))
     description = _clean_null(data.get("description"))
 
+    if not material and detected.get("category"):
+        material = _CATEGORY_MATERIAL.get(detected["category"])
     material = material or "Mixed Materials"
     category = category or _infer_category_from_material(material) or "Other Crafts"
-    name = name or f"Handmade {material} Craft"
-    craft = craft or "Handcrafted"
+    craft = craft or _CRAFT_BY_CATEGORY.get(category) or "Handmade"
     color = color or "Natural"
     size = size or "Standard"
     weight = weight or "Approx. 300 g"
 
+    if not name or _is_generic_name(name):
+        product = detected.get("product")
+        if product:
+            name = _build_product_name(product, material, color)
+        else:
+            mat = "" if material == "Mixed Materials" else f"{material} "
+            name = f"Handmade {mat}Craft"
+
     if not description:
-        parts = [f"{name}, made from {material.lower()}."]
-        if color and color.lower() != "natural":
-            parts.append(f"It is {color.lower()} in colour.")
-        parts.append("It is handmade, so every piece is slightly unique.")
-        description = " ".join(parts)
+        description = _build_description(name, material, craft, color, size, weight, category)
 
     return {
         "product_name": name,
@@ -582,7 +759,7 @@ def extract_step1_product_details(
                 if val is not None:
                     base[k] = val
 
-    return _fill_step1_defaults(base)
+    return _fill_step1_defaults(base, transcript)
 
 
 def extract_step2_quantity_details(transcript: str) -> dict:
@@ -603,11 +780,12 @@ def extract_step2_quantity_details(transcript: str) -> dict:
             if llm_val is not None:
                 base[k] = llm_val
 
+    # Never return empty fields (mobile shows "could not connect" on empty data)
     return {
-        "quantity": _clean_null(base.get("quantity")),
-        "production_capacity": _clean_null(base.get("production_capacity")),
-        "making_time": _clean_null(base.get("making_time")),
-        "making_process": _clean_null(base.get("making_process")),
+        "quantity": _clean_null(base.get("quantity")) or "As per order",
+        "production_capacity": _clean_null(base.get("production_capacity")) or "Made to order",
+        "making_time": _clean_null(base.get("making_time")) or "Depends on order size",
+        "making_process": _clean_null(base.get("making_process")) or "Handmade process",
     }
 
 
@@ -628,15 +806,53 @@ def extract_step3_story_details(transcript: str) -> dict:
             val = _clean_null(llm_data.get(k))
             # Use LLM result (even if null — that means artisan didn't share)
             base[k] = val
-    else:
-        # LLM failed — no story generation from regex
-        base["craft_story"] = None
-        base["artisan_intro"] = None
+
+    return _fill_step3_defaults(base, transcript)
+
+
+def _detect_name(transcript: str) -> Optional[str]:
+    for pattern in _NAME_PATTERNS:
+        m = re.search(pattern, transcript or "", re.IGNORECASE)
+        if m:
+            candidate = m.group(1).strip().strip(",.!?")
+            if candidate and candidate.lower() not in {"hai", "is", "ke", "ka", "ki"}:
+                return candidate.capitalize()
+    return None
+
+
+def _fill_step3_defaults(base: dict, transcript: str) -> dict:
+    """Never return empty story/location/intro — always related to what was said."""
+    story = _clean_null(base.get("craft_story"))
+    location = _clean_null(base.get("location"))
+    intro = _clean_null(base.get("artisan_intro"))
+
+    detected = _detect_product(transcript) or {}
+    product = detected.get("product")
+    material = _clean_null(base.get("material"))
+    name = _detect_name(transcript)
+
+    if not story:
+        if product:
+            mat = f" using {material.lower()}" if material and material.lower() != "mixed materials" else ""
+            story = f"Each {product.lower()} is shaped by hand{mat} — a craft I work on every day."
+        else:
+            story = "I make handcrafted products with care, one piece at a time."
+
+    if not location:
+        location = "India"
+
+    if not intro:
+        if name:
+            intro = f"My name is {name}. I make {product.lower() if product else 'handcrafted products'}."
+        else:
+            intro = f"I am an artisan from {location} who makes {product.lower() if product else 'handcrafted products'}."
+    elif not re.match(r'^(i|my|we|hello|namaste)\b', intro, re.IGNORECASE) and len(intro) < 60:
+        intro = f"My name is {intro.strip().rstrip('.')}."
 
     return {
-        "craft_story": _clean_null(base.get("craft_story")),
-        "location": _clean_null(base.get("location")),
-        "artisan_intro": _clean_null(base.get("artisan_intro")),
+        "craft_story": story,
+        "location": location,
+        "artisan_intro": intro,
     }
 
 
@@ -664,13 +880,13 @@ def extract_product_details(transcript: str) -> ProductDetails:
             llm_val = _clean_null(llm_data.get(k))
             if llm_val is not None:
                 base[k] = llm_val
-    else:
-        # LLM failed — null out fields it should have decided
-        base["product_name"] = None
-        base["category"] = None
-        base["craft"] = None
-        base["description"] = None
-        base["craft_story"] = None
-        base["artisan_intro"] = None
+
+    # Always guarantee non-empty, speech-related catalog fields (offline-safe)
+    base.update(_fill_step1_defaults(base, transcript))
+    base.update(_fill_step3_defaults(base, transcript))
+    base.setdefault("quantity", None)
+    base["quantity"] = _clean_null(base.get("quantity")) or "As per order"
+    base["production_capacity"] = _clean_null(base.get("production_capacity")) or "Made to order"
+    base["making_time"] = _clean_null(base.get("making_time")) or "Depends on order size"
 
     return ProductDetails(**{k: v for k, v in base.items() if k in ProductDetails.model_fields})

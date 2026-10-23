@@ -1249,7 +1249,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
 
         _buildFormField(lang.t('productTitle'), _productNameCtrl, Icons.shopping_bag_outlined, lang.t('hintProductTitle')),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField(lang.t('description'), _descriptionCtrl, Icons.description_outlined, lang.t('hintDescription'), maxLines: 2),
+        _buildFormField(lang.t('description'), _descriptionCtrl, Icons.description_outlined, lang.t('hintDescription'), maxLines: 12, minLines: 2),
         const SizedBox(height: AppDimensions.md),
         _buildFormField(lang.t('category'), _categoryCtrl, Icons.category_outlined, lang.t('hintCategory')),
         const SizedBox(height: AppDimensions.md),
@@ -1402,6 +1402,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
     IconData icon,
     String hint, {
     int maxLines = 1,
+    int? minLines,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1417,6 +1418,7 @@ class _VoiceStep1DetailsScreenState extends State<VoiceStep1DetailsScreen>
         TextField(
           controller: controller,
           maxLines: maxLines,
+          minLines: minLines,
           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
           decoration: InputDecoration(
             hintText: hint,

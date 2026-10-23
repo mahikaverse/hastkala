@@ -1069,11 +1069,11 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
         ),
         const SizedBox(height: AppDimensions.lg),
 
-        _buildFormField(lang.t('craftOriginHeritage'), _craftStoryCtrl, Icons.auto_stories_outlined, lang.t('hintStory'), maxLines: 4),
+        _buildFormField(lang.t('craftOriginHeritage'), _craftStoryCtrl, Icons.auto_stories_outlined, lang.t('hintStory'), maxLines: 12, minLines: 3),
         const SizedBox(height: AppDimensions.md),
         _buildFormField(lang.t('artisanLocation'), _locationCtrl, Icons.location_on_outlined, lang.t('hintLocation')),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField(lang.t('artisanHeritage'), _artisanIntroCtrl, Icons.person_pin_outlined, lang.t('hintHeritage'), maxLines: 2),
+        _buildFormField(lang.t('artisanHeritage'), _artisanIntroCtrl, Icons.person_pin_outlined, lang.t('hintHeritage'), maxLines: 8, minLines: 2),
         const SizedBox(height: AppDimensions.xxl),
 
         // Save & Proceed to Pricing Button
@@ -1106,7 +1106,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
     );
   }
 
-  Widget _buildFormField(String label, TextEditingController controller, IconData icon, String hint, {int maxLines = 1}) {
+  Widget _buildFormField(String label, TextEditingController controller, IconData icon, String hint, {int maxLines = 1, int? minLines}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1121,6 +1121,7 @@ class _VoiceStep3StoryScreenState extends State<VoiceStep3StoryScreen>
         TextField(
           controller: controller,
           maxLines: maxLines,
+          minLines: minLines,
           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
           decoration: InputDecoration(
             hintText: hint,

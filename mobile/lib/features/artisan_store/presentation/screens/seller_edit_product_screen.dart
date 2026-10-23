@@ -315,7 +315,7 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
               const SizedBox(height: AppDimensions.md),
               _buildTextField(_tagsCtrl, 'Tags (comma separated)'),
               const SizedBox(height: AppDimensions.md),
-              _buildTextField(_descCtrl, 'Description', maxLines: 4),
+              _buildTextField(_descCtrl, 'Description', maxLines: 12, minLines: 3),
               const SizedBox(height: AppDimensions.xxl),
             ],
           ),
@@ -384,11 +384,13 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
     String label, {
     bool required = false,
     int maxLines = 1,
+    int? minLines,
     TextInputType keyboardType = TextInputType.text,
   }) {
     return TextFormField(
       controller: ctrl,
       maxLines: maxLines,
+      minLines: minLines,
       keyboardType: keyboardType,
       validator: required ? (v) => (v == null || v.trim().isEmpty) ? 'Required' : null : null,
       decoration: InputDecoration(

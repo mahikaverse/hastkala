@@ -55,15 +55,16 @@ India's artisan communities have carried centuries of craft traditions — block
 ```
 hastkala/
 ├── mobile/          # Flutter mobile app
+│   ├── .env             # Frontend env — change BACKEND_IP here (not committed)
 │   └── lib/
 │       ├── core/        # Models, services, helpers, localization
 │       ├── features/    # Screen modules (auth, b2b, catalog, etc.)
 │       └── app/         # Router, theme, entry point
 ├── backend/         # FastAPI backend
+│   ├── .env             # Backend env — Supabase/keys live here (not committed)
 │   └── app/
 │       ├── api/         # API endpoints
 │       └── services/    # Business logic
-└── .env             # Environment variables (not committed)
 ```
 
 ---
@@ -95,6 +96,15 @@ uvicorn app.main:app --reload
 ---
 
 ## Environment Setup
+
+There are exactly two `.env` files:
+
+| File | Purpose |
+|------|---------|
+| `mobile/.env` | Frontend — `API_MODE` (local/prod), `BACKEND_URL` (Render), `BACKEND_IP` |
+| `backend/.env` | Backend — Supabase + API keys |
+
+`backend/.env` is always loaded from `backend/`, so uvicorn works from any folder.
 
 Create a `.env` file in the `backend/` directory:
 

@@ -20,7 +20,7 @@ class B2BService {
       if (status != null && status.isNotEmpty) {
         query = query.eq('status', status);
       }
-      final data = await query.order('created_at', ascending: false);
+      final data = await query.order('created_at', ascending: false).timeout(const Duration(seconds: 8));
       return (data as List).map((e) => B2BRequirement.fromMap(e)).toList();
     } catch (e) {
       return [];
@@ -81,7 +81,7 @@ class B2BService {
       if (artisanId != null) query = query.eq('artisan_id', artisanId);
       if (productId != null) query = query.eq('product_id', productId);
       if (requirementId != null) query = query.eq('requirement_id', requirementId);
-      final data = await query.order('created_at', ascending: false);
+      final data = await query.order('created_at', ascending: false).timeout(const Duration(seconds: 8));
       return (data as List).map((e) => B2BEnquiry.fromMap(e)).toList();
     } catch (e) {
       return [];
@@ -134,7 +134,7 @@ class B2BService {
       var query = _client.from('b2b_quotes').select();
       if (enquiryId != null) query = query.eq('enquiry_id', enquiryId);
       if (artisanId != null) query = query.eq('artisan_id', artisanId);
-      final data = await query.order('created_at', ascending: false);
+      final data = await query.order('created_at', ascending: false).timeout(const Duration(seconds: 8));
       return (data as List).map((e) => B2BQuote.fromMap(e)).toList();
     } catch (e) {
       return [];
@@ -178,7 +178,7 @@ class B2BService {
       var query = _client.from('b2b_orders').select();
       if (buyerId != null) query = query.eq('buyer_id', buyerId);
       if (artisanId != null) query = query.eq('artisan_id', artisanId);
-      final data = await query.order('created_at', ascending: false);
+      final data = await query.order('created_at', ascending: false).timeout(const Duration(seconds: 8));
       return (data as List).map((e) => B2BOrder.fromMap(e)).toList();
     } catch (e) {
       return [];
@@ -220,7 +220,8 @@ class B2BService {
           .from('b2b_saved_artisans')
           .select('*, artisans:artisan_id(*)')
           .eq('buyer_id', buyerId)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 8));
       return (data as List).cast<Map<String, dynamic>>();
     } catch (e) {
       return [];
@@ -259,7 +260,8 @@ class B2BService {
           .select('id')
           .eq('buyer_id', buyerId)
           .eq('artisan_id', artisanId)
-          .limit(1);
+          .limit(1)
+          .timeout(const Duration(seconds: 6));
       return (data as List).isNotEmpty;
     } catch (e) {
       return false;
@@ -327,6 +329,9 @@ class B2BService {
 
   // ==================== PRODUCTS (read-only from artisan side) ====================
 
+  final Map<String, List<MarketplaceProduct>> _exploreCache = {};
+  final Map<String, Future<List<MarketplaceProduct>>> _exploreInFlight = {};
+
   Future<List<MarketplaceProduct>> exploreProducts({
     String? category,
     String? craftType,
@@ -335,6 +340,38 @@ class B2BService {
     double? maxPrice,
     String? search,
   }) async {
+    final key = '$category|$craftType|$material|$minPrice|$maxPrice|$search';
+    final cached = _exploreCache[key];
+    if (cached != null) {
+      _refreshExplore(key, category, craftType, material, minPrice, maxPrice, search);
+      return cached;
+    }
+    return _fetchExplore(key, category, craftType, material, minPrice, maxPrice, search);
+  }
+
+  void _refreshExplore(
+    String key,
+    String? category,
+    String? craftType,
+    String? material,
+    double? minPrice,
+    double? maxPrice,
+    String? search,
+  ) {
+    if (_exploreInFlight[key] != null) return;
+    _exploreInFlight[key] = _fetchExplore(key, category, craftType, material, minPrice, maxPrice, search)
+        .whenComplete(() => _exploreInFlight.remove(key));
+  }
+
+  Future<List<MarketplaceProduct>> _fetchExplore(
+    String key,
+    String? category,
+    String? craftType,
+    String? material,
+    double? minPrice,
+    double? maxPrice,
+    String? search,
+  ) async {
     try {
       var query = _client
           .from('products')
@@ -359,12 +396,15 @@ class B2BService {
       if (search != null && search.isNotEmpty) {
         query = query.or('name.ilike.%$search%,description.ilike.%$search%,craft_type.ilike.%$search%');
       }
-      final data = await query.order('created_at', ascending: false).limit(50);
-      return (data as List)
+      final data =
+          await query.order('created_at', ascending: false).limit(50).timeout(const Duration(seconds: 8));
+      final list = (data as List)
           .map((e) => MarketplaceProduct.fromMap(_productToCamel(e as Map<String, dynamic>)))
           .toList();
+      _exploreCache[key] = list;
+      return list;
     } catch (e) {
-      return [];
+      return _exploreCache[key] ?? [];
     }
   }
 
@@ -374,17 +414,37 @@ class B2BService {
           .from('products')
           .select()
           .eq('id', productId)
-          .single();
+          .single()
+          .timeout(const Duration(seconds: 6));
       return MarketplaceProduct.fromMap(_productToCamel(data));
     } catch (e) {
       return null;
     }
   }
 
+  final Map<String, List<ArtisanProfile>> _artisanCache = {};
+  final Map<String, Future<List<ArtisanProfile>>> _artisanInFlight = {};
+
   Future<List<ArtisanProfile>> getArtisans({
     String? craftType,
     String? location,
   }) async {
+    final key = '$craftType|$location';
+    final cached = _artisanCache[key];
+    if (cached != null) {
+      _refreshArtisans(key, craftType, location);
+      return cached;
+    }
+    return _fetchArtisans(key, craftType, location);
+  }
+
+  void _refreshArtisans(String key, String? craftType, String? location) {
+    if (_artisanInFlight[key] != null) return;
+    _artisanInFlight[key] =
+        _fetchArtisans(key, craftType, location).whenComplete(() => _artisanInFlight.remove(key));
+  }
+
+  Future<List<ArtisanProfile>> _fetchArtisans(String key, String? craftType, String? location) async {
     try {
       var query = _client.from('artisans').select();
       if (craftType != null && craftType.isNotEmpty) {
@@ -393,12 +453,15 @@ class B2BService {
       if (location != null && location.isNotEmpty) {
         query = query.ilike('location', '%$location%');
       }
-      final data = await query.order('created_at', ascending: false).limit(50);
-      return (data as List)
+      final data =
+          await query.order('created_at', ascending: false).limit(50).timeout(const Duration(seconds: 8));
+      final list = (data as List)
           .map((e) => ArtisanProfile.fromMap(_artisanToCamel(e as Map<String, dynamic>)))
           .toList();
+      _artisanCache[key] = list;
+      return list;
     } catch (e) {
-      return [];
+      return _artisanCache[key] ?? [];
     }
   }
 
@@ -412,32 +475,34 @@ class B2BService {
       final all = <ArtisanProfile>[];
       final seenIds = <String>{};
 
-      // 1. Fetch city artisans first
-      if (city != null && city.isNotEmpty) {
-        final cityData = await _client
-            .from('artisans')
-            .select()
-            .ilike('location', '%$city%')
-            .order('created_at', ascending: false)
-            .limit(20);
-        for (final row in (cityData as List)) {
-          final artisan = ArtisanProfile.fromMap(_artisanToCamel(row as Map<String, dynamic>));
-          if (seenIds.add(artisan.id)) all.add(artisan);
-        }
-      }
+      final cityF = (city != null && city.isNotEmpty)
+          ? _client
+              .from('artisans')
+              .select()
+              .ilike('location', '%$city%')
+              .order('created_at', ascending: false)
+              .limit(20)
+              .timeout(const Duration(seconds: 8))
+          : Future.value(<Map<String, dynamic>>[]);
+      final stateF = (state != null && state.isNotEmpty)
+          ? _client
+              .from('artisans')
+              .select()
+              .eq('state', state)
+              .order('created_at', ascending: false)
+              .limit(30)
+              .timeout(const Duration(seconds: 8))
+          : Future.value(<Map<String, dynamic>>[]);
 
-      // 2. Fill with same-state artisans not already in list
-      if (state != null && state.isNotEmpty) {
-        final stateData = await _client
-            .from('artisans')
-            .select()
-            .eq('state', state)
-            .order('created_at', ascending: false)
-            .limit(30);
-        for (final row in (stateData as List)) {
-          final artisan = ArtisanProfile.fromMap(_artisanToCamel(row as Map<String, dynamic>));
-          if (seenIds.add(artisan.id)) all.add(artisan);
-        }
+      final results = await Future.wait<List<Map<String, dynamic>>>([cityF, stateF]);
+
+      for (final row in results[0]) {
+        final artisan = ArtisanProfile.fromMap(_artisanToCamel(row));
+        if (seenIds.add(artisan.id)) all.add(artisan);
+      }
+      for (final row in results[1]) {
+        final artisan = ArtisanProfile.fromMap(_artisanToCamel(row));
+        if (seenIds.add(artisan.id)) all.add(artisan);
       }
 
       return all;
@@ -452,7 +517,8 @@ class B2BService {
           .from('artisans')
           .select()
           .eq('id', artisanId)
-          .single();
+          .single()
+          .timeout(const Duration(seconds: 6));
       return ArtisanProfile.fromMap(_artisanToCamel(data));
     } catch (e) {
       return null;
@@ -461,56 +527,76 @@ class B2BService {
 
   // ==================== STATS ====================
 
+  final Map<String, Map<String, int>> _statsCache = {};
+
   Future<Map<String, int>> getBuyerStats(String buyerId) async {
-    final requirements = await getRequirements(buyerId: buyerId);
-    final enquiries = await getEnquiries(buyerId: buyerId);
-    final orders = await getOrders(buyerId: buyerId);
-    final saved = await getSavedArtisans(buyerId);
-    return {
-      'requirements': requirements.length,
-      'enquiries': enquiries.length,
-      'orders': orders.length,
-      'saved': saved.length,
-    };
+    final cached = _statsCache[buyerId];
+    try {
+      final counts = await Future.wait<int>([
+        getRequirements(buyerId: buyerId).then((v) => v.length),
+        getEnquiries(buyerId: buyerId).then((v) => v.length),
+        getOrders(buyerId: buyerId).then((v) => v.length),
+        getSavedArtisans(buyerId).then((v) => v.length),
+      ]).timeout(const Duration(seconds: 8));
+      final stats = {
+        'requirements': counts[0],
+        'enquiries': counts[1],
+        'orders': counts[2],
+        'saved': counts[3],
+      };
+      _statsCache[buyerId] = stats;
+      return stats;
+    } catch (_) {
+      return cached ?? {'requirements': 0, 'enquiries': 0, 'orders': 0, 'saved': 0};
+    }
   }
 
   // ==================== CATEGORIES ====================
 
+  List<String>? _categoriesCache;
+  List<String>? _craftTypesCache;
+
   Future<List<String>> getCategories() async {
+    if (_categoriesCache != null) return _categoriesCache!;
     try {
       final data = await _client
           .from('products')
           .select('category')
           .eq('status', 'approved')
-          .eq('visibility', 'public');
+          .eq('visibility', 'public')
+          .timeout(const Duration(seconds: 8));
       final cats = (data as List)
           .map((e) => (e['category'] ?? '').toString())
           .where((e) => e.isNotEmpty)
           .toSet()
           .toList();
       cats.sort();
+      _categoriesCache = cats;
       return cats;
     } catch (e) {
-      return [];
+      return _categoriesCache ?? [];
     }
   }
 
   Future<List<String>> getCraftTypes() async {
+    if (_craftTypesCache != null) return _craftTypesCache!;
     try {
       final data = await _client
           .from('products')
           .select('craft_type')
           .eq('status', 'approved')
-          .eq('visibility', 'public');
+          .eq('visibility', 'public')
+          .timeout(const Duration(seconds: 8));
       final types = (data as List)
           .map((e) => (e['craft_type'] ?? '').toString())
           .where((e) => e.isNotEmpty)
           .toSet()
           .toList();
       types.sort();
+      _craftTypesCache = types;
       return types;
     } catch (e) {
-      return [];
+      return _craftTypesCache ?? [];
     }
   }
 

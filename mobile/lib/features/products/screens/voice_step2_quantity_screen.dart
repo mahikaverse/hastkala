@@ -1093,7 +1093,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
         const SizedBox(height: AppDimensions.md),
         _buildFormField(lang.t('makingTime'), _makingTimeCtrl, Icons.timer_outlined, lang.t('hintMakingTime')),
         const SizedBox(height: AppDimensions.md),
-        _buildFormField(lang.t('makingProcess'), _makingProcessCtrl, Icons.handyman_outlined, lang.t('hintMakingProcess'), maxLines: 2),
+        _buildFormField(lang.t('makingProcess'), _makingProcessCtrl, Icons.handyman_outlined, lang.t('hintMakingProcess'), maxLines: 6, minLines: 2),
         const SizedBox(height: AppDimensions.xxl),
 
         // Save & Next Button
@@ -1124,7 +1124,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
     );
   }
 
-  Widget _buildFormField(String label, TextEditingController controller, IconData icon, String hint, {TextInputType keyboardType = TextInputType.text, int maxLines = 1}) {
+  Widget _buildFormField(String label, TextEditingController controller, IconData icon, String hint, {TextInputType keyboardType = TextInputType.text, int maxLines = 1, int? minLines}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1140,6 +1140,7 @@ class _VoiceStep2QuantityScreenState extends State<VoiceStep2QuantityScreen>
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          minLines: minLines,
           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
           decoration: InputDecoration(
             hintText: hint,

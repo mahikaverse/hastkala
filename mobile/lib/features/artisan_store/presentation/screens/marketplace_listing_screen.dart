@@ -407,7 +407,7 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
       children: [
         if (listing.missingCount > 0) _buildMissingFieldsBanner(listing, lang),
         _buildEditableField(lang.t('productTitleLabel'), listing.title, (v) => _updateListingField(productId, 'title', v)),
-        _buildEditableField(lang.t('description'), listing.description, (v) => _updateListingField(productId, 'description', v), maxLines: 4),
+        _buildEditableField(lang.t('description'), listing.description, (v) => _updateListingField(productId, 'description', v), maxLines: 12, minLines: 3),
         if (listing.bulletPoints.isNotEmpty) _buildBulletPointsDisplay(listing.bulletPoints),
         if (listing.keywords.isNotEmpty) _buildKeywordsDisplay(listing.keywords),
         _buildEditableField(lang.t('category'), listing.category, (v) => _updateListingField(productId, 'category', v)),
@@ -464,7 +464,7 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
     );
   }
 
-  Widget _buildEditableField(String label, String value, Function(String) onChanged, {int maxLines = 1}) {
+  Widget _buildEditableField(String label, String value, Function(String) onChanged, {int maxLines = 1, int? minLines}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -483,6 +483,7 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
             child: TextFormField(
               initialValue: value,
               maxLines: maxLines,
+              minLines: minLines,
               style: AppTextStyles.bodyMedium.copyWith(fontSize: 13),
               decoration: InputDecoration(
                 isDense: true,

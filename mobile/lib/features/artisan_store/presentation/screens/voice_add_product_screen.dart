@@ -566,7 +566,8 @@ class _VoiceAddProductScreenState extends State<VoiceAddProductScreen> {
           _buildTextField(
             _descCtrl,
             'Describe your product...',
-            maxLines: 4,
+            maxLines: 12,
+            minLines: 3,
           ),
           const SizedBox(height: 16),
           // Category
@@ -793,11 +794,13 @@ class _VoiceAddProductScreenState extends State<VoiceAddProductScreen> {
     TextEditingController ctrl,
     String hint, {
     int maxLines = 1,
+    int? minLines,
     TextInputType keyboardType = TextInputType.text,
   }) {
     return TextField(
       controller: ctrl,
       maxLines: maxLines,
+      minLines: minLines,
       keyboardType: keyboardType,
       style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
       decoration: InputDecoration(

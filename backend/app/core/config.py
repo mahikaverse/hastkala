@@ -1,4 +1,10 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
+
+# Always read backend/.env (this file), no matter which folder you launch uvicorn from.
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+ENV_FILE = BACKEND_DIR / ".env"
 
 
 class Settings(BaseSettings):
@@ -40,7 +46,7 @@ class Settings(BaseSettings):
 
     DEEPGRAM_API_KEY: str = ""
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": str(ENV_FILE), "env_file_encoding": "utf-8"}
 
     @property
     def cors_origin_list(self) -> list[str]:
